@@ -1,0 +1,10 @@
+# R session files
+.Rhistory
+.RData
+.Rproj.user/
+
+# the parity check's output (source("check_parity.R"))
+parity_out.txt
+
+# instructions for Claude Code: kept on this machine, not published
+CLAUDE.md
