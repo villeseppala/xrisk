@@ -39,6 +39,8 @@ h1{font-size:21px;font-weight:700;margin:0 0 4px;}
 .langb.on{opacity:1;border-color:#8fd6f2;cursor:default;}
 .langb svg{display:block;border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,.35);}
 .lead{font-size:13px;color:#b7c6d3;margin:0 0 14px;line-height:1.5;}
+.lead a{color:#8fd6f2;overflow-wrap:anywhere;}   /* the link to the article: the page's link colour, wrapping on a phone */
+.lead a:hover{color:#ffd27f;}
 .controls{display:flex;gap:10px;align-items:center;margin:12px 0 20px;flex-wrap:wrap;}
 .controls:has(+ .controls){margin-bottom:6px;}          /* two stacked control rows sit close together */
 .controls + .controls{margin-top:0;}
@@ -526,6 +528,7 @@ body:not(.nospin) .vstack:has(> .arsp:first-child){padding-bottom:13px;}
   border-top:1px solid rgba(255,255,255,.10);padding-top:12px;}
 .summary b{color:#ffd27f;}
 .foot{margin-top:22px;font-size:11.5px;color:#7d8fa0;line-height:1.5;}
+.foot.credit{margin-top:6px;}                     /* the credit, a line under the script's footer */
 </style>
 </head>
 <body>
@@ -543,7 +546,8 @@ body:not(.nospin) .vstack:has(> .arsp:first-child){padding-bottom:13px;}
   </div>
   <h1 data-tr="h1">Expected longevity of humanity under extinction risk</h1>
   <p class="lead" data-tr="lead">Each period's annual extinction probability cascades into survival probability, population, and cumulative
-    human life lived. Changes are measured against a comparison scenario.</p>
+    human life lived. Changes are measured against a comparison scenario. Read more about the site at
+    <a href="https://villeseppala.github.io/interests/articles/201.html" target="_blank" rel="noopener">https://villeseppala.github.io/interests/articles/201.html</a></p>
   <p class="khint lead2" data-tr="help">Edit any <b>extinction probability</b>, <b>survival probability</b>, or
     <b>population</b> or <b>value potential</b> digit &mdash; click it, then use
     <span class='kbd'>&larr;</span><span class='kbd'>&rarr;</span><span class='kbd'>&uarr;</span><span class='kbd'>&darr;</span>
@@ -715,6 +719,7 @@ body:not(.nospin) .vstack:has(> .arsp:first-child){padding-bottom:13px;}
   <div id="panel"></div>
   <div id="summary"></div>
   <div id="foot"></div>
+  <div class="foot credit" data-tr="credit">Site made by Ville Seppälä, with Claude AI</div>
 </div></div>
 <!-- the saved settings (Author controls, what readers first see): the build puts the file's text here -->
 <script src="xriskb_settings.js"></script>
@@ -3286,7 +3291,7 @@ function scrollPageBy(dy){
 }
 
 // ── saved settings ──
-// xriskb_settings.js (beside the page; the build puts its text into the published copy) sets XRISKB_SETTINGS:
+// xriskb_settings.js (beside the page, loaded from there; the interests site's build inlines it) sets XRISKB_SETTINGS:
 // the Author controls (their CSS variables, and a few more), and the view readers first see — the page as it was
 // when saved. Author mode (index.html?author, or #author) shows Author controls and Save settings, which writes that file: through
 // author.R's local server when the page is served by it (any browser, Positron's included); else in
@@ -4007,7 +4012,9 @@ var FI_UI = {
   title: 'Sukupuuttoriskilaskuri',
   h1: 'Ihmiskunnan odotettu elinaika sukupuuttoriskin alla',
   lead: 'Kunkin jakson vuotuinen sukupuuton todennäköisyys kertautuu selviytymistodennäköisyydeksi, väestöksi ja ' +
-        'kumulatiiviseksi eletyksi ihmiselämäksi. Muutoksia verrataan vertailuskenaarioon.',
+        'kumulatiiviseksi eletyksi ihmiselämäksi. Muutoksia verrataan vertailuskenaarioon. Lue lisää sivustosta ' +
+        '(englanniksi): <a href="https://villeseppala.github.io/interests/articles/201.html" target="_blank" ' +
+        'rel="noopener">https://villeseppala.github.io/interests/articles/201.html</a>',
   help: 'Muokkaa mitä tahansa <b>sukupuuton todennäköisyyden</b>, <b>selviytymistodennäköisyyden</b> tai ' +
         '<b>väestö-</b> tai <b>arvopotentiaalin</b> numeroa &mdash; napsauta sitä ja käytä näppäimiä ' +
         "<span class='kbd'>&larr;</span><span class='kbd'>&rarr;</span><span class='kbd'>&uarr;</span><span class='kbd'>&darr;</span> " +
@@ -4041,7 +4048,8 @@ var FI_UI = {
   tm_play: '&#9654;&nbsp;Toista', tm_play_t: 'Toista opastus alusta, niin kuin muut sen näkevät',
   tm_clear: 'Aloita alusta', tm_clear_t: 'Poista kaikki vaiheet ja otsikko', tm_url: 'Opastuksen linkki',
   tm_hint: 'Säilyy vain tässä selaimessa, kunnes jaat sen. Linkki sisältää koko opastuksen: kuka tahansa, jolla se on, ' +
-           'voi avata sen, ja muutettu opastus tarvitsee uuden linkin.'
+           'voi avata sen, ja muutettu opastus tarvitsee uuden linkin.',
+  credit: 'Sivuston teki Ville Seppälä, apuna Claude-tekoäly'
 };
 var LANG_ATTRS = [['data-tr', null], ['data-tr-title', 'title'], ['data-tr-ph', 'placeholder'], ['data-tr-aria', 'aria-label']];
 function applyLang(){
