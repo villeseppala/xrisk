@@ -307,7 +307,8 @@ svg.arrows #ah-bad path, svg.arrows #ah-bad-hl path{fill:#ee4d4d;}
    left edge, stands out to the left of them as the place to choose; the default width has it on top (258 + 24) */
 .grid-wrap{--halfcol:74px;--labind:24px;--labw:max(var(--labw-user, 282px), var(--labw-fit, 0px));}
 @media (max-width:760px){ .grid-wrap{--labind:12px;--labw:max(var(--labw-user, 192px), var(--labw-fit, 0px));} }   /* small screens: narrower labels, more room for values */
-/* --labw-fit (fitLabels): with the formulas shown, the width that keeps each on one line; the column never narrower */
+/* --labw-fit (fitLabels): the width that keeps every view switch, and with the formulas shown each formula, on one line;
+   the column never narrower */
 body:not(.nofx) .rformula{white-space:nowrap;}
 .grid-scroll{overflow-x:auto;overflow-y:hidden;cursor:grab;}   /* drag to scroll (see "drag to scroll") */
 /* a finger on the table pans the page and the table, but neither double-tap zooms the page (taps there edit) nor does a
@@ -403,19 +404,21 @@ body.colresize, body.colresize *{cursor:col-resize !important;user-select:none !
 .rclose:focus-visible{outline:2px solid #8fd6f2;outline-offset:1px;}
 .rfx{grid-column:1;min-width:0;text-align:center;}
 body.nofx .rfx{display:none;}          /* "Formulas" off (placeScales moves the Scale menu to the title first) */
-/* a phone's narrow screen: the names column narrower still, as narrow as its words allow (a view switch's two words may
-   go on two lines, and the formula, when shown, over the title instead of beside it), and kept in view while the
-   values scroll sideways under it (sticky), as "Choose outcome"'s title and choices are (wrapping to a phone's width) */
+/* a phone's narrow screen: the names column narrower still, as narrow as its words allow, but no narrower than keeps
+   every view switch on one line (fitLabels), and the formula, when shown, over the title instead of beside it. Its
+   width its own (--labw-narrow, dragged there), not the one dragged or saved on a wider screen (--labw-user). It
+   scrolls sideways with the values, as on a wide screen, so the boxes keep their symbols ("S by 2036:") with the
+   formulas hidden too: they still say which row they are once the names are out of sight. "Choose outcome" and its
+   choices on one line, scrolling with the rest where wider than the screen */
 @media (max-width:560px){
-  .grid-wrap{--labind:6px;--labw:max(var(--labw-user, 150px), var(--labw-fit, 0px));}
-  .grid-wrap .rlabel, #panel .grow.outsel > .outch{position:sticky;left:0;}
-  #panel .grow.outsel > .outch{max-width:360px;}
-  .rtitle .seg{flex-wrap:wrap;}
+  .grid-wrap{--labind:6px;--labw:max(var(--labw-narrow, 120px), var(--labw-fit, 0px));}
+  #panel .grow.outsel > .outch, #panel .grow.outsel > .outch .seg{flex-wrap:nowrap;white-space:nowrap;}
   .rlblwrap{grid-template-columns:minmax(0,1fr);row-gap:4px;}
   .rfx{grid-column:1;text-align:right;}
   .rtitle{grid-column:1;}
   .gscale select{max-width:100%;}                 /* the Scale menu, and "Exclude from comparison", within the column */
   .rlabel .xchk{white-space:normal;text-align:left;}
+  body.nofx .vcsym{display:inline;}
 }
 .rformula{font-size:var(--formula-fs, 14.4px);color:#cbb68e;padding-left:0;font-weight:400;
   line-height:1.6;font-family:Cambria,Georgia,"Times New Roman",serif;font-style:italic;}
@@ -3390,16 +3393,19 @@ function placeScales(){
     if(hT <= w.getBoundingClientRect().height) t.appendChild(g);
   });
 }
-// With the formulas shown, the names column at least as wide as keeps every formula on one line (CSS: nowrap):
-// --labw-fit on #panel, which --labw takes over the default or dragged width when wider. Measured at that width (the
-// fit cleared first): the most any formula then lacks of its one line, in the column's own px (offsetWidth,
-// scrollWidth: the table zoom left out, as in --labw). Before placeScales, which places by the labels' heights.
+// The names column at least as wide as keeps every view switch (seg: its two words, never broken) and, with the
+// formulas shown, every formula on one line (CSS: nowrap): --labw-fit on #panel, which --labw takes over the default
+// or dragged width when wider. Measured at that width (the fit cleared first): the most any of them then lacks of
+// its line (a switch: past its title's width; a phone's narrow default needs it), in the column's own px
+// (offsetWidth, scrollWidth, clientWidth: the table zoom left out, as in --labw). Before placeScales, which places by
+// the labels' heights.
 function fitLabels(){
   var p = document.getElementById('panel'), gw = document.querySelector('.grid-wrap');
   p.style.removeProperty('--labw-fit');
-  if(!gw || !isChecked('showfx')) return;
+  if(!gw) return;
   var lb = gw.querySelector('.rlabel'), more = 0;
-  gw.querySelectorAll('.rformula').forEach(function(f){ more = Math.max(more, f.scrollWidth - f.clientWidth); });
+  gw.querySelectorAll('.rtitle .seg').forEach(function(s){ more = Math.max(more, s.offsetWidth - s.closest('.rtitle').clientWidth); });
+  if(isChecked('showfx')) gw.querySelectorAll('.rformula').forEach(function(f){ more = Math.max(more, f.scrollWidth - f.clientWidth); });
   if(lb && more > 0) p.style.setProperty('--labw-fit', Math.ceil(lb.offsetWidth + more) + 'px');
 }
 function watchArrows(){
@@ -3835,12 +3841,14 @@ document.addEventListener('touchcancel', endPinch);
 // ── names column width ──
 // The grip on the names column's right edge (colGrip(), in every row's label): drag it to set the column's width,
 // --labw-user on #panel, which the table's --labw takes (so it outlasts every redraw); a double-click returns
-// it to the default. The width is in the table's own px, so a drag follows the pointer at any table zoom.
+// it to the default. The width is in the table's own px, so a drag follows the pointer at any table zoom. On a phone's
+// narrow screen (narrowScreen) the column has a width of its own, --labw-narrow (CSS), dragged there and not saved: the
+// one dragged or saved on a wider screen (view.namesWidth) would leave a phone little room for the values.
 var LABW_MIN = 110, LABW_MAX = 600, colDrag = null, colQueued = false;
-function setLabW(w){                              // w: px, or null for the default
-  var p = document.getElementById('panel');
-  if(w == null) p.style.removeProperty('--labw-user');
-  else p.style.setProperty('--labw-user', Math.round(Math.min(LABW_MAX, Math.max(LABW_MIN, w))) + 'px');
+function setLabW(w, narrow){                      // w: px, or null for the default; narrow: the phone's width
+  var p = document.getElementById('panel'), prop = narrow ? '--labw-narrow' : '--labw-user';
+  if(w == null) p.style.removeProperty(prop);
+  else p.style.setProperty(prop, Math.round(Math.min(LABW_MAX, Math.max(LABW_MIN, w))) + 'px');
   if(!colQueued){                                 // re-fit the columns and graphs, redraw the arrows: once a frame
     colQueued = true;
     requestAnimationFrame(function(){ colQueued = false; watchArrows(); });
@@ -3849,14 +3857,14 @@ function setLabW(w){                              // w: px, or null for the defa
 document.addEventListener('pointerdown', function(e){
   var g = e.target.closest && e.target.closest('.colgrip'); if(!g || e.button !== 0) return;
   var k = gridScale(g);
-  colDrag = {x: e.clientX, w: g.parentNode.getBoundingClientRect().width / k, k: k, id: e.pointerId};
+  colDrag = {x: e.clientX, w: g.parentNode.getBoundingClientRect().width / k, k: k, id: e.pointerId, narrow: narrowScreen()};
   try { g.setPointerCapture(e.pointerId); } catch(err){}   // keep the moves while the pointer is off the grip
   document.body.classList.add('colresize');
   e.preventDefault();
 });
 document.addEventListener('pointermove', function(e){
   var d = colDrag; if(!d || e.pointerId !== d.id) return;
-  setLabW(d.w + (e.clientX - d.x) / d.k);
+  setLabW(d.w + (e.clientX - d.x) / d.k, d.narrow);
 });
 function endColDrag(e){
   if(!colDrag || e.pointerId !== colDrag.id) return;
@@ -3864,7 +3872,7 @@ function endColDrag(e){
 }
 document.addEventListener('pointerup', endColDrag);
 document.addEventListener('pointercancel', endColDrag);
-document.addEventListener('dblclick', function(e){ if(e.target.closest && e.target.closest('.colgrip')) setLabW(null); });
+document.addEventListener('dblclick', function(e){ if(e.target.closest && e.target.closest('.colgrip')) setLabW(null, narrowScreen()); });
 
 // ── author controls ──
 // The Author controls group: each input sets a CSS variable on the root that the stylesheet reads (the page's colour, the graph and
@@ -4172,14 +4180,26 @@ function viewStart(v){
 // On a phone's narrow screen (NARROW_MQ, the CSS's own breakpoint) every view, the first one or a scene's (a tour's
 // step), comes with the reader's groups collapsed to their titles and the formulas hidden, so the table comes first
 // and its names column stays narrow, and the table at NARROW_ZOOM at most, so more of it fits across; the reader can
-// open, show or zoom any of them again. A view saved there (currentSettings) is the page as it then is.
+// open, show or zoom any of them again. A view saved there (currentSettings) is the page as it then is. A screen
+// that turns narrow (a phone turned upright, a window narrowed) gets the same at once, the page as it is otherwise
+// kept; widened again, the page stays as it then is.
 var NARROW_MQ = window.matchMedia ? window.matchMedia('(max-width: 560px)') : null, NARROW_ZOOM = 0.75;
+var NARROW_OFF = ['formulas', 'groupElements', 'groupVariables', 'groupTimeScale', 'groupControls'];   // (SHOW_IDS' keys)
+function narrowScreen(){ return !!(NARROW_MQ && NARROW_MQ.matches); }
 function narrowView(v){
-  if(!(NARROW_MQ && NARROW_MQ.matches)) return v;
+  if(!narrowScreen()) return v;
   var sh = Object.assign({}, v.show || {});
-  ['formulas', 'groupElements', 'groupVariables', 'groupTimeScale', 'groupControls'].forEach(function(k){ sh[k] = false; });
+  NARROW_OFF.forEach(function(k){ sh[k] = false; });
   return Object.assign({}, v, {show: sh, zoom: Math.min(typeof v.zoom === 'number' ? v.zoom : tableZoom, NARROW_ZOOM)});
 }
+function turnedNarrow(){
+  if(!narrowScreen()) return;
+  NARROW_OFF.forEach(function(k){ var el = document.getElementById(SHOW_IDS[k]); if(el) el.checked = false; });
+  applyShowToggles();
+  setTableZoom(Math.min(tableZoom, NARROW_ZOOM));
+  requestAnimationFrame(watchArrows);               // the labels without their formulas, the narrow column: re-fit
+}
+if(NARROW_MQ){ if(NARROW_MQ.addEventListener) NARROW_MQ.addEventListener('change', turnedNarrow); else if(NARROW_MQ.addListener) NARROW_MQ.addListener(turnedNarrow); }
 // The view part (currentSettings().view): at start-up (applySettings) and on loading a scene (applyScene). New time
 // points start from their defaults (the caller then sets any values of its own); the history is the caller's.
 function applyView(v){
