@@ -4,29 +4,31 @@
 // keeps the page's default.
 window.XRISKB_SETTINGS = {
   "author": {
-    "--g-bg": "#1e2933",
+    "--page-bg": "#182630",
+    "--g-bg": "#1d3c59",
     "--g-line-col": "#000000",
     "--row-line-w": "2px",
-    "--row-line-col": "#030303",
-    "--v-bg": "#152b3c",
-    "--v-edit-bg": "#02111c",
+    "--row-line-col": "#2b4b5e",
+    "--v-bg": "#0e405d",
+    "--v-edit-bg": "#0e273a",
+    "--area-op": "0.5",
     "--title-fs": "19px",
     "--formula-fs": "17.2px",
     "--ar-w": "1.6px",
     "--col-rate": "#c98678",
-    "--col-surv": "#8ebecd",
+    "--col-surv": "#7bb9cc",
     "--col-rate-c": "#bd5b47",
     "--col-surv-c": "#41b3d2",
     "--col-out": "#ca779f",
-    "--col-cum": "#bc4980",
+    "--col-cum": "#c2b456",
     "graphYears": true,
     "boxTextPx": 16.9
   },
   "view": {
     "start": 2026,
     "points": [
-      1,
-      2
+      2,
+      3
     ],
     "scale": [
       10,
@@ -36,8 +38,8 @@ window.XRISKB_SETTINGS = {
       100000,
       1000000
     ],
-    "zoom": 0.837,
-    "namesWidth": 353,
+    "zoom": 0.9,
+    "namesWidth": 412,
     "variables": [
       "rate",
       "surv",
@@ -53,10 +55,10 @@ window.XRISKB_SETTINGS = {
       "b": true,
       "names": false,
       "note": false,
-      "groupElements": true,
-      "groupVariables": true,
+      "groupElements": false,
+      "groupVariables": false,
       "groupTimeScale": true,
-      "groupControls": true,
+      "groupControls": false,
       "comparison": true
     },
     "comparePrevious": false,
@@ -79,8 +81,12 @@ window.XRISKB_SETTINGS = {
       "rateComp": true,
       "survComp": false,
       "yearsComp": false,
+      "yrexpComp": false,
       "livesLy": false,
-      "livesLoss": false
+      "livesLoss": false,
+      "popexpLoss": false,
+      "valexpLoss": false,
+      "valcumLoss": false
     },
     "relative": {}
   }

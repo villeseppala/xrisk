@@ -29,7 +29,9 @@ button,input{font:inherit;color:inherit;margin:0;}
 .checkbox input{margin:0 5px 0 0;cursor:pointer;}
 
 /* ── the app (as reference/app_xrisk/app.R) ── */
-body{background:#0b3552;color:#e8eef4;font-family:Arial,Helvetica,sans-serif;margin:0;}
+/* the page's colour (Author controls' "Page background", --page-bg): the body's, and the fills that stand in for it
+   over the arrows (the names column, the outcome band, the graphs' growth note) */
+body{background:var(--page-bg, #0b3552);color:#e8eef4;font-family:Arial,Helvetica,sans-serif;margin:0;}
 .wrap{max-width:1600px;margin:0 auto;padding:18px 5px 70px;}
 h1{font-size:21px;font-weight:700;margin:0 0 4px;}
 /* the language flags (setLang), top right; the one shown outlined, the other faded */
@@ -125,6 +127,8 @@ body:not(.author) .scenebox{display:none;}
 .acin{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:#cdd9e3;}
 .acin input[type=number]{width:56px;font:inherit;color:#e8eef4;background:#0a2438;border:1px solid #2a6a8f;border-radius:4px;padding:2px 4px;}
 .acin input[type=color]{width:34px;height:22px;padding:0;border:1px solid #2a6a8f;border-radius:4px;background:#0a2438;cursor:pointer;}
+.acin input[type=range]{width:90px;vertical-align:middle;accent-color:#8fd6f2;cursor:pointer;}
+.acin output{display:inline-block;min-width:2ch;text-align:right;font-variant-numeric:tabular-nums;}   /* a slider's value (its id + "V") */
 .ctlbox > legend{padding:0 6px;margin:0;font-size:12.5px;font-weight:700;color:#9fb0bf;letter-spacing:.02em;}
 /* Show variables / Show elements: toggle buttons, raised while off, pressed in (darker, sunk, text in the row's
    colour, or light for an element) while on */
@@ -154,7 +158,7 @@ body:not(.author) .scenebox{display:none;}
    table's fill, so an arrow down through the band passes under it. (#panel: over the packed rows' rule for cells.) */
 #panel .grow.outsel{display:flex;align-items:center;}
 #panel .grow.outsel > .outch{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;width:auto;position:relative;z-index:3;
-  margin:8px 0;padding:0 8px 0 4px;background:#0b3552;font-size:var(--title-fs, 15px);}
+  margin:8px 0;padding:0 8px 0 4px;background:var(--page-bg, #0b3552);font-size:var(--title-fs, 15px);}
 .outlab{color:#e8eef4;font-weight:600;}
 .outch .seg{white-space:normal;flex-wrap:wrap;}
 .outch .segb{padding:3px 12px;}
@@ -171,9 +175,6 @@ body:not(.author) .scenebox{display:none;}
 .ctlbox > legend .lgchk{display:inline-flex;align-items:center;gap:5px;cursor:pointer;}
 .ctlbox > legend .lgchk input{margin:0;cursor:pointer;}
 .khint{font-size:12.5px;color:#9fb0bf;}
-.lead2{margin:-8px 0 4px;line-height:1.7;}   /* editing hint, directly under the lead paragraph */
-.kbd{display:inline-block;background:#0a2438;border:1px solid #2a6a8f;border-radius:4px;
-  padding:0 7px;font-size:12px;margin:0 1px;line-height:18px;}
 .grid-wrap{margin-top:4px;position:relative;zoom:var(--tzoom,1);}   /* the table zoom (setTableZoom sets --tzoom on #panel) */
 .zprobe{position:absolute;left:0;top:0;width:100px;height:0;visibility:hidden;pointer-events:none;}   /* gridScale's ruler */
 /* each value is a box sized to its content; "Show arrows" adds an SVG overlay (drawArrows) linking
@@ -205,13 +206,14 @@ body.nofx .vcsym{display:none;}
 .gplot polyline, .gplot line{fill:none;stroke-width:1.7;stroke-linejoin:round;stroke-linecap:round;
   vector-effect:non-scaling-stroke;}   /* the plot stretches sideways (stretchGraphs); the lines keep their width */
 .gplot .ga{stroke-dasharray:3 3;opacity:.6;}      /* B, the comparison */
-/* the area under a running total's curve (A's, and B's while it is drawn): 90% see-through, each on its own, so
-   where they overlap the two stack (81% see-through there) */
-.gplot .garea{stroke:none;fill-opacity:.2;}   /* the area under an annual outcome's curve (o.area): 80% transparent */
+/* the area under an annual outcome's curve (o.area; A's, and B's while it is drawn), each on its own, so where they
+   overlap the two stack: its opacity the Author controls' "Graph fill" (--area-op), by default 20% */
+.gplot .garea{stroke:none;fill-opacity:var(--area-op, .2);}
 .gplot .gsoft{opacity:.5;}   /* the x-risk line when it shares the survival line's colour (riskOverlay) */
 .gplot .ga.gsoft{opacity:.3;}
 /* the growth note over the plot, top left: on a patch of the page's colour so a line under it can't blur it */
 .gnote{position:absolute;left:3px;top:3px;z-index:1;padding:0 3px;border-radius:3px;background:rgba(11,53,82,.8);
+  background:color-mix(in srgb, var(--page-bg, #0b3552) 80%, transparent);   /* the same, in the page's colour where supported */
   font-size:10.5px;line-height:1.2;font-style:italic;color:#8496a4;white-space:nowrap;pointer-events:none;}
 /* "Years under graphs" (Author controls: body.graph-years; never the labels' own class, .gyears, on the body: the rule
    hiding them would hide the whole page): each graph's first and last year under its two ends, in the captions' grey;
@@ -227,29 +229,41 @@ body.graphs.graph-years .grid-wrap .grow:has(> .gcell) > .vcell, body.graphs.gra
    "1 in" or the Δ|% switch. The fill reaches past the number as the odds' X's does (4 px each side, 2 px over and
    under): the side margins take theirs back, so the numbers stay lined up; the lines grow by the rest. */
 .dfill{display:inline-flex;align-items:flex-end;background:var(--v-edit-bg, rgba(4,20,34,.55));border-radius:3px;padding:2px 4px;margin:0 -4px;}
-/* the population potential set in an annual population box (potInBoxes), over the box's own value, as a sum (potSet),
-   in rows of the value's stack: the setter, "Population if survived pp" centred over its digits (which end where the
-   value's do), together on one editable fill; "× 0.9512175" (the survival probability, or "× (1 − 0.0487825)" in
-   the extinction view; A's and B's with the comparison), its first number under the value's first digit, and "="
-   after it; then the value (the box's caption, "ap at 2036:", on top as every box's). These lines (.vctr) add no
-   width of their own: centreLabels widens the stack's columns to hold them and moves each in from the left (its
+/* the population potential set in an annual population box (potInBoxes), over the box's own value, as a product
+   (potSet, setterSum), in rows of the value's stack, a multiplication down the numbers' column: "0.951218 ×" (A's
+   survival probability, or "(1 − 0.048782)" in the extinction view), centred over the value; the setter,
+   "Population if survived pp" centred over its digits (which end where the value's do), together on one editable
+   fill (column 1 only), "=" beside its A, outside it; then the value (the box's caption, "ap at 2036:", on top as every box's). The label (.vctr)
+   adds no width of its own: centreLabels widens the stack's columns to hold it and moves it in from the left (its
    padding) */
 .grid-wrap .vctr{grid-column:1 / -1;justify-self:stretch;contain:inline-size;white-space:nowrap;text-align:left;}
 .grid-wrap .vctr > span{display:inline-block;}   /* measured */
 .vpotlab{font-size:11px;line-height:1.25;font-style:italic;color:#8496a4;}
 .vpotlab .vcsym{font-size:13px;line-height:1;margin:0 0 0 .3em;}   /* the formula symbol at the label's end: "pp" */
-.vpotmul{margin:2px 0 3px;line-height:1.25;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;color:#8496a4;}
-  /* "× 0.9512175", its first number under the value's first digit (centreLabels) */
-.vpotk{font-size:11px;font-weight:600;color:#9fb0bf;margin-right:4px;}            /* its "A:" / "B:" */
-/* the setter (the .xedit its editing finds) is one editable fill across the value's stack: a subgrid of its columns,
-   so its digits stay in the numbers' column and, with the comparison, its Δ|% switch in the side column. Its own stack
-   draws no box: its lines are the subgrid's rows. The fill reaches 4 px past the columns each side (padding taken back
-   by the margins, so the columns don't widen), as a number's own fill (.dfill) does, which it replaces here. */
-.grid-wrap .vpot.xedit{display:grid;grid-column:1 / -1;grid-template-columns:subgrid;align-items:center;
-  background:var(--v-edit-bg, rgba(4,20,34,.55));border-radius:4px;padding:2px 4px 3px;margin:0 -4px;}
-.grid-wrap .vpot.xedit > .vstack{display:contents;}
+.vpotmul{margin:2px 0 3px;line-height:1.25;font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;color:#8496a4;}
+  /* "0.951218 ×", centred over the value (centreLabels); the numbers' size */
+/* the multiplication's "=", beside the setter's A, in the side column (outside the setter's fill) */
+.vop{font-size:13px;font-weight:700;color:#8496a4;}
+/* the setter (the .xedit its editing finds) draws no box of its own: its lines (the label, A, the change, B, and
+   beside them "=" and its Δ|% switch) are rows of the value's stack, so its digits stay in the numbers' column and
+   what stands beside them in the side column */
+.grid-wrap .vpot.xedit, .grid-wrap .vpot.xedit > .vstack{display:contents;}
+.grid-wrap .vpot .vpotlab{grid-column:1;margin-top:2px;}   /* centreLabels keeps it inside the numbers' column */
 .grid-wrap .vpot .vmain, .grid-wrap .vpot .vdelta, .grid-wrap .vpot .vbase{grid-column:1;}   /* a row each */
 .grid-wrap .vpot .dfill{background:none;}
+.grid-wrap .vpot .vx-m{pointer-events:none;}       /* the "=": not part of what a click edits */
+/* ...and one editable fill under them all (.vpotfill: setterSum gives it the setter's rows), under the numbers' column
+   only, so what stands in the side column is outside it. Placed by the stack's grid lines (an absolutely positioned
+   item: it takes no cell from the lines), 4 px past the column each side as a number's own fill (.dfill) reaches,
+   3 px under the last line (the value under it moved down as much); behind the lines (the stack isolated) */
+.grid-wrap .vstack:has(> .vpot){position:relative;isolation:isolate;}
+.grid-wrap .vpot + .vmain{margin-top:3px;}
+/* (both its column lines given: an absolutely positioned item's line left out, "grid-column: 1"'s end, is the grid's
+   padding edge, not the next line, so the fill would reach over the side column too) */
+.grid-wrap .vpotfill{position:absolute;grid-column:1 / 2;top:0;bottom:-3px;left:-4px;right:-4px;z-index:-1;
+  background:var(--v-edit-bg, rgba(4,20,34,.55));border-radius:4px;}
+.grid-wrap .vpot.xedit:not(.sel):hover > .vpotfill{background-image:linear-gradient(rgba(255,255,255,.07),rgba(255,255,255,.07));}
+.grid-wrap .vpot.xedit.sel > .vpotfill{outline:2px solid rgba(255,210,127,.55);outline-offset:-2px;}
 /* no side column in use (no comparison): no gap for it either, so the box's lines stay centred */
 .grid-wrap .vstack.vside:has(> .vpot):not(:has(.vx:not(:empty))){column-gap:0;}
 
@@ -259,7 +273,12 @@ body.graphs.graph-years .grid-wrap .grow:has(> .gcell) > .vcell, body.graphs.gra
 .grid-wrap .xedit:not(.sel):hover{background-image:linear-gradient(rgba(255,255,255,.07),rgba(255,255,255,.07));}   /* over the box's own fill */
 svg.arrows{position:absolute;left:0;top:0;pointer-events:none;overflow:visible;z-index:2;}
 svg.arrows path.e{fill:none;stroke:#a3acb4;stroke-width:var(--ar-w, 1.3px);opacity:.75;}   /* grey: apart from survival's blue; width: Author controls */
-svg.arrows path.e.hl{stroke-width:calc(2 * var(--ar-w, 1.3px));}   /* the hovered box's arrows, in and out (markArrows) */
+/* the hovered box's arrows, in and out (markArrows): three times as thick, nearly opaque, and their heads in proportion
+   (the -hl markers, sized by the stroke: drawArrows) */
+svg.arrows path.e.hl{stroke-width:calc(3 * var(--ar-w, 1.3px));opacity:.95;}
+svg.arrows path.e.hd.hl{marker-end:url(#ah-hl);}
+svg.arrows path.e.hd.hl.good{marker-end:url(#ah-good-hl);}
+svg.arrows path.e.hd.hl.bad{marker-end:url(#ah-bad-hl);}
 /* graphs and arrows both on: room over the graphs for the arrows from one checkpoint to the next, which run over their tops (the same
    added to the boxes, so the two stay level) */
 body.garrows .grid-wrap .vcell{margin-top:19px;}
@@ -268,8 +287,8 @@ svg.arrows marker path{fill:#a3acb4;opacity:.9;}
 /* arrows leaving a box where a change starts (an input that differs from the baseline): the delta's green / red (arrowTones) */
 svg.arrows path.e.good{stroke:#7fd18f;opacity:.9;}
 svg.arrows path.e.bad{stroke:#ee4d4d;opacity:.9;}
-svg.arrows #ah-good path{fill:#7fd18f;}
-svg.arrows #ah-bad path{fill:#ee4d4d;}
+svg.arrows #ah-good path, svg.arrows #ah-good-hl path{fill:#7fd18f;}
+svg.arrows #ah-bad path, svg.arrows #ah-bad-hl path{fill:#ee4d4d;}
 /* two half-columns per checkpoint (values sit on the years, rates in the gaps between them);
    --ncols1 (the half-columns after the first) is set on .grid-wrap per render from the number of checkpoints */
 /* Cap the column pitch so a short horizon doesn't spread three checkpoints across the whole width.
@@ -284,10 +303,16 @@ svg.arrows #ah-bad path{fill:#ee4d4d;}
    half-column minimum, so rows stay aligned. When the minimums don't fit, .grid-scroll scrolls sideways
    (only the table, and under the row labels, which stay put; the page never does). */
 /* --labw, the names column: the width the reader dragged it to (--labw-user on #panel, see "names column width"), else
-   the default */
-.grid-wrap{--halfcol:74px;--labw:var(--labw-user, 258px);}
-@media (max-width:760px){ .grid-wrap{--labw:var(--labw-user, 180px);} }   /* small screens: narrower labels, more room for values */
+   the default. --labind: the variables' labels start this far in (.rlabel), so "Choose outcome", from the column's
+   left edge, stands out to the left of them as the place to choose; the default width has it on top (258 + 24) */
+.grid-wrap{--halfcol:74px;--labind:24px;--labw:max(var(--labw-user, 282px), var(--labw-fit, 0px));}
+@media (max-width:760px){ .grid-wrap{--labind:12px;--labw:max(var(--labw-user, 192px), var(--labw-fit, 0px));} }   /* small screens: narrower labels, more room for values */
+/* --labw-fit (fitLabels): with the formulas shown, the width that keeps each on one line; the column never narrower */
+body:not(.nofx) .rformula{white-space:nowrap;}
 .grid-scroll{overflow-x:auto;overflow-y:hidden;cursor:grab;}   /* drag to scroll (see "drag to scroll") */
+/* a finger on the table pans the page and the table, but neither double-tap zooms the page (taps there edit) nor does a
+   pinch: a pinch zooms the table instead (see "table zoom") */
+.grid-scroll{touch-action:pan-x pan-y;}
 /* with a sideways scrollbar (.hscroll, set by fitColumns), room above it, so the last variable reads as the last */
 .grid-scroll.hscroll{padding-bottom:30px;}
 body.dragging, body.dragging *{cursor:grabbing !important;user-select:none !important;}
@@ -300,7 +325,11 @@ body.dragging, body.dragging *{cursor:grabbing !important;user-select:none !impo
     var(--c3,minmax(var(--halfmin,0px),1fr)) repeat(var(--ncols2,5),minmax(var(--halfmin,0px),1fr));
   max-width:calc(var(--labw) + (var(--ncols1,7) + var(--k1,1)) * max(var(--halfcol), var(--halfmin,0px)));
   min-width:calc(var(--labw) + (var(--ncols1,7) + var(--k1,1)) * var(--halfmin,0px));
-  border-bottom:var(--row-line-w, 2px) solid var(--row-line-col, rgba(255,255,255,.4));}   /* the line between variables (Author controls) */
+  /* the line between variables (Author controls' width and colour), from the labels' indent (--labind) on, so "Choose
+     outcome" stands out past the lines too: a strip of background in the row's bottom padding, where a border was */
+  padding-bottom:var(--row-line-w, 2px);
+  background:linear-gradient(var(--row-line-col, rgba(255,255,255,.4)), var(--row-line-col, rgba(255,255,255,.4))) no-repeat;
+  background-position:var(--labind, 0px) 100%;background-size:calc(100% - var(--labind, 0px)) var(--row-line-w, 2px);}
 /* Packed (fitColumns, once the cells are measured; the half-columns above are only the first layout): one track per
    column of cells (--gtpl, their widths), the row exactly as wide as they are (--gsum); each cell one track wide,
    at its natural width, from the track's start and shifted onto its column's centre (left, set per cell) */
@@ -337,11 +366,17 @@ body.dragging, body.dragging *{cursor:grabbing !important;user-select:none !impo
 .tin:focus{outline:none;border-color:#8fd6f2;color:#e8eef4;}
 .tfix{display:flex;align-items:center;justify-content:center;white-space:nowrap;}
 .tpt.on .tin, .tpt.tnow .tin, .tpt.tnow .tfix{color:#e8eef4;}
-.grow.ghead{border-bottom:var(--row-line-w, 2px) solid var(--row-line-col, rgba(255,255,255,.4));}   /* as the lines between variables */
+/* a phone's narrow screen: the groups' sides closer, the points a little narrower, and the line of them scrolling
+   sideways inside its group where it is still too wide (rather than widening the page) */
+@media (max-width:560px){
+  .controls.ctlbox{padding-left:8px;padding-right:8px;}
+  .tpts{grid-template-columns:repeat(7, 52px);min-width:0;max-width:100%;overflow-x:auto;}
+  .tin, .tfix{width:50px;font-size:10px;}
+}
 /* .erow marks the rows with editable values (x-risk, survival, population potential); no band of their own now:
    the fill of their editable parts (--v-edit-bg, above) shows what can be edited */
 .rlabel{grid-column:1;grid-row:1;display:flex;align-items:center;gap:5px;font-size:12.5px;line-height:1.35;font-weight:600;
-  align-self:stretch;padding:9px 8px 9px 0;border-right:1px solid rgba(255,255,255,.10);}
+  align-self:stretch;padding:9px 8px 9px var(--labind, 0px);border-right:1px solid rgba(255,255,255,.10);}
 /* the label: the formula on the left (.rfx) and the title on the right (with the view switches in it), each as
    wide as it needs: the formula takes its width on one line, unless the title would then not fit its longest
    word or switch (the formula then wraps), and the title the rest. The Scale menu goes under whichever of the two
@@ -353,21 +388,35 @@ body.nofx .rlblwrap{grid-template-columns:minmax(0,1fr);}
 .rlbl{font-size:var(--title-fs, 15px);}   /* the variable's name and its italic second line (Author controls; 15 px: 20% over the column's 12.5) */
 /* the row labels scroll sideways with the values (the table's scrollbar moves the names column too): opaque, and
    over the arrows. Positioned, so the × and the column grip inside place themselves on it */
-.rlabel{position:relative;z-index:3;background:#0b3552;}
+.rlabel{position:relative;z-index:3;background:var(--page-bg, #0b3552);}
 /* the grip on the names column's right edge (one per row, lit together): drag to resize, double-click to reset */
 .colgrip{position:absolute;top:0;bottom:0;right:-4px;width:7px;cursor:col-resize;z-index:4;touch-action:none;}
 .grid-wrap:has(.colgrip:hover) .colgrip, body.colresize .colgrip{background:rgba(143,214,242,.35);}
 body.colresize, body.colresize *{cursor:col-resize !important;user-select:none !important;}
 /* the red × at a row label's left, centred down it as the rest of the label: hides that variable (as unticking its
    Show variables button) */
-.rlblwrap{padding-left:20px;}   /* keeps a wrapped label clear of the × */
-.rclose{position:absolute;left:2px;top:50%;margin-top:-8px;width:16px;height:16px;padding:0;border:0;border-radius:3px;background:#d9363e;
+.rlblwrap{padding-left:26px;}   /* keeps a wrapped label, and the formula, clear of the × (16 px wide, 2 px in): 8 px between */
+.rclose{position:absolute;left:calc(var(--labind, 0px) + 2px);top:50%;margin-top:-8px;width:16px;height:16px;padding:0;border:0;border-radius:3px;background:#d9363e;
   color:#fff;font:700 19px/1 Arial,sans-serif;display:flex;align-items:center;justify-content:center;cursor:pointer;
   box-shadow:0 1px 2px rgba(0,0,0,.35);}   /* a bigger ×, centred */
 .rclose:hover{background:#b8262e;}
 .rclose:focus-visible{outline:2px solid #8fd6f2;outline-offset:1px;}
 .rfx{grid-column:1;min-width:0;text-align:center;}
 body.nofx .rfx{display:none;}          /* "Formulas" off (placeScales moves the Scale menu to the title first) */
+/* a phone's narrow screen: the names column narrower still, as narrow as its words allow (a view switch's two words may
+   go on two lines, and the formula, when shown, over the title instead of beside it), and kept in view while the
+   values scroll sideways under it (sticky), as "Choose outcome"'s title and choices are (wrapping to a phone's width) */
+@media (max-width:560px){
+  .grid-wrap{--labind:6px;--labw:max(var(--labw-user, 150px), var(--labw-fit, 0px));}
+  .grid-wrap .rlabel, #panel .grow.outsel > .outch{position:sticky;left:0;}
+  #panel .grow.outsel > .outch{max-width:360px;}
+  .rtitle .seg{flex-wrap:wrap;}
+  .rlblwrap{grid-template-columns:minmax(0,1fr);row-gap:4px;}
+  .rfx{grid-column:1;text-align:right;}
+  .rtitle{grid-column:1;}
+  .gscale select{max-width:100%;}                 /* the Scale menu, and "Exclude from comparison", within the column */
+  .rlabel .xchk{white-space:normal;text-align:left;}
+}
 .rformula{font-size:var(--formula-fs, 14.4px);color:#cbb68e;padding-left:0;font-weight:400;
   line-height:1.6;font-family:Cambria,Georgia,"Times New Roman",serif;font-style:italic;}
 /* a row's two views in its title (seg): two pills side by side, a small gap between, each view outlined in its
@@ -388,7 +437,7 @@ body.nofx .rfx{display:none;}          /* "Formulas" off (placeScales moves the 
 .gscale select{width:calc(15ch + 22px);margin:0;padding:2px 4px 2px calc(3px + 7ch);text-overflow:ellipsis;
   white-space:nowrap;overflow:hidden;font:inherit;font-size:11.5px;color:#cdd9e3;
   background:#12405f;border:1px solid #2a6a8f;border-radius:5px;cursor:pointer;}
-/* "Exclude from comparison": the population row's, under its formula, and each x-risk box's, on top of it */
+/* "Exclude from comparison": the population row's (and the value potential's), under its formula */
 .xchk{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:400;font-style:normal;color:#9fb0bf;
   cursor:pointer;user-select:none;white-space:nowrap;line-height:1.3;}
 .xchk input{margin:0;cursor:pointer;}
@@ -427,6 +476,75 @@ body.nospin .ar, body.nospin .arsp{display:none;}   /* "▲ and ▼ controls" un
    line up. */
 .vbase{font-size:13px;line-height:1.2;margin-top:3px;font-variant-numeric:tabular-nums;text-align:right;}
 .vbase .dch{opacity:.8;}
+/* A drives B (an editable box with B shown, editInner: .vtie on its stack; not the read-only boxes, whose B the model
+   works out from B's own inputs): a thin bracket at the lines' left from A's down to B's, its
+   arrowhead at B, the change (B − A) joining it on the way. An edit of A moves B with it (the change kept: editA),
+   one of B or of the change leaves A as it is. Drawn on the lines themselves, each its stretch, bridging the gaps
+   between them (the change's 1px margin, B's 3px) so the segments meet without overlapping */
+/* a survival box's working over A's number (survCalc, gcellEdit's o.work): in the numbers' column, ending where the
+   digits do (the column widened when it's the wider), grey as the population boxes' "× S =" line, its numbers in
+   their rows' colours */
+.vcalc{margin:0 0 4px;line-height:1.25;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;color:#8496a4;}
+.vcalc.vbig{font-size:13px;}   /* the numbers' size: the generations' "0.951218 ÷ 75 =" */
+.vstack.vside > .vwork{justify-self:end;white-space:nowrap;}
+.vcalc.vwup{margin-bottom:1px;}   /* its upper line ("0.951218 ×"): close over the next, one working */
+/* "risk" over the odds beside a survival (gcellEdit o.topLab): small, in the odds' colour; beside the value, over A's
+   odds and centred on them (.oddw), reaching up into the row over A's line: the working's (beside it), or a row of its
+   own, its side cell (.vx-h) the word's height */
+.olab{font-size:11px;line-height:1.1;font-weight:600;color:var(--col-rate, #e8836f);}
+.grow[data-row="surv"] .olab{color:var(--col-rate-c, #e8836f);}
+.oddw{position:relative;display:inline-block;}
+.oddw > .olab{position:absolute;left:50%;bottom:100%;line-height:1;transform:translateX(-50%);white-space:nowrap;pointer-events:none;}
+.vx.vx-h{height:12px;}
+/* ...and the odds' column, beside the value, further from the numbers: in a survival box from the working's "=", so
+   the word reads as theirs, not as the working's result; in the x-risk row's boxes alike; with the word or without */
+.vstack.vside:has(> .vx-m .odds){column-gap:12px;}
+.vtie{--tie:#7590a4;}
+/* room for it inside the box, a few px clear of the box's edge: the box's stack of lines moved in (its own, or one
+   holding a setter's, the population or value potential in an outcome box) */
+.vcell > .vtie, .vcell > .vstack:has(.vtie){margin-left:8px;}
+.vtie > .vmain, .vtie > .vdelta, .vtie > .vbase{position:relative;}
+.vtie > .vmain::before, .vtie > .vdelta::before, .vtie > .vdelta::after, .vtie > .vbase::before, .vtie > .vbase::after{
+  content:'';position:absolute;pointer-events:none;}
+.vtie > .vmain::before{left:-9px;top:50%;bottom:-3px;width:5px;border:solid var(--tie);border-width:1px 0 0 1px;}   /* ┌ */
+.vtie:has(> .vdelta) > .vmain::before{bottom:-1px;}
+.vtie > .vdelta::before{left:-9px;top:0;bottom:-3px;border-left:1px solid var(--tie);}                            /* │ */
+.vtie > .vdelta::after{left:-9px;top:50%;width:6px;border-top:1px solid var(--tie);}                             /* ├─ */
+.vtie > .vbase::before{left:-9px;top:0;height:calc(50% - 1px);width:4px;border:solid var(--tie);border-width:0 0 1px 1px;}   /* └ */
+.vtie > .vbase::after{left:-5px;top:50%;margin-top:-4px;border:3.5px solid transparent;border-left:4px solid var(--tie);border-right:0;}   /* ▸ */
+/* B lit for a moment when it moved because A or the change was edited (render: flashB), fading to its own fill */
+@keyframes bflash{from{background-color:rgba(143,214,242,.45);}}
+.vbase.bflash, .vbase.bflash .dfill{animation:bflash .8s ease-out;border-radius:3px;}
+/* A's working framed with A (the survival and outcome boxes with a working, while B − A or B shows: frameA,
+   dhmsBlock's frame): a thin line round the working's lines and A's, so the change and B under them read as apart
+   from the sum, not more of it. Solid (dashed is B's: its graph line, its key) and faint, neither the editable fill nor the selection's gold. An
+   absolutely positioned item placed by its grid's lines (the stack's or the time block's), so it takes no cell: the
+   rows from the first to A's, every column; 3 px past them each side (13 px on the left round a setter's A → B
+   bracket), 3 px over and under. Room for it: the block moved down from the caption, A's line apart from the next
+   (in a stack its margin, the frame inside it; in a time block a gap row, the frame reaching into it) */
+.grid-wrap .vframe{position:absolute;grid-column:1 / -1;top:-3px;left:-3px;right:-3px;pointer-events:none;
+  border:1px solid rgba(159,176,191,.3);border-radius:5px;}
+.grid-wrap .vstack:has(> .vframe), .grid-wrap .vdhms:has(> .vframe){position:relative;margin-top:4px;}
+.grid-wrap .vstack > .vframe{bottom:3px;}
+.grid-wrap .vstack:has(> .vframe):has(.vtie) > .vframe{left:-13px;}
+/* ...A's line, and what stands beside it (a survival's odds), alike, so they stay level */
+.grid-wrap .vstack:has(> .vframe) > .vmain, .grid-wrap .vstack:has(> .vframe) > .vmain + .vx{margin-bottom:6px;}
+/* a survival box's own A → B bracket stays outside its frame: its ┌ shorter, ending 2 px clear of it, and reaching
+   down over the gap under A's line */
+.grid-wrap .vtie:has(> .vframe) > .vmain::before{width:3px;bottom:-9px;}
+.grid-wrap .vtie:has(> .vframe):has(> .vdelta) > .vmain::before{bottom:-7px;}
+/* ...its frame (the stack the bracket's own, .vtie) roomier: 6 px past the working on the left and over it, 5 px on
+   the right; the bracket 3 px further out to stay clear of it (its stubs as much longer, the arrowhead where it was),
+   the lines moved in and down as much */
+.grid-wrap .vstack.vtie > .vframe{top:-6px;left:-6px;right:-5px;}
+.grid-wrap .vstack.vtie:has(> .vframe){margin-top:7px;}
+.vcell > .vstack.vtie:has(> .vframe){margin-left:11px;}
+.grid-wrap .vtie:has(> .vframe) > .vmain::before, .grid-wrap .vtie:has(> .vframe) > .vdelta::before,
+.grid-wrap .vtie:has(> .vframe) > .vdelta::after, .grid-wrap .vtie:has(> .vframe) > .vbase::before{left:-12px;}
+.grid-wrap .vtie:has(> .vframe) > .vdelta::after{width:9px;}
+.grid-wrap .vtie:has(> .vframe) > .vbase::before{width:7px;}
+.grid-wrap .vdhms > .vframe{bottom:-3px;}
+.grid-wrap .vdhms > .dfgap{grid-column:1 / -1;height:6px;}
 .ratio.vref{opacity:.8;}
 /* side column: a second grid column beside the value / delta / baseline rows (sideCol), holding the delta switch
    and the rate's odds, so neither shifts the digits off their shared right edge */
@@ -436,12 +554,62 @@ body.nospin .ar, body.nospin .arsp{display:none;}   /* "▲ and ▼ controls" un
 .vx.vx-b{margin-top:3px;}   /* ...and with the baseline row */
 .vx.vx-p{margin-top:3px;}   /* level with the potential's row */
 .vpotl{font-size:11px;line-height:1.2;font-style:italic;color:#8496a4;text-align:right;}   /* "potential", under it */
+/* a box's values in years, days, hours and minutes (dhmsBlock: the Years outcome's two rows), centred in the box; a
+   line per value, its label then the four parts in columns, each right-aligned so the units line up (a dropped
+   part's empty cell adds no width) */
+.vdhms{display:grid;grid-template-columns:repeat(5, auto);margin-top:5px;font-size:12.5px;line-height:1.25;color:#8496a4;
+  font-variant-numeric:tabular-nums;white-space:nowrap;}
+.vdhms > span{text-align:right;}
+.vdhms .dpt{padding-left:.3em;}
+.vdhms .dlab{font-size:11px;font-weight:600;color:#9fb0bf;align-self:center;}   /* as the numbers' labels (.vlab) */
+.vdhms .dghost{visibility:hidden;}             /* the comma a line's last part leaves out, holding its place */
+.vdhms .druler{height:0;visibility:hidden;}    /* the ruler under the lines (dhmsBlock): its widths, no height */
+/* ...as a box's main readout (the Years outcome's annual row: dhmsBlock 'big'), under its working: the numbers' size,
+   the numbers bold as theirs */
+.vdhms.big{font-size:13px;margin-top:0;}
+.vdhms.big .dpt span{font-weight:700;}
+/* ...with its operators (dhmsBlock op): a column of their own after the parts; a factor's line (.dspan) across the
+   label's and the parts' columns, ending where the parts do */
+.vdhms.ops{grid-template-columns:repeat(6, auto);}
+.vdhms .dop{text-align:left;padding-left:.4em;font-weight:700;color:#8496a4;}
+.vdhms .dspan{grid-column:1 / 6;text-align:right;font-weight:700;color:#8496a4;}
+.vdhms .dspan.dmid{grid-column:1 / -1;text-align:center;}   /* centred over the whole block (mid) */
+/* ...a running total's potential (the Years outcome's cumulative row): a line of its own, grey, a little apart from the
+   lines over it (gap), "potential" under it, ending where the parts do, as the numbers' boxes' (.vpotn, .vpotl) */
+.vdhms > .dgap{grid-column:1 / -1;height:3px;}
+.vdhms .dspan.dpotl{font-size:11px;line-height:1.2;font-weight:400;font-style:italic;}
+.vdhms .dparts{grid-column:2 / 6;text-align:right;font-weight:700;}   /* a line's own html in the parts' columns */
+.vdhms .dop .dtog{margin-left:.1em;vertical-align:middle;}            /* the Δ | % switch as the change's "operator" */
+/* the Σ before a running total's A and B (sumb): a small button in the line's label, the sum it opens (#sumpop) a
+   box over the page, its lines a column addition: operator, year (or "by 2126"), number (the year's share of a
+   year, the totals in years), a note; the years left out a line of their own, the total last, also in y/d/h/m */
+.sumb{box-sizing:border-box;width:15px;font:700 12px/1 Arial,Helvetica,sans-serif;text-align:center;color:#a9b8c4;
+  background:rgba(255,255,255,.06);border:1px solid rgba(159,176,191,.35);border-radius:3px;padding:1px 0;margin-right:4px;
+  cursor:pointer;vertical-align:middle;}
+/* ...in a number box's labels (gcellRo's o.sum): every label of the box a Σ wider, so their colons stay in line; without
+   B's line, A's Σ a label of its own, just its width */
+.vstack:has(.sumb) .vlab{width:calc(2.6em + 19px);}
+.vstack:has(.sumb) .vlab.vlsum{width:auto;}
+.sumb:hover, .sumb.on{color:#ffd27f;border-color:rgba(255,210,127,.6);}
+#sumpop{position:fixed;z-index:50;max-width:calc(100vw - 16px);padding:8px 10px 9px;border-radius:6px;
+  background:#0a2438;border:1px solid rgba(159,176,191,.45);box-shadow:0 4px 14px rgba(0,0,0,.45);
+  font-size:13px;line-height:1.35;color:#c9d6e1;font-variant-numeric:tabular-nums;pointer-events:auto;}
+/* the title and the note of what is added up wrap to the sum's width (inline-size containment: they add none), so the
+   sum sets the box's width and its numbers end at its right edge, by the Σ */
+#sumpop .stitle{contain:inline-size;font-weight:700;color:#e8eef4;margin-bottom:2px;}
+#sumpop .snote{contain:inline-size;font-size:11px;line-height:1.3;font-style:italic;color:#8496a4;margin-bottom:5px;}
+#sumpop .sgrid{display:grid;grid-template-columns:auto auto auto;column-gap:8px;align-items:baseline;white-space:nowrap;}
+#sumpop .sop{font-weight:700;color:#8496a4;}
+#sumpop .slab{color:#9fb0bf;}
+#sumpop .snum{font-weight:700;text-align:right;}
+#sumpop .sgap{grid-column:1 / -1;font-size:11px;font-style:italic;color:#8496a4;text-align:center;padding:1px 0;}
+#sumpop .sdhms{grid-column:2 / -1;font-weight:700;}
 .vlab{flex:none;box-sizing:content-box;width:2.6em;text-align:right;align-self:center;margin-right:auto;padding-right:5px;
   font-size:11px;font-weight:600;color:#9fb0bf;white-space:nowrap;}
 /* the delta as a percentage of A, the baseline: its label is the fraction (B−A over A) */
-.vlab .frac{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;font-size:10px;line-height:1.05;}
-.vlab .frac > span:first-child{border-bottom:1px solid currentColor;padding:0 1px 1px;}
-.vlab .frac > span + span{padding-top:1px;}
+.vlab .frac, .dlab .frac{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;font-size:10px;line-height:1.05;}
+.vlab .frac > span:first-child, .dlab .frac > span:first-child{border-bottom:1px solid currentColor;padding:0 1px 1px;}
+.vlab .frac > span + span, .dlab .frac > span + span{padding-top:1px;}
 .vdelta:has(> .vlab .frac){align-items:center;}
 /* With graphs shown: a key just before the A and B letters, the graphs' own line for each (A solid, B dashed 3/3
    and fainter, as .ga), in the value's colour (vkey). It sits in the label column's own room (the column is sized
@@ -529,6 +697,47 @@ body:not(.nospin) .vstack:has(> .arsp:first-child){padding-bottom:13px;}
 .summary b{color:#ffd27f;}
 .foot{margin-top:22px;font-size:11.5px;color:#7d8fa0;line-height:1.5;}
 .foot.credit{margin-top:6px;}                     /* the credit, a line under the script's footer */
+
+/* ── touch screens: the keypad, the tooltips' bubble, room for a finger ── */
+/* the keypad (see "keypad" in the script): beside the box being edited, in the page (it scrolls with it); ◀ ▶ ▲ ▼ ±
+   over the digits 1–5 and 6–0, Done down the right. Its buttons take a held finger as theirs (no pan), so ▲ / ▼ held
+   keep stepping */
+#keypad{position:absolute;z-index:40;display:grid;grid-template-columns:repeat(5, minmax(34px, 44px)) minmax(44px, 54px);
+  grid-auto-rows:40px;gap:4px;padding:6px;max-width:calc(100vw - 16px);border-radius:8px;background:#0a2438;
+  border:1px solid rgba(159,176,191,.45);box-shadow:0 4px 14px rgba(0,0,0,.45);touch-action:manipulation;}
+#keypad[hidden]{display:none;}
+#keypad button{margin:0;padding:0;min-width:0;font:700 17px/1 Arial,Helvetica,sans-serif;color:#e8eef4;
+  background:linear-gradient(#1a4d72,#12405f);border:1px solid #2a6a8f;border-radius:6px;cursor:pointer;
+  touch-action:none;-webkit-user-select:none;user-select:none;}
+#keypad button:active{background:#0a2438;}
+#keypad button:disabled{opacity:.3;cursor:default;}
+#keypad .kpdone{grid-column:6;grid-row:1 / span 3;font-size:13px;background:#1f77a8;border-color:#8fd6f2;color:#fff;}
+/* ▲ / ▼ as on the digits: green the way that makes the value better, red the way that makes it worse (the box's data-good) */
+#keypad[data-good="more_good"] .kpup, #keypad[data-good="more_bad"] .kpdn{color:#7fd18f;}
+#keypad[data-good="more_bad"] .kpup, #keypad[data-good="more_good"] .kpdn{color:#ee4d4d;}
+/* a tooltip's text on a touch screen (see "tooltips on a touch screen"), over what it explains */
+#tippop{position:fixed;z-index:60;max-width:min(320px, calc(100vw - 16px));padding:6px 9px;border-radius:6px;background:#0a2438;
+  border:1px solid rgba(159,176,191,.45);box-shadow:0 4px 14px rgba(0,0,0,.45);font-size:13px;line-height:1.4;color:#e8eef4;
+  white-space:pre-line;pointer-events:none;}
+#tippop[hidden]{display:none;}
+.boxrow, #tourbar, #tourmaker{touch-action:manipulation;}   /* quick taps on the controls: no double-tap zoom */
+@media (pointer:coarse){
+  /* small controls: a finger's room round them, invisible (nothing moves), as far as their neighbours leave */
+  .rclose::before, .segb::before, .tdotb::before, .colgrip::before, .sumb::before{content:'';position:absolute;}
+  .segb, .sumb{position:relative;}
+  .rclose::before{inset:-10px -8px;}
+  .segb::before{left:0;right:0;top:-5px;bottom:-5px;}
+  .tdotb::before{inset:-3px -14px;}
+  .colgrip::before{top:0;bottom:0;left:-8px;right:-8px;}
+  .sumb::before{inset:-6px -4px;}
+  /* ...or roomier themselves: the Δ|% switch (its outline clips anything past it), the toggle buttons, the flags */
+  .dtog span{padding:4px 5px;}
+  .vbtn span{padding:7px 11px;}
+  .langb{padding:6px;}
+  /* no text selection or callout from a finger held on the table: a held name or graph shows its tooltip instead */
+  .grid-wrap{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;}
+  .grid-wrap input{-webkit-user-select:text;user-select:text;}   /* the odds' field still takes typing (iOS) */
+}
 </style>
 </head>
 <body>
@@ -548,13 +757,6 @@ body:not(.nospin) .vstack:has(> .arsp:first-child){padding-bottom:13px;}
   <p class="lead" data-tr="lead">Each period's annual extinction probability cascades into survival probability, population, and cumulative
     human life lived. Changes are measured against a comparison scenario. Read more about the site at
     <a href="https://villeseppala.github.io/interests/articles/201.html" target="_blank" rel="noopener">https://villeseppala.github.io/interests/articles/201.html</a></p>
-  <p class="khint lead2" data-tr="help">Edit any <b>extinction probability</b>, <b>survival probability</b>, or
-    <b>population</b> or <b>value potential</b> digit &mdash; click it, then use
-    <span class='kbd'>&larr;</span><span class='kbd'>&rarr;</span><span class='kbd'>&uarr;</span><span class='kbd'>&darr;</span>
-    or the mouse wheel, or type <span class='kbd'>0</span>&ndash;<span class='kbd'>9</span> to set the digit
-    (or turn on <span class='kbd'>&#9650;</span>/<span class='kbd'>&#9660;</span> buttons under Show elements).
-    On a change (B&minus;A) line, <span class='kbd'>+</span> or <span class='kbd'>&minus;</span> sets its sign.
-    Survival edits backtrace into the earlier extinction rates.</p>
   <!-- Author controls: settings for the page's look (CSS variables on the root; see "author controls" in the script) -->
   <fieldset class="controls ctlbox authbox grpbox on">
     <legend><label class="lgchk"><input id="grpAuthor" class="grpchk" type="checkbox" checked autocomplete="off"><span>Author controls</span></label></legend>
@@ -562,11 +764,13 @@ body:not(.nospin) .vstack:has(> .arsp:first-child){padding-bottom:13px;}
          ⇄ view). Defaults: COL_RATE, COL_SURV, COL_RATE_CUM, COL_SURV_CUM, COL_POP, COL_CUM -->
     <label class="acin" title="The annual extinction probability (e): its row's values, its line in the survival graphs, the odds 1 in X in its boxes, and the Annual risk/survival button">Annual risk <input id="acColRate" type="color" value="#e8836f"></label>
     <label class="acin" title="The annual survival probability (s): its row's values and its line in the survival graphs">Annual survival <input id="acColSurv" type="color" value="#4fb8d6"></label>
-    <label class="acin" title="The cumulative extinction probability (E): its row's values and graphs, the odds 1 in X in its boxes, lost years and lives">Cumulative risk <input id="acColRateC" type="color" value="#e8836f"></label>
-    <label class="acin" title="The cumulative survival probability (S): its row's values and graphs, S in the outcome boxes, survived years, lived lives, the summary, and the Cumulative risk/survival button">Cumulative survival <input id="acColSurvC" type="color" value="#4fb8d6"></label>
+    <label class="acin" title="The cumulative extinction probability (E): its row's values and graphs, the odds 1 in X in its boxes, and “lost” in the outcome rows' switches">Cumulative risk <input id="acColRateC" type="color" value="#e8836f"></label>
+    <label class="acin" title="The cumulative survival probability (S): its row's values and graphs, S in the outcome boxes, “lived”, “alive” and “realised” in the outcome rows' switches, the summary, and the Cumulative risk/survival button">Cumulative survival <input id="acColSurvC" type="color" value="#4fb8d6"></label>
     <label class="acin" title="The annual outcome row (value, population, years, generations) and its button">Annual outcome <input id="acColOut" type="color" value="#e46ba6"></label>
     <label class="acin" title="The cumulative outcome row (value, lives, years, generations) and its button">Cumulative outcome <input id="acColCum" type="color" value="#e46ba6"></label>
+    <label class="acin" title="The page's colour, behind everything">Page background <input id="acPbg" type="color" value="#0b3552"></label>
     <label class="acin">Graph background <input id="acGbg" type="color" value="#0b3552"></label>
+    <label class="acin" title="The fill under the annual outcome's curve (in the cumulative outcome's colour): 0 none, 100 solid">Graph fill <input id="acAreaOp" type="range" min="0" max="100" step="5" value="20"> <output id="acAreaOpV">20</output> %</label>
     <!-- the swatches start at what the defaults look like: no fill (the page's colour), and the editable parts' dark
          fill (black-blue at 55%) over the page -->
     <label class="acin" title="The fill of every value box, editable or not">Box background <input id="acVbg" type="color" value="#0b3552"></label>
@@ -576,7 +780,7 @@ body:not(.nospin) .vstack:has(> .arsp:first-child){padding-bottom:13px;}
     <label class="acin">Lines between variables <input id="acRw" type="number" min="0" max="8" step="0.5" value="2"> px</label>
     <!-- the swatch starts at what the default line (white at 40%) looks like over the page's colour -->
     <label class="acin">Line colour <input id="acRcol" type="color" value="#6d8697"></label>
-    <label class="acin" title="The arrows between the boxes (twice as thick for the box under the pointer)">Arrows <input id="acArW" type="number" min="0.5" max="6" step="0.1" value="1.3"> px</label>
+    <label class="acin" title="The arrows between the boxes (three times as thick, with bigger heads, for the box under the pointer)">Arrows <input id="acArW" type="number" min="0.5" max="6" step="0.1" value="1.3"> px</label>
     <label class="acin" title="How much the ▲ / ▼ fade except on the line being edited: 0 not at all, 100 out of sight">Inactive ▲▼ fade <input id="acArFade" type="number" min="0" max="100" step="5" value="60"> %</label>
     <label class="acin" title="The variables' names in the names column, their view switches included">Title font <input id="acTfs" type="number" min="8" max="30" step="0.5" value="15"> px</label>
     <label class="acin" title="The formulas in the names column">Formula font <input id="acFfs" type="number" min="8" max="30" step="0.4" value="14.4"> px</label>
@@ -721,6 +925,20 @@ body:not(.nospin) .vstack:has(> .arsp:first-child){padding-bottom:13px;}
   <div id="foot"></div>
   <div class="foot credit" data-tr="credit">Site made by Ville Seppälä, with Claude AI</div>
 </div></div>
+<!-- The keypad: a digit's editing on a touch screen, beside the box whose digit a tap selected (see "keypad" in the
+     script). Outside .page, so it scrolls with the page but never adds to the height posted to an article's frame -->
+<div id="keypad" hidden role="group" data-tr-aria="kp" aria-label="Edit the digit">
+  <button type="button" data-kp="left" data-tr-aria="kp_left" aria-label="Previous digit">&#9664;</button>
+  <button type="button" data-kp="right" data-tr-aria="kp_right" aria-label="Next digit">&#9654;</button>
+  <button type="button" data-kp="up" class="kpup" data-tr-aria="kp_up" aria-label="Raise the digit">&#9650;</button>
+  <button type="button" data-kp="dn" class="kpdn" data-tr-aria="kp_dn" aria-label="Lower the digit">&#9660;</button>
+  <button type="button" data-kp="sign" data-tr-aria="kp_sign" aria-label="Turn the change the other way">&plusmn;</button>
+  <button type="button" data-kp="done" class="kpdone" data-tr="kp_done">Done</button>
+  <button type="button" data-kp="1">1</button><button type="button" data-kp="2">2</button><button type="button" data-kp="3">3</button>
+  <button type="button" data-kp="4">4</button><button type="button" data-kp="5">5</button><button type="button" data-kp="6">6</button>
+  <button type="button" data-kp="7">7</button><button type="button" data-kp="8">8</button><button type="button" data-kp="9">9</button>
+  <button type="button" data-kp="0">0</button>
+</div>
 <!-- the saved settings (Author controls, what readers first see): the build puts the file's text here -->
 <script src="xriskb_settings.js"></script>
 <script>
@@ -734,8 +952,8 @@ body:not(.nospin) .vstack:has(> .arsp:first-child){padding-bottom:13px;}
 // ── model (mirrors app_xrisk's R: START, ALL_RATES, POP0, LIFE_EXP, model_for, fit_state, compute) ──
 var START = 2026, LIFE_EXP = 75, POP0 = 8.3e9;
 var VAL0 = 100;                                   // the value potential's default: 100 a year, at every checkpoint
-var VAL_DEC = 5, VAL_PAD = 6;                     // value's decimals; its setter's integer digits (100 with three padding zeros)
-var PCT_DEC = 5;                                  // decimals of the percentages (probabilities, summary; growth rates one fewer)
+var VAL_DEC = 4, VAL_PAD = 6;                     // value's decimals; its setter's integer digits (100 with three padding zeros)
+var PCT_DEC = 4;                                  // decimals of the percentages (probabilities, summary; growth rates one fewer)
 var SCALE_MIN = 1, SCALE_MAX = 6;                 // the time points the table can show: 10^1 .. 10^6 years ahead
 var DEF_POINTS = [1, 2, 3];                       // ...and those it starts with: 10, 100 and 1 000 years
 // per period: 0.05%, 0.05%, 0.01%, 0.005%, 0.001%, 0.001% a year (the last, 102 027-1 002 026, only at the
@@ -757,8 +975,8 @@ var FAINT_TRAIL = false;               // the decimals' trailing zeros faint too
 var OUTCOMES = {value: ['valexp', 'valcum'], population: ['popexp', 'lives'], years: ['yrexp', 'years'],
                 generation: ['yrexp', 'years']};
 var COL_PICK = '#e8eef4';                         // Choose outcome's options: white, as its title (not the rows' colours)
-var OUTCOME_LIST = [['value', 'Value', COL_PICK], ['population', 'Population', COL_PICK], ['years', 'Years', COL_PICK],
-                    ['generation', 'Generations', COL_PICK]];
+var OUTCOME_LIST = [['years', 'Years', COL_PICK], ['population', 'Population', COL_PICK],
+                    ['generation', 'Generations', COL_PICK], ['value', 'Value', COL_PICK]];
 
 // The time points (SCALE_MIN..SCALE_MAX, the Time scale's dots), each a number of years ahead: ys[k - 1], by default
 // 10^k (DEF_YEARS; the reader can type others, ascending: drawScale). Checkpoints are START plus the years ahead of
@@ -867,7 +1085,10 @@ var FI = {
   'given survival probability, assuming 75-year lives': 'selviytymis&shy;todennäköisyydellä, olettaen 75 vuoden eliniän',
   'assuming 75-year lives': 'olettaen 75 vuoden eliniän', 'of humanity': 'ihmiskunnan osalta',
   'Annual years': 'Eletyt vuodet vuodessa', 'Annual generations': 'Sukupolvet vuodessa',
+  'Annual lost years': 'Menetetyt vuodet vuodessa', 'Annual lost generations': 'Menetetyt sukupolvet vuodessa',
   'Annual population': 'Vuotuinen väestö', 'Annual value': 'Vuotuinen arvo', 'Cumulative value': 'Kumulatiivinen arvo',
+  'Annual lost population': 'Vuotuinen menetetty väestö', 'Annual lost value': 'Vuotuinen menetetty arvo',
+  'Cumulative lost value': 'Kumulatiivinen menetetty arvo',
   'Annual population potential': 'Vuotuinen väestöpotentiaali', 'if survived': 'jos selvitään',
   'Population if survived': 'Väestö, jos selvitään', 'Value if survived': 'Arvo, jos selvitään',
   // the graphs' tooltips
@@ -883,9 +1104,22 @@ var FI = {
   // the boxes
   'by {y}:': '{y} mennessä:', 'at {y}:': 'vuonna {y}:', '{a} to {b}, per year:': '{a}–{b}, vuodessa:',
   'potential': 'potentiaali', 'Exclude from comparison': 'Jätä vertailun ulkopuolelle',
+  // a running total's sum (the Σ before its A and B: sumHtml)
+  'How this adds up': 'Miten tämä lasketaan yhteen', 'by {y}': '{y} mennessä', '{n} more years': '{n} vuotta lisää',
+  'The total by {y} (the box on the left), plus {what}': 'Kertymä {y} mennessä (vasemmalla oleva laatikko) sekä {what}',
+  '{what}, added up': '{what}, yhteenlaskettuna',
+  'each year’s chance we’re still here': 'jokaisen vuoden todennäköisyys, että olemme yhä olemassa',
+  'each year’s chance we’ve died out': 'jokaisen vuoden todennäköisyys, että olemme kuolleet sukupuuttoon',
+  'each year’s expected population': 'jokaisen vuoden odotettu väestö', 'each year’s population lost': 'jokaisen vuoden menetetty väestö',
+  'each year’s expected value': 'jokaisen vuoden odotettu arvo', 'each year’s value lost': 'jokaisen vuoden menetetty arvo',
+  'Years lived by {y}, {s}': 'Eletyt vuodet {y} mennessä, {s}', 'Years lost by {y}, {s}': 'Menetetyt vuodet {y} mennessä, {s}',
+  'Generations lived by {y}, {s}': 'Eletyt sukupolvet {y} mennessä, {s}', 'Generations lost by {y}, {s}': 'Menetetyt sukupolvet {y} mennessä, {s}',
+  'Lives lived by {y}, {s}': 'Eletyt elämät {y} mennessä, {s}', 'Lives lost by {y}, {s}': 'Menetetyt elämät {y} mennessä, {s}',
+  'Life-years lived by {y}, {s}': 'Eletyt elinvuodet {y} mennessä, {s}', 'Life-years lost by {y}, {s}': 'Menetetyt elinvuodet {y} mennessä, {s}',
+  'Value realised by {y}, {s}': 'Toteutunut arvo {y} mennessä, {s}', 'Value lost by {y}, {s}': 'Menetetty arvo {y} mennessä, {s}',
   'Use the same value in both scenarios (A and B)': 'Käytä samaa arvoa molemmissa skenaarioissa (A ja B)',
   '1 in ': '1 / ', 'Click to type the odds': 'Napsauta kirjoittaaksesi todennäköisyyden',
-  'y|unit': 'v', '%/yr': '%/v',
+  'y|unit': 'v', 'd|unit': 'pv', 'm|min': 'min', '%/yr': '%/v', 'risk|odds': 'riski',
   'Difference. Click for the change as a percentage of A': 'Erotus. Napsauta nähdäksesi muutoksen prosentteina A:sta',
   'Difference in percentage points. Click for the change as a percentage of A':
     'Erotus prosenttiyksikköinä. Napsauta nähdäksesi muutoksen prosentteina A:sta',
@@ -948,18 +1182,26 @@ var FI = {
   'Chance of': '', 'in a single year': 'todennäköisyys yhden vuoden aikana',
   'if humanity has made it that far': 'jos ihmiskunta on selvinnyt siihen asti',
   'up to that year': 'todennäköisyys siihen vuoteen mennessä', 'every year’s risk combined': 'kaikkien vuosien riskit yhdessä',
-  'Expected years lived,': 'Odotetut eletyt vuodet', 'Expected generations lived,': 'Odotetut eletyt sukupolvet', 'per year': 'vuotta kohden',
-  '1 year &times; chance we’re still here': '1 vuosi &times; todennäköisyys, että olemme yhä olemassa',
-  '1/75 generation &times; chance we’re still here': '1/75 sukupolvea &times; todennäköisyys, että olemme yhä olemassa',
+  'per year|years': 'vuodet vuotta kohden', 'per year|gens': 'sukupolvet vuotta kohden',
+  'chance we’re still here &times;&nbsp;1 year': 'todennäköisyys, että olemme yhä olemassa &times;&nbsp;1 vuosi',
+  'chance we’re still here &divide;&nbsp;75': 'todennäköisyys, että olemme yhä olemassa &divide;&nbsp;75',
+  'chance we’ve died out &times;&nbsp;1 year': 'todennäköisyys, että olemme kuolleet sukupuuttoon &times;&nbsp;1 vuosi',
+  'chance we’ve died out &divide;&nbsp;75': 'todennäköisyys, että olemme kuolleet sukupuuttoon &divide;&nbsp;75',
   'Expected years|row': 'Odotetut', 'Expected generations|row': 'Odotetut',
   'in total, up to then|years': 'vuodet yhteensä siihen mennessä', 'in total, up to then|gens': 'sukupolvet yhteensä siihen mennessä',
   'one generation = 75 years': 'yksi sukupolvi = 75 vuotta',
-  'Expected population': 'Odotettu väestö', 'each year': 'vuosittain',
-  'population if we survive &times; chance we survive': 'väestö, jos selviämme &times; selviämisen todennäköisyys',
+  // (the population and value rows: "Odotettu [elossa oleva | menetetty] väestö vuosittain", the noun after the switch)
+  'Expected population|row': 'Odotettu', 'each year|pop': 'väestö vuosittain', 'alive|pop': 'elossa oleva', 'lost|sg': 'menetetty',
+  'chance we survive &times;&nbsp;population if we survive': 'selviämisen todennäköisyys &times;&nbsp;väestö, jos selviämme',
+  'chance we die out &times;&nbsp;population if we survive': 'sukupuuton todennäköisyys &times;&nbsp;väestö, jos selviämme',
   'Expected|pl': 'Odotetut', 'life-years': 'elinvuodet', 'in total, up to then': 'yhteensä siihen mennessä',
   'one life = 75 years': 'yksi elämä = 75 vuotta',
-  'Expected value': 'Odotettu arvo', 'value if we survive &times; chance we survive': 'arvo, jos selviämme &times; selviämisen todennäköisyys',
+  'Expected value|row': 'Odotettu', 'each year|val': 'arvo vuosittain', 'in total, up to then|val': 'arvo yhteensä siihen mennessä',
+  'realised': 'toteutuva',
+  'chance we survive &times;&nbsp;value if we survive': 'selviämisen todennäköisyys &times;&nbsp;arvo, jos selviämme',
+  'chance we die out &times;&nbsp;value if we survive': 'sukupuuton todennäköisyys &times;&nbsp;arvo, jos selviämme',
   'the yearly expected values added up': 'vuosittaiset odotetut arvot yhteenlaskettuna',
+  'the values lost each year, added up': 'vuosittain menetetyt arvot yhteenlaskettuna',
   // ...and their tooltips (metricGrow's tip), each with the horizon's number
   'The chance humanity dies out during a single year, if it has made it to that year. In {a}–{b}: {p} a year, or 1 in {x}.':
     'Todennäköisyys, että ihmiskunta kuolee sukupuuttoon yhden vuoden aikana, jos se on selvinnyt siihen vuoteen asti. Vuosina {a}–{b}: {p} vuodessa eli 1 / {x}.',
@@ -973,6 +1215,10 @@ var FI = {
     'Jokainen vuosi lasketaan yhdeksi eletyksi vuodeksi kerrottuna todennäköisyydellä, että ihmiskunta on yhä olemassa sinä vuonna. Vuonna {y}: {v} vuotta.',
   'Each year counts as 1/75 of a generation, times the chance humanity is still here that year. In {y}: {v} generations.':
     'Jokainen vuosi lasketaan 1/75 sukupolveksi kerrottuna todennäköisyydellä, että ihmiskunta on yhä olemassa sinä vuonna. Vuonna {y}: {v} sukupolvea.',
+  'Each year counts as one year lost, times the chance humanity has died out by then. In {y}: {v} years.':
+    'Jokainen vuosi lasketaan yhdeksi menetetyksi vuodeksi kerrottuna todennäköisyydellä, että ihmiskunta on kuollut sukupuuttoon siihen mennessä. Vuonna {y}: {v} vuotta.',
+  'Each year counts as 1/75 of a generation lost, times the chance humanity has died out by then. In {y}: {v} generations.':
+    'Jokainen vuosi lasketaan 1/75 menetetyksi sukupolveksi kerrottuna todennäköisyydellä, että ihmiskunta on kuollut sukupuuttoon siihen mennessä. Vuonna {y}: {v} sukupolvea.',
   'The years humanity can expect to live from {s} up to that year, each counted by the chance of being alive in it. By {y}: {v} of {p} years.':
     'Vuodet, jotka ihmiskunta voi odottaa elävänsä vuodesta {s} siihen vuoteen asti, kukin painotettuna todennäköisyydellä olla olemassa sinä vuonna. {y} mennessä: {v} / {p} vuotta.',
   'The years lost to extinction from {s} up to that year: all the years since, less the years humanity can expect to live. By {y}: {v} of {p} years.':
@@ -994,7 +1240,13 @@ var FI = {
   'The value in a year, averaged over surviving and not: the value if humanity survives, times the chance it does. In {y}: {v}.':
     'Arvo vuoden aikana, keskiarvona selviämisen ja sukupuuton yli: arvo, jos ihmiskunta selviää, kerrottuna selviämisen todennäköisyydellä. Vuonna {y}: {v}.',
   'The yearly expected values added up, from {s} to that year. By {y}: {v}.':
-    'Vuosittaiset odotetut arvot laskettuna yhteen vuodesta {s} siihen vuoteen asti. {y} mennessä: {v}.'
+    'Vuosittaiset odotetut arvot laskettuna yhteen vuodesta {s} siihen vuoteen asti. {y} mennessä: {v}.',
+  'The population lost to extinction in a year, averaged over surviving and not: the population if humanity survives, times the chance it has died out by then. In {y}: {v}.':
+    'Sukupuuton vuoksi menetetty väestö vuoden aikana, keskiarvona selviämisen ja sukupuuton yli: väestö, jos ihmiskunta selviää, kerrottuna todennäköisyydellä, että se on kuollut sukupuuttoon siihen mennessä. Vuonna {y}: {v}.',
+  'The value lost to extinction in a year, averaged over surviving and not: the value if humanity survives, times the chance it has died out by then. In {y}: {v}.':
+    'Sukupuuton vuoksi menetetty arvo vuoden aikana, keskiarvona selviämisen ja sukupuuton yli: arvo, jos ihmiskunta selviää, kerrottuna todennäköisyydellä, että se on kuollut sukupuuttoon siihen mennessä. Vuonna {y}: {v}.',
+  'The value lost to extinction from {s} up to that year: the value there would be if humanity surely survived, less the value to expect. By {y}: {v}.':
+    'Sukupuuton vuoksi menetetty arvo vuodesta {s} siihen vuoteen asti: arvo, joka kertyisi, jos ihmiskunta varmasti selviäisi, vähennettynä odotetulla arvolla. {y} mennessä: {v}.'
 };
 function tr(s){ return LANG === 'fi' && FI.hasOwnProperty(s) ? FI[s] : s.split('|')[0]; }
 function trf(s, o){ return tr(s).replace(/\{(\w+)\}/g, function(m, k){ return o[k] != null ? o[k] : m; }); }
@@ -1019,6 +1271,74 @@ function fmtF(x, d, big){
 function fInt(x){ return fmtF(Math.round(x), 0, true); }
 function fPct(x){ return fmtF(x * 100, PCT_DEC) + '%'; }
 function fYears(x){ return fmtF(x, 4, true) + tr('y|unit'); }
+// Years in years, days, hours and minutes (0y, 364d, 7h, 5m): the parts' numbers, years first, to the nearest
+// minute (no seconds: fewer parts, so a larger type), a year the Gregorian calendar's average (365.2425 days). The
+// larger the number, the fewer the parts, the last rounded: from 1 000 years on no minutes, from 100 000 no hours
+// (each number by its own size, a difference too).
+var YEAR_S = 31556952;                            // seconds in that year
+function dhmsParts(x){
+  var ax = Math.abs(x), np = ax >= 100000 ? 2 : ax >= 1000 ? 3 : 4;   // parts shown, the years' included
+  var step = [0, 0, 86400, 3600, 60][np];        // the last part's size, in seconds
+  var s = Math.round(ax * YEAR_S / step) * step, y = Math.floor(s / YEAR_S); s -= y * YEAR_S;
+  var d = Math.floor(s / 86400); s -= d * 86400;
+  var h = Math.floor(s / 3600); s -= h * 3600;
+  return [y, d, h, Math.round(s / 60)].slice(0, np);
+}
+// A box's time block (the Years outcome's boxes): its values in years, days, hours ... (dhmsParts), a line each.
+// The parts in columns, years under years, days under days, each ending where the others do (a part
+// dropped: an empty cell; its comma held invisibly so the units line up). Lines: {lab (shown when non-empty), x,
+// sign (a difference's +, − or ± in front), col (the sign, unless ±, and the parts from the first that isn't zero on
+// in that colour: a difference's, as its digits, the zeros before grey), ncol (the numbers in that colour, the units
+// grey: a value's), noYears (the years' part left out: a year's length, "365d, 5h, 49m"), op (an operator after the
+// line, "×" or "=", in a column of their own)} or {span (html across the label's and the parts' columns, ending
+// where the parts do: a factor, "0.951218"), op, mid (instead centred across the whole block, its op right after it)}
+// or {lab, parts (html in the parts' columns, ending where they do: a change as a percentage), op}, or {gap: true} (a
+// little room before the next line). Any of them: mark (a class on its first cell: 'dwk' a working line, 'dval' the
+// value's, A's: the graphs' height leaves the working out; 'dpotl' a span's: "potential", in the word's type). cls: the block's own class too ('big': the box's main readout, the
+// Years outcome's annual row, a multiplication down its columns). frame: A's line framed with the working over it
+// (.vframe, CSS; none without a working), a gap under it. ymax: the largest number of years the block can show (the
+// box's potential; one digit's worth without it).
+// Under the lines a ruler, an invisible line of no height (.druler): each part at its widest, bold, the years at
+// ymax's digits, a sign in front while a line has one, every part there even when the lines leave some out. So the
+// columns, and with them the box, keep their width as the numbers change (365d after 5d, a part dropped from 1 000
+// years on), and the table's columns don't shift while a rate is changed.
+function dhmsBlock(lines, cls, frame, ymax){
+  var units = [tr('y|unit'), tr('d|unit'), tr('h|unit'), tr('m|min')], last = units.length - 1;
+  var ops = lines.some(function(l){ return l.op != null; });   // the operators' column
+  var ai = frame ? lines.map(function(l){ return l.mark; }).indexOf('dval') : -1;   // A's line
+  if(ai < 1) ai = -1;
+  return '<div class="vdhms' + (cls ? ' ' + cls : '') + (ops ? ' ops' : '') + '">' +
+    (ai > 0 ? '<span class="vframe" style="grid-row:1 / span ' + (ai + 1) + ';"></span>' : '') + lines.map(function(l, i){
+      return line(l) + (i === ai ? '<span class="dfgap"></span>' : '');
+    }).join('') + ruler() + '</div>';
+  function ruler(){
+    var sgn = lines.some(function(l){ return l.sign; }) ? '−' : '';
+    var w = [sgn + fmtF(Math.round(ymax || 0), 0, true), '000', '00', '00'];   // tabular digits: any of them as wide
+    return '<span class="druler"></span>' + units.map(function(u, k){
+      return '<span class="dpt druler"><span>' + w[k] + u + (k < last ? ',' : '') + '</span></span>';
+    }).join('') + (ops ? '<span class="druler"></span>' : '');
+  }
+  function line(l){
+    var op = ops ? '<span class="dop">' + (l.op || '') + '</span>' : '';
+    if(l.gap) return '<span class="dgap"></span>';
+    if(l.span != null) return l.mid ? '<span class="dspan dmid' + (l.mark ? ' ' + l.mark : '') + '">' + l.span + (l.op ? ' ' + l.op : '') + '</span>'   // centred, its op with it
+                                    : '<span class="dspan' + (l.mark ? ' ' + l.mark : '') + '">' + l.span + '</span>' + op;
+    var dlab = '<span class="dlab' + (l.mark ? ' ' + l.mark : '') + '">' + (l.lab || '') + '</span>';
+    if(l.parts != null) return dlab + '<span class="dparts">' + l.parts + '</span>' + op;   // its own html in the parts' place
+    var p = dhmsParts(l.x), hit = false;
+    var sgn = !l.sign ? '' : p.every(function(v){ return !v; }) ? '±' : l.x > 0 ? '+' : '−';
+    if(l.col && sgn && sgn !== '±') sgn = '<span' + sty(l.col) + '>' + sgn + '</span>';   // a change's sign in its colour, as the digits'
+    return dlab + units.map(function(u, k){
+      if(k >= p.length || (l.noYears && !k)) return '<span></span>';
+      var num = k ? String(p[k]) : fmtF(p[k], 0, true);
+      var t = (l.ncol ? '<span' + sty(l.ncol) + '>' + num + '</span>' : num) + u;
+      if(p[k]) hit = true;
+      if(l.col && hit) t = '<span' + sty(l.col) + '>' + t + '</span>';
+      var comma = k === p.length - 1 ? (k < last ? '<span class="dghost">,</span>' : '') : ',';
+      return '<span class="dpt">' + (k ? '' : sgn) + t + comma + '</span>';
+    }).join('') + op;
+  }
+}
 function fmtYear(y){ return y >= 10000 ? group3(String(y)) : String(y); }   // thin separator only for 5+ digits
 function sty(col){ return col == null ? '' : ' style="color:' + col + ';"'; }
 // formatC(x, format = "e", digits = 6): R writes at least two exponent digits (1.000000e-05)
@@ -1134,7 +1454,7 @@ function fitDecimals(x, n){
 // measured from A, the value, as the baseline: B − A, the new scenario less the baseline, coloured by whether B is
 // the better. 'abs': that difference, but for a percentage the "%" is left out (it is in percentage points) and
 // only held as an invisible placeholder so the digits stay under the value's; 'rel': the change as a percentage
-// of A, (B − A) / A, with as many digits as the value shows (its padding included), by fitDecimals. (With
+// of A, (B − A) / A, with as many digits as the value shows (its padding included; o.relLess fewer), by fitDecimals. (With
 // o.dmode set the cell puts the switch between the two beside this row.) pad: the value's integer width; good,
 // eps: as deltaLook; edit: ▲/▼ on the digits (an editable cell's delta: a step moves B by that place).
 function deltaRow(o, pad, good, eps, edit){
@@ -1147,7 +1467,7 @@ function deltaRow(o, pad, good, eps, edit){
     else {
       var r = (to - from) / from;
       var vint = fmtF(Math.abs(o.cur) * o.toDisp, o.decimals).split('.')[0].length;   // the value's integer digits
-      var dec = fitDecimals(Math.abs(r) * 100, Math.max(vint, pad || 0) + o.decimals), dr = deltaLook(r, 100, dec, good, eps);
+      var dec = fitDecimals(Math.abs(r) * 100, Math.max(vint, pad || 0) + o.decimals - (o.relLess || 0)), dr = deltaLook(r, 100, dec, good, eps);
       // editable: one padding zero in front, as the difference has, so a change can grow a digit (0.5% → 10.5%)
       var rpad = edit ? fmtF(Math.abs(r) * 100, dec).split('.')[0].length + 1 : null;
       body = buildSlots(r, 100, dec, '%', {pad: rpad, editable: edit, fill: edit, digitColor: dr.digitColor, signChar: dr.sgn, signColor: dr.col});
@@ -1176,8 +1496,12 @@ function sideCol(on){
 // With the comparison off only A remains.
 // With o.base, o.oddsSide and o.dmode unset the markup is app_xrisk's: the value, then the delta under it (and
 // app_xrisk shows the baseline beside the value).
+// o.topLab: a word over the value's odds ("risk", beside a survival), with them under the value, or beside it centred
+// over A's odds (.oddw), in the row over A's line. o.pre: rows over the value, in its stack (so with the side column,
+// as gcellRo's: the survival's frame, frameA). o.work: a line, or a list of them, in the rows over A's, in the numbers'
+// column, ending where they do (the survival's working, survCalc), the odds' word beside the last.
 // o: col, cur, ref, kind, vi, toDisp, decimals, suffix, good, sub, color, pad, head, top, oddsSide, delta, base, topBase,
-//    dmode, row, node, cap, sym
+//    dmode, row, node, cap, sym, topLab, pre, work, relLess
 function gcellEdit(o){
   return vcellHtml(o.col, capHtml(o.cap, o.sym) + editInner(o), 'vcell xedit', nodeAttr(o.node) + editAttrs(o));
 }
@@ -1190,19 +1514,26 @@ function editAttrs(o){
 function editInner(o){
   var delta = o.delta !== false;                   // delta: false hides the delta row ("Show change" unticked)
   var oddsSide = o.top != null && !!(o.base || o.oddsSide);
-  var x = sideCol(oddsSide || (delta && !!o.dmode));
+  var x = sideCol(oddsSide || (delta && !!o.dmode) || o.pre != null || o.work != null);
   function side(html, cls){ return x ? x(html, cls) : ''; }
+  var olab = o.topLab ? '<div class="olab">' + o.topLab + '</div>' : '';
+  // beside A's odds, the word over them, centred on them (CSS), in the row over A's line: the working's last, or
+  // (none) a row of its own, its side cell holding the word's height
+  var work = o.work == null ? ['<div></div>'] : [].concat(o.work);   // a line each, its side cell after it
+  var lab = (oddsSide && olab) || o.work != null ? work.map(function(w, k){ return w + side('', k === work.length - 1 ? ' vx-h' : ''); }).join('') : '';
+  var odds = oddsSide && olab ? '<span class="oddw"><span class="olab">' + o.topLab + '</span>' + o.top + '</span>' : o.top;
   var val = '<div class="vmain digits"' + sty(o.color) + '>' + vlab(o.base, vkey(false, o.color) + 'A:') +
-              buildSlots(o.cur, o.toDisp, o.decimals, o.suffix, {pad: o.pad, fill: !!o.dmode, lit: !!o.dmode}) + '</div>' + side(oddsSide ? o.top : '', ' vx-m');
+              buildSlots(o.cur, o.toDisp, o.decimals, o.suffix, {pad: o.pad, fill: !!o.dmode, lit: !!o.dmode}) + '</div>' + side(oddsSide ? odds : '', ' vx-m');
   var chg = !delta ? '' : deltaRow(o, o.pad, o.good, 1e-12, !!o.dmode) +   // ▲/▼ on the page's own cells (app_xrisk's delta has none)
               side(o.dmode ? dtogHtml(o.row, o.dmode === 'rel', o.suffix === '%') : '', ' vx-d');
   var cmp = !o.base ? '' : '<div class="vbase digits"' + sty(o.color) + '>' + vlab(true, vkey(true, o.color) + 'B:') +
               buildSlots(o.ref, o.toDisp, o.decimals, o.suffix, {pad: o.pad, fill: !!o.dmode, lit: !!o.dmode}) + '</div>' + side(oddsSide ? o.topBase : '', ' vx-b');
   // the odds when not beside the value: over it (app_xrisk's), or under it on this page's own cells (o.dmode)
-  var top = o.top != null && !oddsSide ? '<div class="vtop">' + o.top + '</div>' : '', under = !!o.dmode;
-  return (o.head != null ? o.head : '') +          // e.g. the x-risk box's "Exclude from comparison"
+  var top = o.top != null && !oddsSide ? '<div class="vtop">' + olab + o.top + '</div>' : '', under = !!o.dmode;
+  return (o.head != null ? o.head : '') +          // e.g. a box's own controls, over it
     (under ? '' : top) +
-    '<div class="' + (x ? 'vstack vside' : 'vstack') + '">' + val + chg + cmp + '</div>' +
+    '<div class="' + (x ? 'vstack vside' : 'vstack') + (o.base ? ' vtie' : '') + '">' +   // vtie: A's bracket to B (CSS)
+      (o.pre || '') + lab + val + chg + cmp + '</div>' +
     (under ? top : '') +
     (o.sub != null ? '<div class="vsub">' + o.sub + '</div>' : '');
 }
@@ -1210,19 +1541,22 @@ function editInner(o){
 // the baseline (read-only here too), in gcellEdit's order. o.pre: rows over the value, in its stack (so with the
 // side column, which they may use: the annual population's box, the population potential's, potInBoxes). o.pot: the
 // value's potential, as a last row of digits in the value's type and units, ending where the value's do, "potential"
-// under it (in place of a "of … potential" o.sub).
-// o: col, cur, ref, toDisp, decimals, suffix, kind, sub, color, delta, base, dmode, row, node, cap, sym, pre, pot, lit (a zero value in its colour: buildSlots)
+// under it (in place of a "of … potential" o.sub). o.sum: a running total's Σ buttons ({a, b}: their html), in A's
+// and B's labels; without B's line A's on a label of its own.
+// o: col, cur, ref, toDisp, decimals, suffix, kind, sub, color, delta, base, dmode, row, node, cap, sym, pre, pot, lit (a zero value in its colour: buildSlots), sum
 function gcellRo(o){
   var delta = o.delta !== false;
   var pad = fmtF(Math.abs(o.cur) * o.toDisp, o.decimals).split('.')[0].length;   // value's integer-digit width
   var x = sideCol((delta && !!o.dmode) || o.pre != null);   // the delta switch's column (see gcellEdit), or o.pre's
   function side(html, cls){ return x ? x(html, cls) : ''; }
-  var val = '<div class="vmain digits"' + sty(o.color) + '>' + vlab(o.base, vkey(false, o.color) + 'A:') +   // invisible sign slot: same width as the delta
+  var sa = o.sum ? o.sum.a : '', sb = o.sum ? o.sum.b : '';
+  var val = '<div class="vmain digits"' + sty(o.color) + '>' +
+              (o.sum && !o.base ? '<span class="vlab vlsum">' + sa + '</span>' : vlab(o.base, sa + vkey(false, o.color) + 'A:')) +   // invisible sign slot: same width as the delta
               buildSlots(o.cur, o.toDisp, o.decimals, o.suffix, {pad: pad, editable: false,
                          signChar: delta ? '±' : null, signColor: 'transparent', lit: o.lit}) + '</div>' + side('', ' vx-m');
   var chg = !delta ? '' : deltaRow(o, pad, o.kind, 1e-9, false) +
               side(o.dmode ? dtogHtml(o.row, o.dmode === 'rel', o.suffix === '%') : '', ' vx-d');
-  var cmp = !o.base ? '' : '<div class="vbase digits"' + sty(o.color) + '>' + vlab(true, vkey(true, o.color) + 'B:') +
+  var cmp = !o.base ? '' : '<div class="vbase digits"' + sty(o.color) + '>' + vlab(true, sb + vkey(true, o.color) + 'B:') +
               buildSlots(o.ref, o.toDisp, o.decimals, o.suffix, {pad: pad, editable: false}) + '</div>' + side('', ' vx-b');
   var pot = o.pot == null ? '' : '<div class="vpotn digits">' +   // grey (CSS), not the value's colour
               buildSlots(o.pot, o.toDisp, o.decimals, o.suffix, {pad: pad, editable: false}) + '</div>' + side('', ' vx-p') +
@@ -1237,8 +1571,8 @@ function bigop(sym, lo, up){
          '</span><span class="lim lo">' + lo + '</span></span>';
 }
 function mv(txt, col){ return '<span style="color:' + col + ';">' + txt + '</span>'; }
-// "Exclude from comparison" (shown while the comparison is): the population row's, in its label, and each
-// x-risk box's, on top of it. Excluded values are shared by both scenarios (refState). attrs: its data-excl.
+// "Exclude from comparison" (shown while the comparison is): the population row's, in its label (and the value
+// potential's). Excluded values are shared by both scenarios (refState). attrs: its data-excl.
 function exclBox(attrs, on, cls){
   return '<label class="xchk' + (cls || '') + '" title="' + tr('Use the same value in both scenarios (A and B)') + '"><input type="checkbox"' +
          attrs + (on ? ' checked' : '') + '>' + tr('Exclude from comparison') + '</label>';
@@ -1282,8 +1616,8 @@ function sameSeries(a, b){
 // ends of the vertical scale; an end left out is the data's own), hiAt(i) (period i's own fixed top, instead of
 // hi), perPeriod (each period on its own scale: its own data's range, or hiAt's), extra(i) (more values period i's
 // scale must hold, or, on one scale, every period's: an overlay drawn on the row's own scale), area (a colour: the
-// area under the curves, A's and B's, filled with it, faint; the annual outcome rows', in the cumulative outcome's
-// colour, as what adds up to it). overlay gets
+// area under the curves, A's and B's, filled with it, faint; every annual outcome row's (population, value, years,
+// generations), in the cumulative outcome's colour, as what adds up to it). overlay gets
 // box.yOf, the period's scale, for that.
 function graphCells(row, val, cur, ref, withB, gcol, o){
   var top = 0, bot = GRAPH_H, left = 0, right = GRAPH_W;   // the plot fills the box, outline included
@@ -1488,6 +1822,7 @@ function range1(n){ var a = []; for(var k = 1; k <= n; k++) a.push(k); return a;
 function panelHtml(cur, ref){
   var m = M, n = m.n, np = n - 1, rc = rateComp, sc = survComp;
   var cmp = showsCmp(), sd = showsChange(), sr = showsBase();   // the comparison's lines: change (delta), scenario (B)
+  var gB = sd || sr;                                // B in the graphs (its line, its share of their scales): while either is shown
   var J = range1(n), I = range1(np), elapsed = [0];
   for(var k = 0; k < np; k++) elapsed.push(elapsed[k] + m.segLen[k]);
   var potIn = potInBoxes(), popShown = visibleRows().indexOf('pop') >= 0;
@@ -1500,7 +1835,7 @@ function panelHtml(cur, ref){
     if(!gOn) return '';
     var o = {color: color, label: label, fmt: fmt};
     for(var key in more || {}) o[key] = more[key];
-    return graphCells(row, val, cur, ref, cmp, gcol, o);
+    return graphCells(row, val, cur, ref, gB, gcol, o);
   }
   function fGens(x){ return fmtF(x, 4, true); }
   function fVal(x){ return fmtF(x, VAL_DEC, true); }   // a value, in the graphs' tooltips
@@ -1529,9 +1864,9 @@ function panelHtml(cur, ref){
   // kind of probability (annual and cumulative survival, or extinction); else "0/next power of ten"
   function rateScale(){ return graphScale.rate === 'cum' && rc === sc ? 'pow' : graphScale.rate; }
   function potAt(a, b, j){ return Math.max(a[j], b[j]); }   // a potential at checkpoint index j, A or B the larger
-  function potMax(i){                               // the population potential's largest over period i: A's, and B's while compared
+  function potMax(i){                               // the population potential's largest over period i: A's, and B's while drawn
     var m = Math.max.apply(null, cur.track[i].popPot);
-    return cmp ? Math.max(m, Math.max.apply(null, ref.track[i].popPot)) : m;
+    return gB ? Math.max(m, Math.max.apply(null, ref.track[i].popPot)) : m;
   }
   function potScale(){ return {lo: 0, perPeriod: graphScale.pop === 'per', hiAt: potMax}; }   // its Scale menu's choice
   // the population potential's value at checkpoint j, editable: its own box, or (potIn) its part of the annual
@@ -1542,45 +1877,68 @@ function panelHtml(cur, ref){
       decimals: 0, suffix: 'm', pad: 5, good: 'more_good', color: COL_POP, delta: sd && !ex, base: sr && !ex,
       dmode: dm('pop'), row: 'pop'}, more);
   }
-  // ...written out as the sum it is: the setter, "Population if survived pp" over its digits on one editable fill,
-  // then "× 0.9512175" (the survival probability by then as a fraction, S, or "× (1 − 0.0487825)" while the cumulative
-  // row shows extinction, as its formula does; A's, and with the comparison B's too), its first number under the
-  // value's first digit and "=" after it, then the box's own value (its caption, "ap at 2036:", on top as every box's);
-  // the label centred over their numbers (centreLabels). Rows of the value's own stack (gcellRo's
-  // o.pre); the setter a subgrid of its columns (CSS, .vpot), so its digits end where the value's do and, with the
-  // comparison, its Δ|% switch stands over the value's, in the side column.
-  function potSet(j){
+  // ...written out as the product it is, a multiplication down the numbers' column (setterSum): the survival
+  // probability by then, "0.951218 ×", then the setter, "Population if survived pp" over its digits on one editable
+  // fill, "=" beside it, then the box's own value (its caption, "ap at 2036:", on top as every box's). Rows of the
+  // value's own stack (gcellRo's o.pre), the setter's too (CSS, .vpot), so its digits end where the value's do and,
+  // with the comparison, its Δ|% switch stands over the value's, in the side column (with the "="). lost: the
+  // population lost (the row's switch, popexpLoss), the chance of being gone by then first
+  function potSet(j, lost){
     // in people, not millions (its own row's), so its digits stand over the annual population's of the same place;
     // padded to 11 digits as the row's 5 millions digits are (up to 99.9 billion)
-    return setterSum(j, potOpts(j, {toDisp: 1, suffix: '', pad: 11}), tr('Population if survived'), csym('pp', COL_POP));
+    return setterSum(j, potOpts(j, {toDisp: 1, suffix: '', pad: 11}), tr('Population if survived'), csym('pp', COL_POP), lost);
   }
   // The value potential (a value per year lived: vals) at checkpoint j, set in the annual value's box as the population
-  // potential is in the annual population's (valSet): five decimals, 100 with three padding zeros. Its first
+  // potential is in the annual population's (valSet): four decimals (VAL_DEC), 100 with three padding zeros. Its first
   // checkpoint's never compared (refState)
   function valOpts(j){
     var ex = valExcluded || j === 1;
     return {cur: cur.valPot[j - 1], ref: ref.valPot[j - 1], kind: 'val', vi: j, toDisp: 1, decimals: VAL_DEC, suffix: '',
       pad: VAL_PAD, good: 'more_good', color: COL_VAL, delta: sd && !ex, base: sr && !ex, dmode: dm('val'), row: 'val'};
   }
-  function valSet(j){ return setterSum(j, valOpts(j), tr('Value if survived'), csym('pv', COL_VAL)); }
-  // the sum, for either: o the setter's (potOpts / valOpts), label and sym over its digits
-  function setterSum(j, o, label, sym){
-    // sv: a survival probability; k: "A:" / "B:". Fractions to the percentages' precision (95.12175% → 0.9512175);
-    // the first checkpoint's exact 1. .vpota: the first number, which centreLabels lines up
-    function mul(sv, k){
-      function num(x, col, cls){
-        return '<span class="' + (cls || '') + '" style="color:' + col + ';">' + lnum(j === 1 ? fmtF(x, 0) : fmtF(x, PCT_DEC + 2)) + '</span>';
-      }
-      var expr = sc ? '(<span class="vpota">1</span> &minus; ' + num(1 - sv, COL_RATE_CUM) + ')' : num(sv, COL_SURV_CUM, 'vpota');
-      return '<div class="vpotmul vctr"><span>' + (k ? '<span class="vpotk">' + k + '</span>' : '') + '&times; ' + expr + ' =</span></div>';
+  function valSet(j, lost){ return setterSum(j, valOpts(j), tr('Value if survived'), csym('pv', COL_VAL), lost); }
+  // A's share at checkpoint j, of being here (lived) or gone (lost) by then, as the survival row shows its
+  // probability: S (blue) or E (orange), the other as 1 − it ("(1 − 0.951218)" for a share lost while that row shows
+  // survival, as the formulas write it); a fraction to the percentages' precision (95.1218% → 0.951218), the first
+  // checkpoint's exact 1 or 0. The outcome boxes' workings start with it
+  function shareOf(j, lost){
+    var sv = cur.surv[j - 1], c = sc ? COL_RATE_CUM : COL_SURV_CUM;
+    function num(x){ return mv(lnum(j === 1 ? fmtF(x, 0) : fmtF(x, PCT_DEC + 2)), c); }
+    return lost === sc ? num(lost ? 1 - sv : sv) : '(1 &minus; ' + num(sc ? 1 - sv : sv) + ')';
+  }
+  // A's working framed with A (.vframe, CSS) in a box's stack, while B − A or B shows under them: the stack's first
+  // rows, the working's and A's (as many as rows)
+  function frameA(j, rows){ return j > 1 && (sd || sr) ? '<div class="vframe" style="grid-row:1 / span ' + rows + ';"></div>' : ''; }
+  // A time block's change line (the Years outcome's boxes, dhmsBlock): B − A as a time, or (the row's Δ | % switch,
+  // beside it in the operators' column) as a percentage of A, as the numbers' cells' (fitDecimals); green the better
+  // way (lost: a fall), red the worse. lab: the lines labelled (B shown)
+  function timeChange(row, a, b, lost, lab){
+    var d = b - a, dcol = (d > 0) !== lost ? GOOD : BAD, rel = dm(row) === 'rel', tog = dtogHtml(row, rel, false);
+    if(!rel) return {lab: lab ? 'B&minus;A:' : '', x: d, sign: true, col: dcol, op: tog};
+    var r = a > 0 ? d / a : null, pc = '&mdash;';
+    if(r != null){
+      var dec = fitDecimals(Math.abs(r) * 100, 5), z = !/[1-9]/.test(fmtF(Math.abs(r) * 100, dec));
+      pc = '<span' + sty(z ? ZERO : dcol) + '>' + (z ? '±' : r > 0 ? '+' : '−') + lnum(fmtF(Math.abs(r) * 100, dec)) + '%</span>';
     }
-    // A's and B's, labelled, while B is shown (as the value's lines below); else A's alone, unlabelled. The first
-    // checkpoint's 1 is both scenarios'
-    var ab = sr && j > 1;
-    var muls = mul(cur.surv[j - 1], ab ? 'A:' : '') + (ab ? mul(ref.surv[j - 1], 'B:') : '');
-    return '<div class="vpot xedit"' + editAttrs(o) + '>' +
+    return {lab: lab ? '<span class="frac"><span>B&minus;A</span><span>A</span></span>:' : '', parts: pc, op: tog};
+  }
+  // A running total's Σ, before A's or B's line (s: 'a', 'b') in row's box at checkpoint j: a click (a hover) opens
+  // the sum the total is (sumHtml: the total by the checkpoint before, plus each year of the period). No title: the
+  // browser's tooltip would cover the sum the hover opens. sigmas: both, for gcellRo's o.sum
+  function sigma(row, j, s){
+    return '<button type="button" class="sumb" data-sum="' + row + ':' + j + ':' + s + '" aria-label="' + tr('How this adds up') + '">&Sigma;</button>';
+  }
+  function sigmas(row, j){ return {a: sigma(row, j, 'a'), b: sigma(row, j, 'b')}; }
+  // the product, for either: o the setter's (potOpts / valOpts), label and sym over its digits. A's share (shareOf;
+  // B's follows the same rule), "×" after it, centred over the value (a .vctr line: centreLabels); "=" beside the
+  // setter's A, outside its fill (as its odds: o.top; CSS). The fill, .vpotfill, is placed on the stack's rows: the
+  // setter's from the second (the "×" line is the first), its label, A, and the change and B when shown
+  function setterSum(j, o, label, sym, lost){
+    var rows = 2 + (o.delta !== false ? 1 : 0) + (o.base ? 1 : 0);
+    return frameA(j, rows + 2) + '<div class="vpotmul vctr"><span>' + shareOf(j, !!lost) + ' &times;</span></div>' +
+           '<div class="vpot xedit"' + editAttrs(o) + '><div class="vpotfill" style="grid-row:2 / span ' + rows + ';"></div>' +
              '<div class="vpotlab vctr"><span>' + label + '<span class="vcsym">' + sym + '</span></span></div>' +
-             editInner(o) + '</div>' + muls;
+             editInner(Object.assign({}, o, {top: '<span class="vop">=</span>', oddsSide: true})) + '</div>';
   }
 
   // the header: each checkpoint's year, and between two of them the period's length ("← 10 years →")
@@ -1618,19 +1976,35 @@ function panelHtml(cur, ref){
   function sub(s){ return s ? "<br><span class='ital'>" + s + '</span>' : ''; }
   var yN = fmtYear(m.cps[n - 1]), yS = fmtYear(START + 1);   // the examples' year (the horizon), and the first year counted
   function odds(p){ return p > 0 ? fInt(1 / p) : '&infin;'; }
+  // A survival box's working (checkpoint j), over A's number (A's only), its lines ending where its digits do
+  // (gcellEdit's o.work), a multiplication down the numbers' column as the population boxes': the survival at the
+  // checkpoint before (none after the present's 100%) "0.951218 ×", then under it the period's survival per year to
+  // the power of its years, "(1 − 0.000100)⁹⁰⁰ =". Each number in its row's colour and current view: the x-risk as
+  // "(1 − 0.000100)", or "0.999900" while that row shows annual survival; while this row shows cumulative extinction,
+  // "1 − (1 − 0.048782) ×" over the rest. Fractions, not the boxes' percentages (99.9900% → 0.999900, to the same
+  // precision): a power of a percentage reads ambiguously, and typed into a calculator as shown, a fraction gives the
+  // result, as the outcome boxes' workings do (shareOf). Its lines, a list: one at the first period's end, else two
+  function survCalc(j){
+    var r = cur.rates[j - 2], sp = cur.surv[j - 2], n = '<sup>' + fInt(m.segLen[j - 2]) + '</sup>';
+    function pc(x, col){ return mv(lnum(fmtF(x, PCT_DEC + 2)), col); }
+    function line(s, up){ return '<div class="vcalc vwork' + (up ? ' vwup' : '') + '"><span>' + s + '</span></div>'; }
+    var f = rc ? pc(1 - r, COL_SURV) + n : '(1 &minus; ' + pc(r, COL_RATE) + ')' + n, head = sc ? '1 &minus; ' : '';
+    if(j < 3) return [line(head + f + ' =')];
+    return [line(head + (sc ? '(1 &minus; ' + pc(1 - sp, COL_RATE_CUM) + ')' : pc(sp, COL_SURV_CUM)) + ' &times;', true), line(f + ' =')];
+  }
 
   // each row is built only when it is visible
   var rows = {
     rate: function(){                                   // editable, in the gaps between years
       var cells = I.map(function(i){
         var cv = rc ? 1 - cur.rates[i - 1] : cur.rates[i - 1], rv = rc ? 1 - ref.rates[i - 1] : ref.rates[i - 1];
-        var ex = !!rateExcluded[i - 1];                 // this period's x-risk excluded from the comparison
+        // (no "Exclude from comparison" here: leaving a period's x-risk out of the comparison is editing A alone)
         return gcellEdit({col: gcol(i), cur: cv, ref: rv, kind: rc ? 'rate_c' : 'rate', vi: i, toDisp: 100, decimals: PCT_DEC,
-          suffix: '%', good: rc ? 'more_good' : 'more_bad', color: rateCol, delta: sd && !ex, base: sr && !ex,
+          suffix: '%', good: rc ? 'more_good' : 'more_bad', color: rateCol, delta: sd, base: sr,
           dmode: dm('rate'), row: 'rate', node: 'rate:' + i, cap: trf('{a} to {b}, per year:', {a: fmtYear(m.segStart[i - 1]), b: fmtYear(m.cps[i])}), sym: sym(rc ? 's' : 'e', 't', rateCol),
-          head: cmp ? exclBox(' data-excl="rate" data-i="' + (i - 1) + '"', ex) : null,
           top: oddsHtml('cur', cur.rates[i - 1], 'ratio'), oddsSide: cmp, // odds of extinction either way; beside
                                                                           // the value in every box while comparing
+          topLab: rc ? tr('risk|odds') : null,          // ...named as a risk beside a survival
           topBase: oddsHtml('base', ref.rates[i - 1], 'ratio vref')});    // ...and the baseline's
       }).join('');
       var rN = cur.rates[np - 1];                   // the example: the last period's
@@ -1650,8 +2024,12 @@ function panelHtml(cur, ref){
         var cv = sc ? 1 - cur.surv[j - 1] : cur.surv[j - 1], rv = sc ? 1 - ref.surv[j - 1] : ref.surv[j - 1];
         return gcellEdit({col: ycol(j), cur: cv, ref: rv, kind: sc ? 'surv_c' : 'surv', vi: j - 1, toDisp: 100, decimals: PCT_DEC,
           suffix: '%', pad: 2, good: sc ? 'more_bad' : 'more_good', color: survCol, delta: sd, base: sr, dmode: dm('surv'), row: 'surv', node: 'surv:' + j, cap: by(j), sym: csym(sc ? 'E' : 'S', survCol),
-          // the odds of cumulative extinction, "1 in X", in either view (as the x-risk row's), placed and typed into as those
-          top: oddsHtml('cur', 1 - cur.surv[j - 1], 'ratio'), oddsSide: cmp, topBase: oddsHtml('base', 1 - ref.surv[j - 1], 'ratio vref')});
+          relLess: 1,                                   // its change as a % of A a digit shorter than the value: +1.0042%
+          // the odds of cumulative extinction, "1 in X", in either view (as the x-risk row's), placed and typed into as
+          // those; named as a risk beside a survival
+          top: oddsHtml('cur', 1 - cur.surv[j - 1], 'ratio'), oddsSide: cmp, topBase: oddsHtml('base', 1 - ref.surv[j - 1], 'ratio vref'),
+          // the working over A, "risk" beside it over the odds, framed with A (frameA): two rows
+          topLab: sc ? null : tr('risk|odds'), pre: frameA(j, j < 3 ? 2 : 3), work: survCalc(j)});
       }).join('');
       var rateShown = visibleRows().indexOf('rate') >= 0;   // the x-risk row hidden: its line is left out of these graphs too
       cells +=
@@ -1659,8 +2037,8 @@ function panelHtml(cur, ref){
           function(t, k){ return sc ? 1 - t.surv[k] : t.surv[k]; },
           {lo: graphScale.surv === 'full' ? 0 : null, hi: graphScale.surv === 'full' ? 1 : null, perPeriod: graphScale.surv === 'per',
            // the x-risk, joined to its survival: on the scale its row's menu picks (rateScale; "cumulative's scale": this one)
-           overlay: rateShown ? riskOverlay(cur, ref, cmp, rc, rateScale() === 'cum', rateCol, rateScale()) : null,   // its row's Scale menu
-           extra: rateShown && rateScale() === 'cum' ? riskValues(cur, ref, cmp, rc) : null,
+           overlay: rateShown ? riskOverlay(cur, ref, gB, rc, rateScale() === 'cum', rateCol, rateScale()) : null,   // its row's Scale menu
+           extra: rateShown && rateScale() === 'cum' ? riskValues(cur, ref, gB, rc) : null,
            tipMore: rateShown ? function(i){ var r = cur.rates[i];
              return tr('; annual ' + (rc ? 'survival' : 'extinction') + ' probability ') + lnum(fPct(rc ? 1 - r : r)); } : null});
       var sN = cur.surv[n - 1];                     // the example: the horizon's
@@ -1675,26 +2053,55 @@ function panelHtml(cur, ref){
               {y: yN, p: lnum(fPct(sc ? 1 - sN : sN)), x: odds(1 - sN)}));
     },
     // a year's survived years (the Years outcome: S_t, a year lived with the probability of surviving to it) or
-    // generations (the Generation outcome: S_t / 75): the annual row the years row sums
+    // generations (the Generation outcome: S_t / 75): the annual row the years row sums. Either lived or (⇄,
+    // yrexpComp, as the years row's own) lost: the year less the lived part, 1 − S_t, the chance humanity is gone by
+    // then. Lost is the extinction side: a rise is the bad way.
     yrexp: function(){
-      var gen = outcome === 'generation', per = gen ? LIFE_EXP : 1, unit = gen ? '' : tr('y|unit'), col = COL_POP;   // pink: an outcome
-      var dec = gen ? PCT_DEC + 4 : PCT_DEC + 2, nm = gen ? 'g' : 'y';   // decimals: S_t's own (0.9512175), over 75 two more
-      function v(res, j){ return res.surv[j - 1] / per; }
+      var gen = outcome === 'generation', lost = yrexpComp, per = gen ? LIFE_EXP : 1, unit = gen ? '' : tr('y|unit'), col = COL_POP;   // pink: an outcome
+      var dec = gen ? PCT_DEC + 4 : PCT_DEC + 2, nm = (gen ? 'g' : 'y') + (lost ? '&prime;' : '');   // decimals: S_t's own (0.951218), over 75 two more
+      function sOf(sv){ return lost ? 1 - sv : sv; }   // the share of the year counted: lived or lost
+      function v(res, j){ return sOf(res.surv[j - 1]) / per; }
+      // The Years outcome's boxes: the time itself, as the product it is, a multiplication down the time's columns
+      // (dhmsBlock, in the numbers' size), as the population boxes' down theirs: A's chance of being here (lived) or
+      // gone (lost) by then, a fraction as theirs (0.951218; in the survival row's other view "(1 − …)"), "×"; a year
+      // (dhmsParts': 365d, 5h, 49m) in the days', hours' and minutes' columns, "="; then the year lived or lost for A,
+      // B − A and B, the change with its Δ | % switch beside it (timeChange; the Generation outcome's boxes share the
+      // switch). No number in years over it (the graph's tooltip, the summary have that)
+      // the Generation outcome's boxes, numbers as before, their working over them: "0.951218 ÷ 75 =" (A's share of a
+      // year over a generation's 75), centred over the value (a .vctr line: centreLabels), in the numbers' size
+      function genCalc(j){ return frameA(j, 2) + '<div class="vcalc vbig vctr"><span>' + shareOf(j, lost) + ' &divide; 75 =</span></div>'; }
+      function timeCell(j){
+        var first = j === 1, a = v(cur, j), b = v(ref, j), share = shareOf(j, lost);
+        var lab = sr && !first;                           // labelled while B is shown, as the numbers' lines
+        var ls = [{span: share, op: '&times;', mid: true, mark: 'dwk'},   // centred over the box
+                  {x: 1, noYears: true, ncol: '#a9b8c4', op: '='},   // a year: its potential, grey
+                  {lab: lab ? 'A:' : '', x: a, ncol: col, mark: 'dval'}];
+        if(sd && !first) ls.push(timeChange('yrexp', a, b, lost, lab));
+        if(lab) ls.push({lab: 'B:', x: b, ncol: col});
+        return vcellHtml(ycol(j), capHtml(at(j), csym(nm, col)) + dhmsBlock(ls, 'big', lab || sd && !first), 'vcell', nodeAttr('yrexp:' + j));
+      }
       var cells = J.map(function(j){
+        if(!gen) return timeCell(j);
         if(j === 1) return ro({col: ycol(1), cur: v(cur, 1), ref: v(cur, 1), toDisp: 1, decimals: dec, suffix: unit,
-                               delta: false, color: col, node: 'yrexp:1', cap: at(1), sym: csym(nm, col)});
-        return ro({col: ycol(j), cur: v(cur, j), ref: v(ref, j), toDisp: 1, decimals: dec, suffix: unit, kind: 'more_good',
-          color: col, delta: sd, base: sr, dmode: dm('yrexp'), row: 'yrexp', node: 'yrexp:' + j, cap: at(j), sym: csym(nm, col)});
+                               delta: false, color: col, node: 'yrexp:1', cap: at(1), sym: csym(nm, col), pre: genCalc(1)});
+        return ro({col: ycol(j), cur: v(cur, j), ref: v(ref, j), toDisp: 1, decimals: dec, suffix: unit, kind: lost ? 'more_bad' : 'more_good',
+          color: col, delta: sd, base: sr, dmode: dm('yrexp'), row: 'yrexp', node: 'yrexp:' + j, cap: at(j), sym: csym(nm, col),
+          pre: genCalc(j)});
       }).join('') +
-        graphs('yrexp', col, tr('Annual ' + (gen ? 'generations' : 'years')), function(x){ return fmtF(x, dec); },
-          function(t, k){ return t.surv[k] / per; },
-          Object.assign({area: COL_CUM}, graphScale.yrexp === 'full' ? {lo: 0, hi: 1 / per} : {perPeriod: graphScale.yrexp === 'per'}));
-      return metricGrow(lines(tr(gen ? 'Expected generations lived,' : 'Expected years lived,'), tr('per year')) +
-                        sub(tr(gen ? '1/75 generation &times; chance we’re still here' : '1 year &times; chance we’re still here')), col, cells, '', 'yrexp',
-                        mv(nm + '<sub>t</sub>', col) + ' = ' + csv('t') + (gen ? ' / 75' : ''), gscale('yrexp'),
-                        trf(gen ? 'Each year counts as 1/75 of a generation, times the chance humanity is still here that year. In {y}: {v} generations.'
-                                : 'Each year counts as one year lived, times the chance humanity is still here that year. In {y}: {v} years.',
-                            {y: yN, v: lnum(fmtF(v(cur, n), dec))}));
+        graphs('yrexp', col, tr('Annual ' + (lost ? 'lost ' : '') + (gen ? 'generations' : 'years')), function(x){ return fmtF(x, dec); },
+          function(t, k){ return sOf(t.surv[k]) / per; },
+          Object.assign({area: COL_CUM}, graphScale.yrexp === 'full' ? {lo: 0, hi: 1 / per} : {perPeriod: graphScale.yrexp === 'per'}));   // the area: what the years row adds up
+      // "Expected years [lived | lost] per year", as the years row's title (its switch the same colours)
+      var name = lines(tr(gen ? 'Expected generations|row' : 'Expected years|row'), seg('yrexp_comp', lost, tr('lived'), tr('lost'), COL_SURV_CUM, COL_RATE_CUM),
+                       tr(gen ? 'per year|gens' : 'per year|years')) +
+                 sub(tr((lost ? 'chance we’ve died out' : 'chance we’re still here') + (gen ? ' &divide;&nbsp;75' : ' &times;&nbsp;1 year')));   // an operator kept with what follows it
+      var tip = gen ? (lost ? 'Each year counts as 1/75 of a generation lost, times the chance humanity has died out by then. In {y}: {v} generations.'
+                            : 'Each year counts as 1/75 of a generation, times the chance humanity is still here that year. In {y}: {v} generations.')
+                    : (lost ? 'Each year counts as one year lost, times the chance humanity has died out by then. In {y}: {v} years.'
+                            : 'Each year counts as one year lived, times the chance humanity is still here that year. In {y}: {v} years.');
+      return metricGrow(name, col, cells, '', 'yrexp',
+                        mv(nm + '<sub>t</sub>', col) + ' = ' + (lost ? lostv('t') : csv('t')) + (gen ? ' / 75' : ''), gscale('yrexp'),
+                        trf(tip, {y: yN, v: lnum(fmtF(v(cur, n), dec))}));
     },
     // survived years, or (the Generation outcome) generations: the years over 75; and either survived or (⇄,
     // yearsComp) lost: the years so far less the survived ones. The years outcome's cumulative row. Lost is the
@@ -1703,12 +2110,29 @@ function panelHtml(cur, ref){
       var gen = outcome === 'generation', lost = yearsComp, col = COL_CUM, per = gen ? LIFE_EXP : 1, unit = gen ? '' : tr('y|unit');   // the cumulative outcome's colour, lost or not
       var ynm = (gen ? 'G' : 'Y') + (lost ? '&prime;' : '');   // its symbol (the formula's)
       function v(res, j){ return (lost ? elapsed[j - 1] - res.cumYears[j - 1] : res.cumYears[j - 1]) / per; }
+      // The Years outcome's boxes: the running total in years, days, hours and minutes (dhmsBlock, as the annual row's):
+      // A, B − A and B, and the potential under them, in the same columns ("100y, 0d, 0h, 0m", "potential" under it, as
+      // the numbers' boxes have theirs). The change with its Δ | % switch beside
+      // it: the difference as a time, or the change as a percentage of A. The sum each total is, a Σ before A's and
+      // B's line (sigma)
+      function timeCell(j){
+        var first = j === 1, a = v(cur, j), b = v(ref, j), lab = sr && !first;
+        var ls = [];
+        ls.push({lab: (first ? '' : sigma('years', j, 'a')) + (lab ? 'A:' : ''), x: a, ncol: col, mark: 'dval'});
+        if(sd && !first) ls.push(timeChange('years', a, b, lost, lab));
+        if(lab) ls.push({lab: sigma('years', j, 'b') + 'B:', x: b, ncol: col});
+        if(!first) ls.push({gap: true}, {x: elapsed[j - 1], ncol: '#8496a4'}, {span: tr('potential'), mark: 'dpotl'});   // the potential, grey
+        return vcellHtml(ycol(j), capHtml(by(j), csym(ynm, col)) + dhmsBlock(ls, 'big', false, elapsed[j - 1]), 'vcell',
+                         nodeAttr('years:' + j));   // ymax: the years so far, the most a total or a change can be
+      }
       var cells = J.map(function(j){
+        if(!gen) return timeCell(j);
         if(j === 1) return ro({col: ycol(1), cur: v(cur, 1), ref: v(cur, 1), toDisp: 1, decimals: 0, suffix: unit,
                                     delta: false, color: col, node: 'years:1', cap: by(1), sym: csym(ynm, col)});
         return ro({col: ycol(j), cur: v(cur, j), ref: v(ref, j), toDisp: 1, decimals: 4, suffix: unit, kind: lost ? 'more_bad' : 'more_good',
           pot: elapsed[j - 1] / per,   // the potential: all the years so far (in generations: over 75)
-          color: col, delta: sd, base: sr, dmode: dm('years'), row: 'years', node: 'years:' + j, cap: by(j), sym: csym(ynm, col)});
+          color: col, delta: sd, base: sr, dmode: dm('years'), row: 'years', node: 'years:' + j, cap: by(j), sym: csym(ynm, col),
+          sum: sigmas('years', j)});
       }).join('') +
         graphs('years', col, tr('Cumulative ' + (lost ? 'lost ' : 'survived ') + (gen ? 'generations' : 'years')), gen ? fGens : fYears,
           function(t, k){ return (lost ? t.yr[k] - START - t.cumYears[k] : t.cumYears[k]) / per; },
@@ -1740,23 +2164,35 @@ function panelHtml(cur, ref){
                         'erow', 'pop', mv('pp<sub>t</sub>', COL_POP),
                         (cmp ? exclBox(' data-excl="pop"', popExcluded, ' xchk-row') : '') + gscale('pop'));
     },
+    // the annual population: the population potential times the chance of being here by then; or (⇄, popexpLoss) the
+    // population lost, the potential less that: the potential times the chance of being gone. Lost is the extinction
+    // side: a rise is the bad way.
     popexp: function(){
+      var loss = popexpLoss, nm = 'ap' + (loss ? '&prime;' : '');   // its symbol (the formula's)
+      function v(res, j){ return loss ? res.popPot[j - 1] - res.popExp[j - 1] : res.popExp[j - 1]; }
       // potIn: the potential's setter over the value, which then needs no "of … potential" under it
       var cells = J.map(function(j){
-        if(j === 1) return ro({col: ycol(1), cur: cur.popExp[0], ref: cur.popExp[0], toDisp: 1, decimals: 0, suffix: '',
-                                    delta: false, color: COL_POP, node: 'popexp:1', cap: at(1), sym: csym('ap', COL_POP), pre: potIn ? potSet(1) : null});
-        return ro({col: ycol(j), cur: cur.popExp[j - 1], ref: ref.popExp[j - 1], toDisp: 1, decimals: 0, suffix: '',
-          pot: potIn ? null : cur.popPot[j - 1], pre: potIn ? potSet(j) : null,
-          color: COL_POP, delta: sd, base: sr, dmode: dm('popexp'), row: 'popexp', node: 'popexp:' + j, cap: at(j), sym: csym('ap', COL_POP)});
+        if(j === 1) return ro({col: ycol(1), cur: v(cur, 1), ref: v(cur, 1), toDisp: 1, decimals: 0, suffix: '',
+                                    delta: false, color: COL_POP, node: 'popexp:1', cap: at(1), sym: csym(nm, COL_POP), pre: potIn ? potSet(1, loss) : null});
+        return ro({col: ycol(j), cur: v(cur, j), ref: v(ref, j), toDisp: 1, decimals: 0, suffix: '', kind: loss ? 'more_bad' : 'more_good',
+          pot: potIn ? null : cur.popPot[j - 1], pre: potIn ? potSet(j, loss) : null,
+          color: COL_POP, delta: sd, base: sr, dmode: dm('popexp'), row: 'popexp', node: 'popexp:' + j, cap: at(j), sym: csym(nm, COL_POP)});
       }).join('') +
-        graphs('popexp', COL_POP, tr('Annual population'), fInt, function(t, k){ return t.popExp[k]; },
+        graphs('popexp', COL_POP, tr(loss ? 'Annual lost population' : 'Annual population'), fInt,
+          function(t, k){ return loss ? t.popPot[k] - t.popExp[k] : t.popExp[k]; },
           Object.assign({area: COL_CUM}, graphScale.popexp === 'pot' ? potScale() : {}));
-      return metricGrow(lines(tr('Expected population'), tr('each year')) + sub(tr('population if we survive &times; chance we survive')), COL_POP, cells, '', 'popexp',
-                        mv('ap<sub>t</sub>', COL_POP) + ' = ' + mv('pp<sub>t</sub>', COL_POP) + ' &middot; ' + csv('t'),
+      // "Expected population [alive | lost] each year" (in Finnish the switch before the noun: "Odotettu [elossa oleva |
+      // menetetty] väestö vuosittain"), its switch as the other outcome rows'
+      var name = lines(tr('Expected population|row'), seg('popexp_loss', loss, tr('alive|pop'), tr('lost|sg'), COL_SURV_CUM, COL_RATE_CUM),
+                       tr('each year|pop')) +
+                 sub(tr(loss ? 'chance we die out &times;&nbsp;population if we survive' : 'chance we survive &times;&nbsp;population if we survive'));
+      return metricGrow(name, COL_POP, cells, '', 'popexp',
+                        mv(nm + '<sub>t</sub>', COL_POP) + ' = ' + (loss ? lostv('t') : csv('t')) + ' &middot; ' + mv('pp<sub>t</sub>', COL_POP),   // the share first, as the box's product
                         // the potential's "Exclude from comparison" here while its own row, which has it, is hidden
                         (potIn && cmp && !popShown ? exclBox(' data-excl="pop"', popExcluded, ' xchk-row') : '') + gscale('popexp'),
-                        trf('The population in a year, averaged over surviving and not: the population if humanity survives, times the chance it does. In {y}: {v}.',
-                            {y: yN, v: fInt(cur.popExp[n - 1])}));
+                        trf(loss ? 'The population lost to extinction in a year, averaged over surviving and not: the population if humanity survives, times the chance it has died out by then. In {y}: {v}.'
+                                 : 'The population in a year, averaged over surviving and not: the population if humanity survives, times the chance it does. In {y}: {v}.',
+                            {y: yN, v: fInt(v(cur, n))}));
     },
     // cumulative lives, or (⇄, livesLy) the life-years they are counted from; and either lived or (the second ⇄,
     // livesLoss) lost: the potential's less the lived. One row (the Lives button). Lost is the extinction side:
@@ -1771,7 +2207,8 @@ function panelHtml(cur, ref){
         if(j === 1) return ro({col: ycol(1), cur: v(cur, 1), ref: v(cur, 1), toDisp: 1, decimals: 0, suffix: '',
                                     delta: false, color: col, node: 'lives:1', cap: by(1), sym: csym(lnm, col)});
         return ro({col: ycol(j), cur: v(cur, j), ref: v(ref, j), toDisp: 1, decimals: 0, suffix: '', kind: loss ? 'more_bad' : 'more_good',
-          pot: pot(cur)[j - 1], color: col, delta: sd, base: sr, dmode: dm('lives'), row: 'lives', node: 'lives:' + j, cap: by(j), sym: csym(lnm, col)});
+          pot: pot(cur)[j - 1], color: col, delta: sd, base: sr, dmode: dm('lives'), row: 'lives', node: 'lives:' + j, cap: by(j), sym: csym(lnm, col),
+          sum: sigmas('lives', j)});
       }).join('') +
         graphs('lives', col, tr('Cumulative ' + (loss ? 'lost ' : '') + (ly ? 'life-years' : 'lives')), fInt,
           function(t, k){ return (loss ? t.cumLyPot[k] - t.cumLy[k] : t.cumLy[k]) / per; },
@@ -1793,45 +2230,63 @@ function panelHtml(cur, ref){
                         gscale('lives'), trf(tipL, {s: yS, y: yN, v: fInt(v(cur, n))}));
     },
     // annual value, as the annual population: the value potential (a value per year lived, set in the box: valSet)
-    // times the survival probability by then. A row of its own (the Value button)
+    // times the survival probability by then; or (⇄, valexpLoss) the value lost, as the population lost. A row of its
+    // own (the Value button)
     valexp: function(){
-      function valMax(i){                           // the value potential's largest over period i: A's, and B's while compared
+      var loss = valexpLoss, nm = 'av' + (loss ? '&prime;' : '');
+      function v(res, j){ return loss ? res.valPot[j - 1] - res.valExp[j - 1] : res.valExp[j - 1]; }
+      function valMax(i){                           // the value potential's largest over period i: A's, and B's while drawn
         var mx = Math.max.apply(null, cur.track[i].valPot);
-        return cmp ? Math.max(mx, Math.max.apply(null, ref.track[i].valPot)) : mx;
+        return gB ? Math.max(mx, Math.max.apply(null, ref.track[i].valPot)) : mx;
       }
       var cells = J.map(function(j){
-        if(j === 1) return ro({col: ycol(1), cur: cur.valExp[0], ref: cur.valExp[0], toDisp: 1, decimals: VAL_DEC, suffix: '',
-                               delta: false, color: COL_VAL, node: 'valexp:1', cap: at(1), sym: csym('av', COL_VAL), pre: valSet(1)});
-        return ro({col: ycol(j), cur: cur.valExp[j - 1], ref: ref.valExp[j - 1], toDisp: 1, decimals: VAL_DEC, suffix: '',
-          pre: valSet(j), color: COL_VAL, delta: sd, base: sr, dmode: dm('valexp'), row: 'valexp', node: 'valexp:' + j,
-          cap: at(j), sym: csym('av', COL_VAL)});
+        if(j === 1) return ro({col: ycol(1), cur: v(cur, 1), ref: v(cur, 1), toDisp: 1, decimals: VAL_DEC, suffix: '',
+                               delta: false, color: COL_VAL, node: 'valexp:1', cap: at(1), sym: csym(nm, COL_VAL), pre: valSet(1, loss)});
+        return ro({col: ycol(j), cur: v(cur, j), ref: v(ref, j), toDisp: 1, decimals: VAL_DEC, suffix: '', kind: loss ? 'more_bad' : 'more_good',
+          pre: valSet(j, loss), color: COL_VAL, delta: sd, base: sr, dmode: dm('valexp'), row: 'valexp', node: 'valexp:' + j,
+          cap: at(j), sym: csym(nm, COL_VAL)});
       }).join('') +
-        graphs('valexp', COL_VAL, tr('Annual value'), fVal, function(t, k){ return t.valExp[k]; },
+        graphs('valexp', COL_VAL, tr(loss ? 'Annual lost value' : 'Annual value'), fVal,
+          function(t, k){ return loss ? t.valPot[k] - t.valExp[k] : t.valExp[k]; },
           Object.assign({area: COL_CUM}, graphScale.valexp === 'all' ? {} : {lo: 0, perPeriod: graphScale.valexp === 'potper', hiAt: valMax}));
-      return metricGrow(lines(tr('Expected value'), tr('each year')) + sub(tr('value if we survive &times; chance we survive')), COL_VAL, cells, '', 'valexp',
-                        mv('av<sub>t</sub>', COL_VAL) + ' = ' + mv('pv<sub>t</sub>', COL_VAL) + ' &middot; ' + csv('t'),
+      // "Expected value [realised | lost] each year" (Finnish: "Odotettu [toteutuva | menetetty] arvo vuosittain")
+      var name = lines(tr('Expected value|row'), seg('valexp_loss', loss, tr('realised'), tr('lost|sg'), COL_SURV_CUM, COL_RATE_CUM),
+                       tr('each year|val')) +
+                 sub(tr(loss ? 'chance we die out &times;&nbsp;value if we survive' : 'chance we survive &times;&nbsp;value if we survive'));
+      return metricGrow(name, COL_VAL, cells, '', 'valexp',
+                        mv(nm + '<sub>t</sub>', COL_VAL) + ' = ' + (loss ? lostv('t') : csv('t')) + ' &middot; ' + mv('pv<sub>t</sub>', COL_VAL),
                         // the value potential's "Exclude from comparison" (as the population potential's)
                         (cmp ? exclBox(' data-excl="val"', valExcluded, ' xchk-row') : '') + gscale('valexp'),
-                        trf('The value in a year, averaged over surviving and not: the value if humanity survives, times the chance it does. In {y}: {v}.',
-                            {y: yN, v: lnum(fVal(cur.valExp[n - 1]))}));
+                        trf(loss ? 'The value lost to extinction in a year, averaged over surviving and not: the value if humanity survives, times the chance it has died out by then. In {y}: {v}.'
+                                 : 'The value in a year, averaged over surviving and not: the value if humanity survives, times the chance it does. In {y}: {v}.',
+                            {y: yN, v: lnum(fVal(v(cur, n)))}));
     },
     // cumulative value: the annual value summed over the years so far, as the life-years are the annual population's;
-    // the potential's (every year survived) under it. A row of its own (the Cumulative value button)
+    // the potential's (every year survived) under it; or (⇄, valcumLoss) the value lost, the potential's less it, as
+    // the lives row's. A row of its own (the Cumulative value button)
     valcum: function(){
+      var loss = valcumLoss, nm = 'V' + (loss ? '&prime;' : '');
+      function v(res, j){ return loss ? res.cumValPot[j - 1] - res.cumVal[j - 1] : res.cumVal[j - 1]; }
       var cells = J.map(function(j){
-        if(j === 1) return ro({col: ycol(1), cur: cur.cumVal[0], ref: cur.cumVal[0], toDisp: 1, decimals: VAL_DEC, suffix: '',
-                               delta: false, color: COL_CUM, node: 'valcum:1', cap: by(1), sym: csym('V', COL_CUM)});
-        return ro({col: ycol(j), cur: cur.cumVal[j - 1], ref: ref.cumVal[j - 1], toDisp: 1, decimals: VAL_DEC, suffix: '',
-          kind: 'more_good', pot: cur.cumValPot[j - 1], color: COL_CUM, delta: sd, base: sr, dmode: dm('valcum'), row: 'valcum',
-          node: 'valcum:' + j, cap: by(j), sym: csym('V', COL_CUM)});
+        if(j === 1) return ro({col: ycol(1), cur: v(cur, 1), ref: v(cur, 1), toDisp: 1, decimals: VAL_DEC, suffix: '',
+                               delta: false, color: COL_CUM, node: 'valcum:1', cap: by(1), sym: csym(nm, COL_CUM)});
+        return ro({col: ycol(j), cur: v(cur, j), ref: v(ref, j), toDisp: 1, decimals: VAL_DEC, suffix: '',
+          kind: loss ? 'more_bad' : 'more_good', pot: cur.cumValPot[j - 1], color: COL_CUM, delta: sd, base: sr, dmode: dm('valcum'), row: 'valcum',
+          node: 'valcum:' + j, cap: by(j), sym: csym(nm, COL_CUM), sum: sigmas('valcum', j)});
       }).join('') +
-        graphs('valcum', COL_CUM, tr('Cumulative value'), fVal, function(t, k){ return t.cumVal[k]; },
+        graphs('valcum', COL_CUM, tr(loss ? 'Cumulative lost value' : 'Cumulative value'), fVal,
+          function(t, k){ return loss ? t.cumValPot[k] - t.cumVal[k] : t.cumVal[k]; },
           {lo: 0, perPeriod: graphScale.valcum === 'potper',
            hiAt: function(i){ return potAt(cur.cumValPot, ref.cumValPot, graphScale.valcum === 'potper' ? i + 1 : n - 1); }});
-      return metricGrow(lines(tr('Expected value'), tr('in total, up to then')) + sub(tr('the yearly expected values added up')), COL_CUM, cells, '', 'valcum',
-                        mv('V<sub>t</sub>', COL_CUM) + ' = ' + SUM + ' ' + mv('av<sub>i</sub>', COL_VAL), gscale('valcum'),
-                        trf('The yearly expected values added up, from {s} to that year. By {y}: {v}.',
-                            {s: yS, y: yN, v: lnum(fVal(cur.cumVal[n - 1]))}));
+      var name = lines(tr('Expected value|row'), seg('valcum_loss', loss, tr('realised'), tr('lost|sg'), COL_SURV_CUM, COL_RATE_CUM),
+                       tr('in total, up to then|val')) +
+                 sub(tr(loss ? 'the values lost each year, added up' : 'the yearly expected values added up'));
+      var sumOf = loss ? '(' + mv('pv<sub>i</sub>', COL_VAL) + ' &minus; ' + mv('av<sub>i</sub>', COL_VAL) + ')' : mv('av<sub>i</sub>', COL_VAL);
+      return metricGrow(name, COL_CUM, cells, '', 'valcum',
+                        mv(nm + '<sub>t</sub>', COL_CUM) + ' = ' + SUM + ' ' + sumOf, gscale('valcum'),
+                        trf(loss ? 'The value lost to extinction from {s} up to that year: the value there would be if humanity surely survived, less the value to expect. By {y}: {v}.'
+                                 : 'The yearly expected values added up, from {s} to that year. By {y}: {v}.',
+                            {s: yS, y: yN, v: lnum(fVal(v(cur, n)))}));
     }
   };
 
@@ -1887,7 +2342,10 @@ var rates = M.defRates.slice(), pops = M.defPops.slice(), vals = M.defVals.slice
 var LEN = M.segLen.slice();                      // period lengths (years), for the survival backtrace
 var rateComp = false, survComp = false;          // per-row complement views (the ⇄ buttons)
 var yearsComp = false;                           // ...lost instead of survived years (generations: the outcome, OUTCOMES)
+var yrexpComp = false;                           // ...and in the annual row, a year's lost instead of lived
 var livesLy = false, livesLoss = false;           // ...life-years instead of lives; lost instead of lived
+var popexpLoss = false, valexpLoss = false;     // ...the population and value lost instead of alive and realised, each year
+var valcumLoss = false;                          // ...and the value lost up to then
 var outcome = 'value';                            // the outcome the third and fourth rows show (Choose outcome: OUTCOMES)
 // each graphed row's Graph scale (its menu; see panelHtml): the option ids, then the defaults. The x-risk row's is the
 // scale of its line in the survival row's graphs (riskOverlay); labelled as x-risk (0 at the foot), or in its ⇄
@@ -1912,7 +2370,8 @@ var relRows = {};                                // rows whose deltas show the c
 function snap(){ return {rates: rates.slice(), pops: pops.slice(), vals: vals.slice()}; }
 var mode = 'current', refStatic = snap(), histPrev = snap(), histLast = snap();
 // What is excluded from the comparison ("Exclude from comparison"): the population potential as a whole (an
-// outside assumption, not a lever: on by default) and single periods' x-risk (off by default). An excluded
+// outside assumption, not a lever: on by default) and the value potential's. (Single periods' x-risk could be
+// excluded too until 2026-10-22; rateExcluded stays empty now, applyScene turning old scenes' into B's values.) An excluded
 // value is shared by both scenarios: the comparison takes the current value, so changing it moves A and B
 // alike and shows no change of its own. The stored comparison keeps its own values meanwhile (refRaw), so
 // they return when the exclusion is lifted. Not part of the undo history (a view choice, like "Show …"). The
@@ -1980,6 +2439,7 @@ function render(){
   renderQueued = false;
   var K = showsGraphs() ? GRAPH_K : 0;             // graphs: sample each period (compute)
   var rs = refState(), cur = compute(rates, pops, M, K, {vals: vals}), ref = compute(rs.rates, rs.pops, M, K, {vals: rs.vals});
+  lastRes = {cur: cur, ref: ref};                  // the Σ sums read them (sumHtml)
   // drawArrows (below, and on every resize) colours by this; no colours while the comparison is hidden
   arrowTone = showsCmp() ? arrowTones(rs, {rates: rates, pops: pops, vals: vals}, M.n) : {};   // B judged against A, as the change lines
   if(potInBoxes()) for(var j = 1; j <= M.n; j++)   // the potential in the annual population's box: a change of it colours that box's arrows
@@ -1990,6 +2450,11 @@ function render(){
   document.getElementById('panel').innerHTML = panelHtml(cur, ref);
   document.getElementById('summary').innerHTML = summaryHtml(cur);
   document.getElementById('foot').innerHTML = footHtml();
+  if(flashB){                                       // B moved by an edit of A or of the change: light its line
+    var fc = document.querySelector('.xedit[data-kind="' + flashB.kind + '"][data-i="' + flashB.i + '"]');
+    var fb = fc && fc.querySelector('.vbase'); if(fb) fb.classList.add('bflash');
+    flashB = null;
+  }
   // the Comparison controls follow the mode (an undo, a comparison edit or a reset can change it)
   var br = document.getElementById('setref'), bp = document.getElementById('cmpprev');
   // "Reset comparison": lit while a click would change B (it differs from A somewhere, as the change lines
@@ -2009,6 +2474,7 @@ function render(){
   applyHighlight();
   watchArrows();
   var sc1 = document.querySelector('.grid-scroll'); if(sc1) sc1.scrollLeft = scrollX;
+  refreshSum();                                   // an open Σ sum: rebuilt with the new numbers, under its Σ
 }
 
 // the controls that reset or rebase the state (each an undo step, since the baseline is in the history).
@@ -2024,25 +2490,29 @@ function resetDefaults(){
   refStatic = snap(); histPrev = snap(); histLast = snap(); mode = 'current'; pushState();
 }
 // Time points changed (a click on one or a year typed, drawScale; ys: the points' years ahead, else as they are): fit
-// the state to the new periods and rebase the baseline on it — a structural change, not an edit. A period keeps its
-// rate (and its "Exclude from comparison") where the old model had one ending at the same time point, a checkpoint
-// its population potential and value where the old one had it, even if that point's year was moved; the rest take
-// their defaults (so edits are kept wherever the two share them: a point shown, hidden or moved changes only the
-// periods next to it). The undo history restarts (its snapshots have the old length) and the selection is clamped so
-// it can't point past the last column.
+// the state to the new periods — a structural change, not an edit. A period keeps its rate (and its "Exclude from
+// comparison") where the old model had one ending at the same time point, a checkpoint its population potential and
+// value where the old one had it, even if that point's year was moved; the rest take their defaults (so edits are
+// kept wherever the two share them: a point shown, hidden or moved changes only the periods next to it). The
+// comparison (B: the frozen one, and the "previous value" one) is fitted the same way, so it carries over to the new
+// periods; where neither had a value both take the default, so no change shows there. The undo history restarts (its
+// snapshots have the old length) and the selection is clamped so it can't point past the last column.
 function setPoints(pts, ys){
   ys = ys || slotYears;
   if(!pts.length || (sameArr(pts, tpoints) && sameArr(ys, slotYears))) return;
   var oldPts = tpoints; tpoints = pts.slice(); slotYears = ys.slice(); M = modelAt(tpoints, slotYears);
   function oldPeriod(i){ return oldPts.indexOf(tpoints[i]); }   // the old period ending at period i's time point, or -1
   function oldCp(i){ if(i === 0) return 0; var j = oldPts.indexOf(tpoints[i - 1]); return j >= 0 ? j + 1 : -1; }   // checkpoint i's
-  rates = M.defRates.map(function(d, i){ var j = oldPeriod(i); return j >= 0 ? rates[j] : d; });
-  pops = M.defPops.map(function(d, i){ var j = oldCp(i); return j >= 0 ? pops[j] : d; });
-  vals = M.defVals.map(function(d, i){ var j = oldCp(i); return j >= 0 ? vals[j] : d; });
+  function fit(s){                                  // a state ({rates, pops, vals} on the old periods) on the new ones
+    return {rates: M.defRates.map(function(d, i){ var j = oldPeriod(i); return j >= 0 ? s.rates[j] : d; }),
+            pops: M.defPops.map(function(d, i){ var j = oldCp(i); return j >= 0 ? s.pops[j] : d; }),
+            vals: M.defVals.map(function(d, i){ var j = oldCp(i); return j >= 0 ? s.vals[j] : d; })};
+  }
+  var now = fit(snap()); rates = now.rates; pops = now.pops; vals = now.vals;
   var ex = {}; M.defRates.forEach(function(d, i){ var j = oldPeriod(i); if(j >= 0 && rateExcluded[j]) ex[i] = true; });
   rateExcluded = ex;
   LEN = M.segLen.slice();
-  refStatic = snap(); histPrev = snap(); histLast = snap();
+  refStatic = fit(refStatic); histPrev = fit(histPrev); histLast = snap();   // the comparison kept
   histStack = [histSnap()]; histIdx = 0;
   var last = (sel.kind === 'pop' || sel.kind === 'val' ? pops.length : rates.length) - 1;   // rate/rate_c/surv/surv_c all index periods
   if(sel.i > last) sel.i = last;
@@ -2090,6 +2560,7 @@ function applyHighlight(){
   if(pendingSign && pendingSign.key !== selKey()) pendingSign = null;   // the selection moved on: forget it
   var sg = pendingSign && deltaSignEl();          // a zero change waiting for its sign shows that sign, not ±
   if(sg && sg.textContent === '±') sg.textContent = pendingSign.s > 0 ? '+' : '−';
+  placePad();                                     // the keypad with the selection (see "keypad")
 }
 // + / − typed on a change line (B − A): a nonzero change takes that sign (B moves to A ± |change|); a
 // zero one (shown ±) remembers it for the next digit typed there (typeDigit). Kept per line (selKey), and
@@ -2105,6 +2576,13 @@ function setDeltaSign(s){
   }
   var v = editVal();
   if(v && (v > 0 ? 1 : -1) !== s) applyEdit(-v);
+}
+// the change turned the other way (a click on its sign, or the keypad's ±): a zero one waits for the other sign
+function flipDeltaSign(){
+  var sg = deltaSignEl(); if(!sg) return;
+  var waiting = pendingSign && pendingSign.key === selKey();
+  if(waiting || sg.textContent === '±') setDeltaSign(waiting ? -pendingSign.s : 1);
+  else { var v = editVal(); if(v) applyEdit(-v); }
 }
 function survOf(arr, i){                          // cumulative survival through interval i
   var p = 1; for(var k = 0; k <= i; k++) p *= Math.pow(1 - arr[k], LEN[k]); return p;
@@ -2172,9 +2650,12 @@ function editA(kind, i, write){
   if(keep){
     var a1 = valOf(kind, i, rates, pops, vals);
     writeBase(kind, i, relRows[KIND_ROW[kind]] && a0 > 0 ? a1 * b0 / a0 : a1 + (b0 - a0));
+    flashB = {kind: kind, i: i};                    // B moved with A: lit for a moment
   }
   pushState();
 }
+// B's line in the box an edit of A or of the change moved it in, lit by the next redraw (render; CSS .bflash)
+var flashB = null;
 function setValAbs(v){ var k = sel.kind, i = sel.i; editA(k, i, function(){ writeVal(k, i, v); }); }
 // The selected row decides what an edit changes: the value (A), the change, or the comparison (B) itself. The
 // change is measured from A, the baseline: B − A, or (B − A) / A where the row's switch is on %; so editing it
@@ -2191,8 +2672,9 @@ function applyEdit(nv){
   pendingSign = null;                              // any edit uses up a waiting sign (see setDeltaSign)
   if(sel.part === 'base') return setBaseAbs(nv);
   if(sel.part !== 'delta') return setValAbs(nv);
-  var a = curVal();
-  if(!relDelta()) setBaseAbs(a + nv);
+  var a = curVal(), rel = relDelta();
+  if(!rel || a > 0) flashB = {kind: sel.kind, i: sel.i};   // the change edited: B moves
+  if(!rel) setBaseAbs(a + nv);
   else if(a > 0) setBaseAbs(a * (1 + nv));          // an A of 0 has no relative change to set
 }
 function change(dir){                             // ▼ always lowers, ▲ always raises (monotonic)
@@ -2250,18 +2732,17 @@ document.addEventListener('keydown', function(e){
   moveDigit(k === 'ArrowRight' ? 1 : -1, true);   // arrows may walk on into the next/previous cell
 });
 document.addEventListener('click', function(e){
-  if(e.target.closest('.dtog, .xchk')) return;      // the delta switch and exclude boxes (controls, below) don't select
+  if(e.target.closest('.dtog, .xchk, #keypad')) return;   // the delta switch and exclude boxes (controls, below), the keypad's keys don't select
   var cell = e.target.closest('.xedit');
   if(!cell){ if(selOn){ selOn = false; applyHighlight(); } return; }   // a click outside the boxes: the selection off
   selOn = true;
+  padOn = (lastPointer === 'touch' || lastPointer === 'pen') && !e.target.closest('.odds');   // a tap: the keypad (the odds' field takes the phone's own keys)
   var dig  = e.target.closest('.dig');
   var sp = e.target.closest('.vdelta .sep'), sg = sp && sp.querySelector('.sgn');
   if(sg){                                           // the change's sign: the change the other way (as + / − typed there)
     sel = {kind:cell.getAttribute('data-kind'), i:+cell.getAttribute('data-i'), place:sel.place, part:'delta'};
     applyHighlight();
-    var waiting = pendingSign && pendingSign.key === selKey();
-    if(waiting || sg.textContent === '±') setDeltaSign(waiting ? -pendingSign.s : 1);   // a zero change: the sign it waits for
-    else { var v = editVal(); if(v) applyEdit(-v); }
+    flipDeltaSign();
     return;
   }
   if(dig){
@@ -2341,7 +2822,7 @@ document.addEventListener('wheel', function(e){
   var STEP = 90;
   if(Math.abs(wheelAcc) < STEP) return;
   sel = {kind:cell.getAttribute('data-kind'), i:+cell.getAttribute('data-i'), place:digDelta(dig), part:partOf(dig)};
-  selOn = true;                                   // the digit turned is the one selected
+  selOn = true; padOn = false;                    // the digit turned is the one selected (by the mouse: no keypad)
   var n = 0;
   while(wheelAcc <= -STEP && n < 8){ wheelAcc += STEP; change(1);  n++; }   // wheel up (deltaY < 0): raise
   while(wheelAcc >=  STEP && n < 8){ wheelAcc -= STEP; change(-1); n++; }   // wheel down: lower
@@ -2378,9 +2859,13 @@ function drawArrows(){
   // the width rounded down: rounded up, at a table zoom it could reach a fraction of a px past the table's box, and
   // that alone gives .grid-scroll a scrollbar (the arrows themselves may still draw past it: overflow visible)
   svg.setAttribute('width', Math.floor(ew / k)); svg.setAttribute('height', Math.ceil(eh / k));
-  function marker(id){ return '<marker id="' + id + '" viewBox="0 0 8 8" refX="7.5" refY="4" markerUnits="userSpaceOnUse" ' +
-                              'markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z"/></marker>'; }
-  svg.innerHTML = '<defs>' + marker('ah') + marker('ah-good') + marker('ah-bad') + '</defs>';   // plain / green / red heads
+  // the heads: 7 px; a hovered box's arrows' (hl: CSS picks them) in proportion to their width, 3.2 times it, and
+  // reaching a little past the arrow's end, so its thick line ends inside the head, not at the tip
+  function marker(id, hl){ return '<marker id="' + id + '" viewBox="0 0 8 8" refX="' + (hl ? 6 : 7.5) + '" refY="4" ' +
+                              (hl ? 'markerUnits="strokeWidth" markerWidth="3.2" markerHeight="3.2"' : 'markerUnits="userSpaceOnUse" markerWidth="7" markerHeight="7"') +
+                              ' orient="auto"><path d="M0,0 L8,4 L0,8 z"/></marker>'; }
+  svg.innerHTML = '<defs>' + marker('ah') + marker('ah-good') + marker('ah-bad') +   // plain / green / red heads
+                  marker('ah-hl', true) + marker('ah-good-hl', true) + marker('ah-bad-hl', true) + '</defs>';
   gw.appendChild(svg);                                            // attached first: paths get sampled while drawing
   // edge e's arrow (box e.from → box e.to), in its source box's tone (arrowTone: green / red where a change starts
   // there; or e.tone, given); both boxes named on it, for the hover (markArrows; a shared stretch names several
@@ -2388,7 +2873,7 @@ function drawArrows(){
   function add(d, head, e){
     var t = e.tone != null ? e.tone : arrowTone[e.from] || 0, tone = t > 0 ? 'good' : (t < 0 ? 'bad' : '');
     var p = document.createElementNS(SVGNS, 'path');
-    p.setAttribute('class', tone ? 'e ' + tone : 'e'); p.setAttribute('d', d);
+    p.setAttribute('class', (tone ? 'e ' + tone : 'e') + (head ? ' hd' : '')); p.setAttribute('d', d);   // hd: it has a head
     p.setAttribute('data-from', e.from); p.setAttribute('data-to', e.to);
     if(head) p.setAttribute('marker-end', 'url(#' + (tone ? 'ah-' + tone : 'ah') + ')');
     svg.appendChild(p); return p;
@@ -2657,7 +3142,7 @@ function drawArrows(){
     var sx = Math.min.apply(null, h.joins.map(function(j){ return j.x; }));
     var sy = h.y0 + (h.y1 - h.y0) * (sx - h.x0) / (h.x1 - h.x0), srcs = [h.e.from], tone = 0;
     h.joins.forEach(function(j){ srcs.push(j.from); tone = tone || arrowTone[j.from] || 0; });
-    h.p.setAttribute('d', 'M' + h.x0 + ',' + h.y0 + ' L' + sx + ',' + sy); h.p.removeAttribute('marker-end');
+    h.p.setAttribute('d', 'M' + h.x0 + ',' + h.y0 + ' L' + sx + ',' + sy); h.p.removeAttribute('marker-end'); h.p.classList.remove('hd');
     add('M' + sx + ',' + sy + ' L' + h.x1 + ',' + h.y1, true, {from: srcs.join(' '), to: to, tone: tone || arrowTone[h.e.from] || 0});
   });
   // coloured arrows over plain ones where they meet (a join, a shared trunk line)
@@ -2673,11 +3158,15 @@ function markArrows(){
                                              p.getAttribute('data-to') === hoverNode));
   });
 }
-document.addEventListener('mouseover', function(e){
-  var box = e.target.closest && e.target.closest('.grid-wrap [data-node]');
+function hoverOn(el){
+  if(!el.closest || el.closest('#keypad')) return;   // the keypad's keys: the box being edited stays the one
+  var box = el.closest('.grid-wrap [data-node]');
   var id = box ? box.getAttribute('data-node') : null;
   if(id !== hoverNode){ hoverNode = id; markArrows(); }
-});
+}
+document.addEventListener('mouseover', function(e){ hoverOn(e.target); });
+// a touch screen has no hover: there the box last tapped, until a tap elsewhere
+document.addEventListener('pointerdown', function(e){ if(e.pointerType === 'touch') hoverOn(e.target); });
 document.documentElement.addEventListener('mouseleave', function(){ if(hoverNode){ hoverNode = null; markArrows(); } });   // off the page
 // Packed columns (fitColumns). The cells sit in columns k = 0, 1, 2, … : 2026's values, the first period's (its
 // rates, graphs, growth notes, label), 2036's, … (the grid column a cell starts at, less 2). Each column's centre
@@ -2728,6 +3217,7 @@ function centreValues(gw){
     if(!d0 || !gs.length) return null;
     var l = Infinity, r = -Infinity;                 // the stack's lines' extent (its rows and side column)
     Array.prototype.forEach.call(s.children, function(c){
+      if(c.classList.contains('vframe')) return;    // A's frame: round the lines, not one of them
       var b = c.getBoundingClientRect(); if(b.width > 0){ l = Math.min(l, b.left); r = Math.max(r, b.right); }
     });
     return {s: s, d: ((r - gs[gs.length - 1].getBoundingClientRect().right) - (d0.getBoundingClientRect().left - l)) / u};
@@ -2736,9 +3226,10 @@ function centreValues(gw){
     if(c.d > 0) c.s.style.paddingLeft = c.d + 'px'; else c.s.style.paddingRight = -c.d + 'px';   // more room right / left
   });
 }
-// The labels of the population potential's sum in an annual population box (potSet): "Population if survived pp"
-// centred over the setter's number, and "× 0.9512175 =" with its first number (.vpota) starting where the box's
-// value's first digit does. The labels (.vctr) add no width of their
+// The labels over a box's numbers: the setter's in an annual population or value box (setterSum), "Population if
+// survived pp", centred over the setter's number, and a generations box's working (genCalc), centred over its value (a
+// multiplier, a .vctr line with a .vpota, would start its first number where the box's value's first digit does;
+// none now). The labels (.vctr) add no width of their
 // own (CSS), so each stack's columns get minimums that hold them (grid-template-columns), and each label is moved in
 // from the left (its padding). The numbers end at the numbers' column's right edge (R), so everything is measured
 // from there; a number from its first significant digit (faint padding zeros left out) to its last. Measured afresh
@@ -2771,6 +3262,7 @@ function centreLabels(gw){
         var nr = numSpan(l.parentNode.classList.contains('vpot') ? l.parentNode.querySelector('.vmain') : vm);
         if(!nr) return null;
         x = R - (nr.l + nr.r) / 2 + w / 2;
+        if(l.parentNode.classList.contains('vpot')) x = Math.max(x, w);   // a setter's: on its fill, not past the numbers' end
       }
       L = Math.max(L, x); Rt = Math.max(Rt, w - x);
       return x;                                    // the line's left edge, left of R
@@ -2858,17 +3350,18 @@ function fitColumns(){
 // comparison's lines) don't stretch every graph with them. The plot stretches both ways (the SVG scales its axes,
 // preserveAspectRatio none; strokes keep their width).
 // Beside a graph a box keeps GRAPH_TOUCH px clear, or with the arrows on too ARROW_LANE: the arrows' lanes.
-var GRAPH_TOUCH = 3, GRAPH_MIN_H = 90, GRAPH_MAX_H = 104, ARROW_LANE = 26;
+var GRAPH_TOUCH = 3, GRAPH_MIN_H = 90, GRAPH_MAX_H = 120, ARROW_LANE = 26;
 // side-by-side arrows: centre to centre, the arrows' width (Author controls: --ar-w, 1.3 px) and 2 px between
 function arrowStep(){ var w = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ar-w')); return (w > 0 ? w : 1.3) + 2; }
 function stretchGraphs(){
   var gs = Array.prototype.slice.call(document.querySelectorAll('.grid-wrap .gcell')); if(!gs.length) return;
   var k = gridScale(gs[0]);                         // measured on screen, used in the table's px
   // the height: the tallest value box outside the x-risk row (its caption, "by 2036:", in it); an annual population
-  // box without the population potential over its value (potInBoxes), so that doesn't raise every graph
+  // box without the population potential's product over its value (potInBoxes), a survival box without its working, so
+  // those don't raise every graph
   var H = 0;
   document.querySelectorAll('.grid-wrap .grow:not([data-row="rate"]) .vcell').forEach(function(b){
-    var pa = b.querySelector('.vpot'), vm = pa && b.querySelector(':scope > .vstack > .vmain');   // the setter; the box's own value
+    var pa = b.querySelector('.vpotmul, .vcalc, .vpot, .dwk'), vm = pa && b.querySelector(':scope > .vstack > .vmain, .dval');   // the working's top line; the box's own value (a time block's: its A line)
     // the potential's rows, down to the value: measured in the stack's px (stackUnit), then in the table's (× the box
     // text's zoom)
     var pot = vm ? (vm.getBoundingClientRect().top - pa.getBoundingClientRect().top) / stackUnit(vm.parentNode) * boxText : 0;
@@ -2897,15 +3390,176 @@ function placeScales(){
     if(hT <= w.getBoundingClientRect().height) t.appendChild(g);
   });
 }
+// With the formulas shown, the names column at least as wide as keeps every formula on one line (CSS: nowrap):
+// --labw-fit on #panel, which --labw takes over the default or dragged width when wider. Measured at that width (the
+// fit cleared first): the most any formula then lacks of its one line, in the column's own px (offsetWidth,
+// scrollWidth: the table zoom left out, as in --labw). Before placeScales, which places by the labels' heights.
+function fitLabels(){
+  var p = document.getElementById('panel'), gw = document.querySelector('.grid-wrap');
+  p.style.removeProperty('--labw-fit');
+  if(!gw || !isChecked('showfx')) return;
+  var lb = gw.querySelector('.rlabel'), more = 0;
+  gw.querySelectorAll('.rformula').forEach(function(f){ more = Math.max(more, f.scrollWidth - f.clientWidth); });
+  if(lb && more > 0) p.style.setProperty('--labw-fit', Math.ceil(lb.offsetWidth + more) + 'px');
+}
 function watchArrows(){
+  fitLabels();
   placeScales();
   var gw = document.querySelector('.grid-wrap');
   if(arrowRO){ arrowRO.disconnect(); if(gw) arrowRO.observe(gw); }
   fitColumns();
   drawArrows();
+  placePad();                                       // the boxes may have moved: the keypad with its box
 }
-window.addEventListener('resize', function(){ requestAnimationFrame(function(){ fitColumns(); drawArrows(); }); });
-if(document.fonts && document.fonts.ready) document.fonts.ready.then(function(){ placeScales(); fitColumns(); drawArrows(); });
+window.addEventListener('resize', function(){ requestAnimationFrame(function(){ fitColumns(); drawArrows(); placeSum(); placePad(); }); });
+if(document.fonts && document.fonts.ready) document.fonts.ready.then(function(){ fitLabels(); placeScales(); fitColumns(); drawArrows(); });
+
+// ── a running total's sum (Σ) ──
+// The running totals' boxes (years or generations, lives or life-years, value; lived or lost) show their totals
+// only; the Σ before A's or B's line (sigma, panelHtml) opens the sum that total is, in a box of its own over the
+// page (#sumpop), as a column addition: the total by the checkpoint before (the box on the left; none by the
+// present), then each year of the period, the first SUM_HEAD and the last SUM_TAIL written out and those between
+// counted; "=" the total (years: also in years, days, hours and minutes, as the box shows it). A year's term is the
+// annual row's for that year: the chance of being here by then (S, from the period's x-risk: compute's cascade) or of
+// being gone, over 75 for generations; times the population potential, or the value potential (both linear between
+// the checkpoints, as compute's), for population or value; over 75 again for lives. A hover shows it; a click (a tap)
+// keeps it open, until a click on its Σ again or elsewhere, or Esc. A redraw rebuilds it (its numbers may have
+// changed), or closes it with its Σ gone (render: refreshSum).
+var lastRes = null;                                // render's results, {cur, ref}: the sums' numbers
+var sumOpen = null;                                // the sum shown: {key: its Σ's data-sum, pinned: kept open}
+var SUM_HEAD = 3, SUM_TAIL = 2;
+function sumHtml(key){
+  var p = key.split(':'), row = p[0], j = +p[1], isB = p[2] === 'b', res = isB ? lastRes.ref : lastRes.cur, i = j - 2;
+  var s0 = res.surv[i], f = 1 - res.rates[i], len = M.segLen[i], y0 = M.cps[i];
+  function S(k){ return s0 * Math.pow(f, k); }                         // the chance of being here in the year y0 + k
+  function lin(a, k){ return a[i] + (a[i + 1] - a[i]) * k / len; }    // a potential that year (a: at the checkpoints)
+  // the row's: its terms (term(k), the year y0 + k's) and totals (total(jj), by checkpoint jj), their decimals, their
+  // colours, the totals' unit; the title; what is added up (what: each year's ...)
+  var term, total, dec, tcol = COL_POP, unit = '', title, what, years = false;
+  if(row === 'years'){
+    var gen = outcome === 'generation', lost = yearsComp, per = gen ? LIFE_EXP : 1;
+    years = !gen; dec = PCT_DEC + 2; unit = gen ? '' : tr('y|unit');
+    if(!gen) tcol = lost ? COL_RATE_CUM : COL_SURV_CUM;   // a year's term the probability itself: in its colour (S, or 1 − S)
+    term = function(k){ var s = S(k); return (lost ? 1 - s : s) / per; };
+    total = function(jj){ var c = res.cumYears[jj - 1]; return (lost ? (M.cps[jj - 1] - START) - c : c) / per; };
+    title = gen ? (lost ? 'Generations lost by {y}, {s}' : 'Generations lived by {y}, {s}') : (lost ? 'Years lost by {y}, {s}' : 'Years lived by {y}, {s}');
+    what = tr(lost ? 'each year’s chance we’ve died out' : 'each year’s chance we’re still here') + (gen ? ' &divide;&nbsp;75' : '');
+  } else if(row === 'lives'){
+    var loss = livesLoss, ly = livesLy, perL = ly ? 1 : LIFE_EXP;
+    dec = 0;
+    term = function(k){ var s = S(k); return lin(res.popPot, k) * (loss ? 1 - s : s) / perL; };
+    total = function(jj){ var a = (ly ? res.cumLy : res.lives)[jj - 1], pt = (ly ? res.cumLyPot : res.livesPot)[jj - 1]; return loss ? pt - a : a; };
+    title = ly ? (loss ? 'Life-years lost by {y}, {s}' : 'Life-years lived by {y}, {s}') : (loss ? 'Lives lost by {y}, {s}' : 'Lives lived by {y}, {s}');
+    what = tr(loss ? 'each year’s population lost' : 'each year’s expected population') + (ly ? '' : ' &divide;&nbsp;75');
+  } else {                                         // valcum
+    var vl = valcumLoss;
+    dec = VAL_DEC; tcol = COL_VAL;
+    term = function(k){ var s = S(k); return lin(res.valPot, k) * (vl ? 1 - s : s); };
+    total = function(jj){ return vl ? res.cumValPot[jj - 1] - res.cumVal[jj - 1] : res.cumVal[jj - 1]; };
+    title = vl ? 'Value lost by {y}, {s}' : 'Value realised by {y}, {s}';
+    what = tr(vl ? 'each year’s value lost' : 'each year’s expected value');
+  }
+  function line(op, lab, x, col, u){
+    return '<span class="sop">' + op + '</span><span class="slab">' + lab + '</span><span class="snum"' + sty(col) + '>' +
+           lnum(fmtF(x, dec, true)) + (u || '') + '</span>';
+  }
+  var out = j > 2 ? line('', trf('by {y}', {y: fmtYear(y0)}), total(j - 1), COL_CUM, unit) : '';
+  var head = len <= SUM_HEAD + SUM_TAIL + 1 ? len : SUM_HEAD;   // none left out for one alone
+  for(var k = 1; k <= len; k++){
+    if(k === head + 1){
+      out += '<span class="sgap">&hellip; ' + trf('{n} more years', {n: fInt(len - SUM_HEAD - SUM_TAIL)}) + ' &hellip;</span>';
+      k = len - SUM_TAIL + 1;
+    }
+    out += line(out ? '+' : '', fmtYear(y0 + k), term(k), tcol);
+  }
+  var t = total(j);
+  out += line('=', '', t, COL_CUM, unit);
+  if(years){
+    var u = [tr('y|unit'), tr('d|unit'), tr('h|unit'), tr('m|min')];
+    out += '<span class="sop">=</span><span class="sdhms"' + sty(COL_CUM) + '>' +
+           dhmsParts(t).map(function(x, k){ return (k ? x : fmtF(x, 0, true)) + u[k]; }).join(', ') + '</span>';
+  }
+  // what is added up, under the title, wrapped to the sum's width (CSS), so the numbers end at its right edge, by the Σ
+  var note = j > 2 ? trf('The total by {y} (the box on the left), plus {what}', {y: fmtYear(y0), what: what})
+                   : trf('{what}, added up', {what: what.charAt(0).toUpperCase() + what.slice(1)});
+  return '<div class="stitle">' + trf(title, {y: fmtYear(M.cps[j - 1]), s: isB ? 'B' : 'A'}) + '</div>' +
+         '<div class="snote">' + note + '</div><div class="sgrid">' + out + '</div>';
+}
+function sumPop(){
+  var p = document.getElementById('sumpop');
+  if(!p){ p = document.createElement('div'); p.id = 'sumpop'; p.setAttribute('role', 'tooltip'); p.hidden = true; document.body.appendChild(p); }
+  return p;
+}
+function sumBtn(){ return sumOpen && document.querySelector('.sumb[data-sum="' + sumOpen.key + '"]'); }
+// An element's box in the window's px. Inside the boxes' text zoom (.vcell > *: --boxt, over the table's --tzoom)
+// browsers differ in how they report positions (as stackUnit's), so it is mapped by a ruler set beside it, under the
+// same zooms: at the window's corner (position: fixed) and 100 px long. Where the ruler is reported is the corner, and
+// its reported length is 100 px times the zooms over it (each element's own, multiplied up)
+function winRect(el){
+  var ruler = document.createElement('div'), z = 1;
+  ruler.style.cssText = 'position:fixed;left:0;top:0;width:100px;height:0;visibility:hidden;pointer-events:none;';
+  el.parentNode.appendChild(ruler);
+  for(var e = el.parentNode; e && e.nodeType === 1; e = e.parentNode){ var ez = parseFloat(getComputedStyle(e).zoom); if(ez > 0) z *= ez; }
+  var q = ruler.getBoundingClientRect(), r = el.getBoundingClientRect(), s = q.width > 0 ? 100 * z / q.width : 1;
+  ruler.remove();
+  return {left: (r.left - q.left) * s, right: (r.right - q.left) * s, top: (r.top - q.top) * s, bottom: (r.bottom - q.top) * s,
+          height: r.height * s};
+}
+// In the window (position: fixed, CSS), so it never makes the page taller: in the page's flow, one near its foot
+// would bring a scrollbar, the page would shift under the pointer, off the Σ, and a hovered sum close again. Left of
+// its Σ, against it, level with it: over neither the box nor the other scenario's Σ under or over it; without the
+// room there, right of the Σ. Kept inside the window
+function placeSum(){
+  var b = sumBtn(), p = document.getElementById('sumpop'); if(!b || !p || p.hidden) return;
+  var r = winRect(b), w = p.offsetWidth, h = p.offsetHeight;
+  var vw = document.documentElement.clientWidth, vh = document.documentElement.clientHeight;
+  var left = r.left - 3 - w, top = r.top + r.height / 2 - h / 2;
+  if(left < 8) left = r.right + 3;
+  p.style.left = Math.max(8, Math.min(left, vw - w - 8)) + 'px';
+  p.style.top = Math.max(8, Math.min(top, vh - h - 8)) + 'px';
+}
+function showSum(b, pinned){
+  var p = sumPop();
+  clearTimeout(sumHideT);
+  sumOpen = {key: b.getAttribute('data-sum'), pinned: pinned};
+  p.innerHTML = sumHtml(sumOpen.key); p.hidden = false;
+  document.querySelectorAll('.sumb.on').forEach(function(x){ x.classList.remove('on'); });
+  if(pinned) b.classList.add('on');
+  placeSum();
+}
+function hideSum(){
+  clearTimeout(sumHideT);
+  sumOpen = null;
+  var p = document.getElementById('sumpop'); if(p) p.hidden = true;
+  document.querySelectorAll('.sumb.on').forEach(function(x){ x.classList.remove('on'); });
+}
+function refreshSum(){                            // after a redraw: the kept one rebuilt, a hovered one closed
+  var b = sumBtn();
+  if(b && sumOpen.pinned) showSum(b, true); else if(sumOpen) hideSum();
+}
+// A hovered sum stays while the pointer is on its Σ or on the sum itself, and a moment after (SUM_GRACE ms), so the
+// pointer can cross the gap between them. Hovering another Σ shows its sum instead, a kept one's too.
+var sumHideT = null, SUM_GRACE = 300;
+document.addEventListener('mouseover', function(e){
+  if(!e.target.closest) return;
+  if(e.target.closest('#sumpop')){ clearTimeout(sumHideT); return; }
+  var b = e.target.closest('.sumb'); if(!b) return;
+  clearTimeout(sumHideT);
+  if(!sumOpen || sumOpen.key !== b.getAttribute('data-sum')) showSum(b, false);
+});
+document.addEventListener('mouseout', function(e){
+  var from = e.target.closest && e.target.closest('.sumb, #sumpop'); if(!from || !sumOpen || sumOpen.pinned) return;
+  if(e.relatedTarget && from.contains(e.relatedTarget)) return;   // still inside it
+  clearTimeout(sumHideT);
+  sumHideT = setTimeout(function(){ if(sumOpen && !sumOpen.pinned) hideSum(); }, SUM_GRACE);
+});
+document.addEventListener('click', function(e){
+  var b = e.target.closest('.sumb');
+  if(b){ if(sumOpen && sumOpen.pinned && sumOpen.key === b.getAttribute('data-sum')) hideSum(); else showSum(b, true); }
+  else if(sumOpen && sumOpen.pinned && !e.target.closest('#sumpop')) hideSum();
+});
+document.addEventListener('keydown', function(e){ if(e.key === 'Escape' && sumOpen) hideSum(); });
+document.addEventListener('scroll', function(){ if(sumOpen) placeSum(); }, true);   // the table's own sideways scroll too
 
 // ── controls ──
 document.addEventListener('click', function(e){
@@ -2968,15 +3622,20 @@ document.addEventListener('change', function(e){
 });
 // per-row views (the switches in the row titles, seg): each switch's flag
 function viewGet(id){
-  return {rate_comp: rateComp, surv_comp: survComp, years_comp: yearsComp,
-          lives_ly: livesLy, lives_loss: livesLoss}[id];
+  return {rate_comp: rateComp, surv_comp: survComp, years_comp: yearsComp, yrexp_comp: yrexpComp,
+          lives_ly: livesLy, lives_loss: livesLoss, popexp_loss: popexpLoss, valexp_loss: valexpLoss,
+          valcum_loss: valcumLoss}[id];
 }
 function viewSet(id, v){
   if(id === 'rate_comp') rateComp = v;
   else if(id === 'surv_comp') survComp = v;
   else if(id === 'years_comp') yearsComp = v;
+  else if(id === 'yrexp_comp') yrexpComp = v;
   else if(id === 'lives_ly') livesLy = v;
   else if(id === 'lives_loss') livesLoss = v;
+  else if(id === 'popexp_loss') popexpLoss = v;
+  else if(id === 'valexp_loss') valexpLoss = v;
+  else if(id === 'valcum_loss') valcumLoss = v;
 }
 document.addEventListener('click', function(e){  // a click on the view not shown shows it
   var b = e.target.closest('.segb'); if(!b) return;
@@ -3124,9 +3783,10 @@ document.addEventListener('click', function(e){
 // ── table zoom ──
 // CSS zoom on the table (--tzoom on #panel, read by .grid-wrap): the table lays out at that scale, so zooming out
 // fits more years across and shows more rows; the controls above keep their size. No control of its own on the page:
-// the saved settings' (view.zoom), or Ctrl (⌘) + wheel or a pinch over the table, which zooms about the pointer: the
-// point under it stays roughly there (roughly: the columns re-fit at the new width). Measuring code converts screen
-// px to the table's own with gridScale.
+// the saved settings' (view.zoom; a phone's narrow screen at NARROW_ZOOM at most: narrowView), or Ctrl (⌘) + wheel or
+// a pinch over the table (a touchpad's, or two fingers on a touch screen), which zooms about the pointer (the fingers'
+// midpoint): the point under it stays roughly there (roughly: the columns re-fit at the new width). Measuring code
+// converts screen px to the table's own with gridScale.
 var tableZoom = 1, ZOOM_MIN = 0.3, ZOOM_MAX = 1.5;
 var zoomQueued = false;
 function setTableZoom(z, at){                     // at: {x, y}, the pointer (client px) to zoom about
@@ -3153,6 +3813,24 @@ document.addEventListener('wheel', function(e){  // Ctrl / ⌘ + wheel, and a to
   var d = e.deltaY * (e.deltaMode === 1 ? 33 : e.deltaMode === 2 ? 400 : 1);
   setTableZoom(tableZoom * Math.exp(-d * 0.002), {x: e.clientX, y: e.clientY});   // a wheel notch: about 18%
 }, {passive:false});
+// Two fingers on the table (both on it): the zoom as it was times how much further apart they are now than when the
+// second came down. The browser doesn't zoom the page from there (CSS: the table's touch-action), so the listeners
+// needn't hold up its scrolling (passive).
+var pinch = null;                                 // {d: the fingers' first distance apart, z: the zoom then}
+function fingersApart(t){ return Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY); }
+document.addEventListener('touchstart', function(e){
+  var t = e.touches; pinch = null;
+  if(t.length !== 2) return;
+  for(var k = 0; k < 2; k++) if(!(t[k].target.closest && t[k].target.closest('.grid-scroll'))) return;
+  var d = fingersApart(t); if(d > 0) pinch = {d: d, z: tableZoom};
+}, {passive:true});
+document.addEventListener('touchmove', function(e){
+  var t = e.touches; if(!pinch || t.length !== 2) return;
+  setTableZoom(pinch.z * fingersApart(t) / pinch.d, {x: (t[0].clientX + t[1].clientX) / 2, y: (t[0].clientY + t[1].clientY) / 2});
+}, {passive:true});
+function endPinch(e){ if(e.touches.length < 2) pinch = null; }
+document.addEventListener('touchend', endPinch);
+document.addEventListener('touchcancel', endPinch);
 
 // ── names column width ──
 // The grip on the names column's right edge (colGrip(), in every row's label): drag it to set the column's width,
@@ -3189,12 +3867,13 @@ document.addEventListener('pointercancel', endColDrag);
 document.addEventListener('dblclick', function(e){ if(e.target.closest && e.target.closest('.colgrip')) setLabW(null); });
 
 // ── author controls ──
-// The Author controls group: each input sets a CSS variable on the root that the stylesheet reads (the graph and
+// The Author controls group: each input sets a CSS variable on the root that the stylesheet reads (the page's colour, the graph and
 // box outline's colour and width, the lines between variables, the fills of graphs, boxes and the boxes' editable
 // parts), so a change shows at once, with no redraw.
-var AUTHOR_VARS = {acGbg: ['--g-bg', ''], acGcol: ['--g-line-col', ''], acGw: ['--g-line-w', 'px'], acRw: ['--row-line-w', 'px'],
+var AUTHOR_VARS = {acPbg: ['--page-bg', ''], acGbg: ['--g-bg', ''],acGcol: ['--g-line-col', ''], acGw: ['--g-line-w', 'px'], acRw: ['--row-line-w', 'px'],
                    acRcol: ['--row-line-col', ''], acVbg: ['--v-bg', ''], acVebg: ['--v-edit-bg', ''],
                    acArFade: ['--ar-off', 'fade'],   // 'fade': the input's % faded, the variable the opacity it leaves
+                   acAreaOp: ['--area-op', 'pct'],   // 'pct': the input's % the opacity itself (the graphs' fill: a slider)
                    acTfs: ['--title-fs', 'px'], acFfs: ['--formula-fs', 'px'],   // the names column's title and formula sizes
                    acArW: ['--ar-w', 'px'],   // the arrows' width
                    // the variables' colours ('col'): the stylesheet's (Show variables, the odds) and the script's, which
@@ -3211,11 +3890,15 @@ function varColours(){
   COL_RATE_CUM = get('--col-rate-c', COL_DEF.rateC); COL_SURV_CUM = get('--col-surv-c', COL_DEF.survC);
   COL_POP = COL_VAL = get('--col-out', COL_DEF.out); COL_CUM = get('--col-cum', COL_DEF.cum);
 }
+// a slider's value shown beside it (an <output>: its id + "V")
+function sliderShow(el){ if(el.type !== 'range') return; var o = document.getElementById(el.id + 'V'); if(o) o.textContent = el.value; }
 document.addEventListener('input', function(e){
   var v = AUTHOR_VARS[e.target.id]; if(!v) return;
   var x = e.target.value;
   if(v[1] === 'px'){ x = parseFloat(x); if(!(x >= 0)) return; x = x + 'px'; }
   else if(v[1] === 'fade'){ x = parseFloat(x); if(!(x >= 0 && x <= 100)) return; x = String((100 - x) / 100); }   // % faded -> opacity
+  else if(v[1] === 'pct'){ x = parseFloat(x); if(!(x >= 0 && x <= 100)) return; x = String(x / 100); }   // % -> opacity
+  sliderShow(e.target);
   document.documentElement.style.setProperty(v[0], x);
   if(e.target.id === 'acTfs' || e.target.id === 'acFfs') requestAnimationFrame(watchArrows);   // the labels' heights: re-fit (Scale menus, graphs, arrows)
   else if(e.target.id === 'acArW') requestAnimationFrame(drawArrows);   // side-by-side arrows: spaced by their width
@@ -3289,6 +3972,116 @@ function scrollPageBy(dy){
   try { window.parent.scrollBy(0, dy); }
   catch(err){ window.parent.postMessage({appScrollBy: dy}, '*'); }
 }
+// The part of the page's window on the reader's screen (client px, top and bottom): all of it, or in an article's
+// frame (same origin; it fits the page, so most of it may be off screen) the part inside the article's window
+function visibleBand(){
+  var b = {top: 0, bottom: document.documentElement.clientHeight};
+  try {
+    var f = window.frameElement;
+    if(f){ var fr = f.getBoundingClientRect(); b.top = Math.max(0, -fr.top); b.bottom = Math.min(b.bottom, window.parent.innerHeight - fr.top); }
+  } catch(err){}
+  return b;
+}
+
+// ── keypad (touch screens) ──
+// A phone has no keys for the editing above, so a digit selected by a tap (a finger or a pen, not the mouse:
+// lastPointer) brings up a keypad (#keypad): ◀ ▶ step to the digit before or after (on into the next box, as the arrow
+// keys), ▲ ▼ raise or lower it (held: again and again, PAD_REPEAT ms apart after PAD_HOLD), 0–9 type it (typeDigit),
+// ± turns a change line's change the other way (as a tap on its sign; only there), Done ends the selection. Under the
+// box, or over it where the screen has no room under it (in an article's frame: the part of the frame on screen,
+// visibleBand), centred on it and kept inside the page; on the same side while the same box is edited, so it doesn't
+// jump. In the page, not the window (position: absolute), since a frame's window is as tall as the page. A click
+// with the mouse on a digit puts it away again; keys still edit while it shows.
+var lastPointer = 'mouse', padOn = false, padSide = null;   // padSide: {key: the box's, above: over it}
+var PAD_HOLD = 450, PAD_REPEAT = 110, padRep = null;       // padRep: ▲ / ▼ held, {t: the timer, n: steps taken}
+document.addEventListener('pointerdown', function(e){ lastPointer = e.pointerType || 'mouse'; }, true);
+function placePad(){
+  var p = document.getElementById('keypad'); if(!p) return;
+  var cell = selOn && padOn ? cellOf(sel) : null;
+  if(!cell){ p.hidden = true; padSide = null; return; }
+  p.querySelector('[data-kp="sign"]').disabled = !(sel.part === 'delta' && deltaSignEl());
+  p.setAttribute('data-good', cell.getAttribute('data-good') || '');
+  p.hidden = false;
+  var box = cell.closest('.vcell') || cell;       // a setter draws no box of its own (display: contents): its value's
+  var r = winRect(box), w = p.offsetWidth, h = p.offsetHeight, band = visibleBand(), de = document.documentElement;
+  var sx = window.pageXOffset, sy = window.pageYOffset, key = sel.kind + ':' + sel.i;
+  if(!padSide || padSide.key !== key){
+    var under = r.bottom + 6 + h <= Math.min(band.bottom, de.scrollHeight - sy);
+    padSide = {key: key, above: !under && r.top - 6 - h >= band.top};
+  }
+  p.style.left = (Math.max(8, Math.min((r.left + r.right) / 2 - w / 2, de.clientWidth - w - 8)) + sx) + 'px';
+  p.style.top = ((padSide.above ? r.top - 6 - h : r.bottom + 6) + sy) + 'px';
+}
+function padPress(k){
+  if(!selOn || !cellOf(sel)) return;
+  if(k === 'done'){ selOn = false; applyHighlight(); }
+  else if(k === 'left' || k === 'right') moveDigit(k === 'right' ? 1 : -1, true);
+  else if(k === 'up' || k === 'dn') change(k === 'up' ? 1 : -1);
+  else if(k === 'sign') flipDeltaSign();
+  else if(/^[0-9]$/.test(k)) typeDigit(+k);
+}
+document.addEventListener('click', function(e){
+  var b = e.target.closest('#keypad [data-kp]'); if(!b) return;
+  var k = b.getAttribute('data-kp'), held = padRep && padRep.n > 0;
+  padRep = null;
+  if(!held) padPress(k);                          // ▲ / ▼ held: their steps taken already
+});
+document.addEventListener('pointerdown', function(e){
+  var b = e.target.closest && e.target.closest('#keypad [data-kp="up"], #keypad [data-kp="dn"]'); if(!b) return;
+  var k = b.getAttribute('data-kp');
+  padRep = {n: 0, t: setTimeout(function step(){ padPress(k); padRep.n++; padRep.t = setTimeout(step, PAD_REPEAT); }, PAD_HOLD)};
+});
+function padStop(){ if(padRep) clearTimeout(padRep.t); }   // (padRep kept: the click that follows reads it)
+document.addEventListener('pointerup', padStop);
+document.addEventListener('pointercancel', padStop);
+document.addEventListener('scroll', function(){ if(padOn && selOn) placePad(); }, true);   // the table's own sideways scroll
+
+// ── tooltips on a touch screen ──
+// Much is explained in tooltips (title: a variable's name, a graph, the controls), which a touch screen never shows.
+// There a finger held still on one for TIP_HOLD ms (or until the browser's own long press, contextmenu) shows its text
+// in a bubble over it (#tippop; under it at the top of the screen), until the next touch, and the press then clicks
+// nothing (tipHeld: the click it ends with is swallowed). A variable's name or a graph, which a tap does nothing else
+// to, shows it on a tap too.
+var TIP_HOLD = 450, tipPress = null, tipHeld = null;   // tipPress: {x, y, el, tap, t: the timer}
+function hideTip(){ var p = document.getElementById('tippop'); if(p) p.hidden = true; }
+function showTip(el){
+  var txt = el.getAttribute('title'); if(!txt) return false;
+  var p = document.getElementById('tippop');
+  if(!p){ p = document.createElement('div'); p.id = 'tippop'; p.setAttribute('role', 'tooltip'); document.body.appendChild(p); }
+  p.textContent = txt; p.hidden = false;
+  var r = winRect(el), w = p.offsetWidth, h = p.offsetHeight, band = visibleBand();
+  var top = r.top - 8 - h; if(top < band.top + 4) top = r.bottom + 8;
+  p.style.left = Math.max(8, Math.min((r.left + r.right) / 2 - w / 2, document.documentElement.clientWidth - w - 8)) + 'px';
+  p.style.top = top + 'px';
+  return true;
+}
+function tipHold(){
+  var t = tipPress; tipPress = null; if(!t) return;
+  clearTimeout(t.t); if(!pinch && showTip(t.el)) tipHeld = t.el;   // (not two fingers zooming the table, held still)
+}
+function tipDrop(){ if(tipPress){ clearTimeout(tipPress.t); tipPress = null; } }
+document.addEventListener('pointerdown', function(e){
+  hideTip(); tipHeld = null; tipDrop();
+  if(e.pointerType !== 'touch' || !e.target.closest) return;
+  var el = e.target.closest('[title]'); if(!el || !el.getAttribute('title')) return;
+  tipPress = {x: e.clientX, y: e.clientY, el: el, tap: !!el.closest('.gcell, .rlbl') && !e.target.closest('button, a, input, select, label'),
+              t: setTimeout(tipHold, TIP_HOLD)};
+});
+document.addEventListener('pointermove', function(e){
+  if(tipPress && Math.abs(e.clientX - tipPress.x) + Math.abs(e.clientY - tipPress.y) > 10) tipDrop();   // a swipe, not a press
+});
+document.addEventListener('pointerup', function(){
+  var t = tipPress; if(!t) return;
+  tipDrop();
+  if(t.tap && !pinch) showTip(t.el);
+});
+document.addEventListener('pointercancel', tipDrop);
+document.addEventListener('contextmenu', function(e){ if(tipPress){ e.preventDefault(); tipHold(); } else if(tipHeld) e.preventDefault(); });
+document.addEventListener('click', function(e){
+  if(tipHeld && tipHeld.contains(e.target)){ e.preventDefault(); e.stopPropagation(); }
+  tipHeld = null;
+}, true);
+document.addEventListener('scroll', hideTip, true);
 
 // ── saved settings ──
 // xriskb_settings.js (beside the page, loaded from there; the interests site's build inlines it) sets XRISKB_SETTINGS:
@@ -3323,8 +4116,9 @@ function currentSettings(){
     show: show, comparePrevious: mode === 'previous', excludePopulation: popExcluded, excludeValue: valExcluded,
     graphScale: Object.assign({}, graphScale),
     outcome: outcome, lang: LANG,   // lang: read only at start-up (startLang), not by a scene
-    views: {rateComp: rateComp, survComp: survComp, yearsComp: yearsComp,
-            livesLy: livesLy, livesLoss: livesLoss},
+    views: {rateComp: rateComp, survComp: survComp, yearsComp: yearsComp, yrexpComp: yrexpComp,
+            livesLy: livesLy, livesLoss: livesLoss, popexpLoss: popexpLoss, valexpLoss: valexpLoss,
+            valcumLoss: valcumLoss},
     relative: rel
   }};
 }
@@ -3334,7 +4128,9 @@ function applySettings(s){                       // at start-up, before the firs
   Object.keys(AUTHOR_VARS).forEach(function(id){
     var v = AUTHOR_VARS[id], x = a[v[0]]; if(typeof x !== 'string' || !x) return;
     document.documentElement.style.setProperty(v[0], x);
-    var el = document.getElementById(id); if(el) el.value = v[1] === 'px' ? parseFloat(x) : v[1] === 'fade' ? Math.round(100 - parseFloat(x) * 100) : x;
+    var el = document.getElementById(id); if(el) el.value = v[1] === 'px' ? parseFloat(x) : v[1] === 'fade' ? Math.round(100 - parseFloat(x) * 100) :
+                                                            v[1] === 'pct' ? Math.round(parseFloat(x) * 100) : x;
+    if(el) sliderShow(el);
   });
   varColours();                                     // the variables' colours, into the script's
   var gy = a.graphYears === true; document.body.classList.toggle('graph-years', gy);
@@ -3373,9 +4169,21 @@ function viewStart(v){
   var s = v.start;
   return s === Math.round(s) && s >= START_MIN && s <= START_MAX ? s : DEF_START;
 }
+// On a phone's narrow screen (NARROW_MQ, the CSS's own breakpoint) every view, the first one or a scene's (a tour's
+// step), comes with the reader's groups collapsed to their titles and the formulas hidden, so the table comes first
+// and its names column stays narrow, and the table at NARROW_ZOOM at most, so more of it fits across; the reader can
+// open, show or zoom any of them again. A view saved there (currentSettings) is the page as it then is.
+var NARROW_MQ = window.matchMedia ? window.matchMedia('(max-width: 560px)') : null, NARROW_ZOOM = 0.75;
+function narrowView(v){
+  if(!(NARROW_MQ && NARROW_MQ.matches)) return v;
+  var sh = Object.assign({}, v.show || {});
+  ['formulas', 'groupElements', 'groupVariables', 'groupTimeScale', 'groupControls'].forEach(function(k){ sh[k] = false; });
+  return Object.assign({}, v, {show: sh, zoom: Math.min(typeof v.zoom === 'number' ? v.zoom : tableZoom, NARROW_ZOOM)});
+}
 // The view part (currentSettings().view): at start-up (applySettings) and on loading a scene (applyScene). New time
 // points start from their defaults (the caller then sets any values of its own); the history is the caller's.
 function applyView(v){
+  v = narrowView(v);
   var w = v.views || {}, sh = v.show || {};
   var p0 = viewPoints(v), y0 = viewScale(v), s0 = viewStart(v);
   if(!sameArr(p0, tpoints) || !sameArr(y0, slotYears)){   // the defaults at those time points
@@ -3408,8 +4216,9 @@ function applyView(v){
     var x = (v.graphScale || {})[r];
     if(GSCALE_OPTS[r].some(function(o){ return o[0] === x; })) graphScale[r] = x;
   });
-  rateComp = !!w.rateComp; survComp = !!w.survComp; yearsComp = !!w.yearsComp;
+  rateComp = !!w.rateComp; survComp = !!w.survComp; yearsComp = !!w.yearsComp; yrexpComp = !!w.yrexpComp;
   livesLy = !!w.livesLy; livesLoss = !!w.livesLoss;
+  popexpLoss = !!w.popexpLoss; valexpLoss = !!w.valexpLoss; valcumLoss = !!w.valcumLoss;   // (older views: alive, realised)
   relRows = {}; Object.keys(v.relative || {}).forEach(function(r){ if(v.relative[r] === true) relRows[r] = true; });
   if(typeof v.zoom === 'number') setTableZoom(v.zoom);
   if(typeof v.namesWidth === 'number') setLabW(v.namesWidth);
@@ -3517,8 +4326,10 @@ function applyScene(st){
   var cur = fit(d), ref = fit(d.ref), prv = fit(d.prev);
   if(cur){ rates = cur.rates; pops = cur.pops; vals = cur.vals; }
   refStatic = ref || snap(); histPrev = prv || snap(); histLast = snap();
+  // periods whose x-risk a scene saved before 2026-10-22 excluded from the comparison (the x-risk boxes have no such
+  // control now): their B set to A's, as the exclusion showed them
   rateExcluded = {};
-  (d.excluded || []).forEach(function(i){ if(i >= 0 && i < rates.length) rateExcluded[i] = true; });
+  (d.excluded || []).forEach(function(i){ if(i >= 0 && i < rates.length){ refStatic.rates[i] = rates[i]; histPrev.rates[i] = rates[i]; } });
   var s = d.sel;
   if(s && KIND_ROW[s.kind] && PART_ROW[s.part] && isFinite(s.i) && isFinite(s.place)){
     sel = {kind: s.kind, i: Math.max(0, Math.min(s.i, (s.kind === 'pop' || s.kind === 'val' ? pops.length : rates.length) - 1)), place: s.place, part: s.part};
@@ -4015,13 +4826,8 @@ var FI_UI = {
         'kumulatiiviseksi eletyksi ihmiselämäksi. Muutoksia verrataan vertailuskenaarioon. Lue lisää sivustosta ' +
         '(englanniksi): <a href="https://villeseppala.github.io/interests/articles/201.html" target="_blank" ' +
         'rel="noopener">https://villeseppala.github.io/interests/articles/201.html</a>',
-  help: 'Muokkaa mitä tahansa <b>sukupuuton todennäköisyyden</b>, <b>selviytymistodennäköisyyden</b> tai ' +
-        '<b>väestö-</b> tai <b>arvopotentiaalin</b> numeroa &mdash; napsauta sitä ja käytä näppäimiä ' +
-        "<span class='kbd'>&larr;</span><span class='kbd'>&rarr;</span><span class='kbd'>&uarr;</span><span class='kbd'>&darr;</span> " +
-        "tai hiiren rullaa, tai kirjoita <span class='kbd'>0</span>&ndash;<span class='kbd'>9</span> asettaaksesi numeron " +
-        "(tai ota käyttöön <span class='kbd'>&#9650;</span>/<span class='kbd'>&#9660;</span>-painikkeet kohdasta Näytä osat). " +
-        "Muutosrivillä (B&minus;A) <span class='kbd'>+</span> tai <span class='kbd'>&minus;</span> asettaa sen etumerkin. " +
-        'Selviytymisen muutokset jäljitetään aiempiin sukupuuton todennäköisyyksiin.',
+  kp: 'Muokkaa numeroa', kp_left: 'Edellinen numero', kp_right: 'Seuraava numero', kp_up: 'Suurenna numeroa',
+  kp_dn: 'Pienennä numeroa', kp_sign: 'Käännä muutos toisin päin', kp_done: 'Valmis',
   elements: 'Näytä osat', graphs: 'Kuvaajat', arrows: 'Nuolet', spin: '&#9650;- ja &#9660;-painikkeet', formulas: 'Kaavat',
   spin_t: '▲/▼-painikkeet jokaisessa numerossa; ilman niitä napsauta numeroa ja käytä nuolinäppäimiä, hiiren rullaa tai 0–9',
   variables: 'Näytä muuttujat', v_rate: 'Vuotuinen riski/selviytyminen', v_surv: 'Kumulatiivinen riski/selviytyminen',
@@ -4090,7 +4896,7 @@ if(document.body.classList.contains('author')) window.addEventListener('error', 
   var el = document.getElementById('acErr'); if(!el) return;   // the newest on top
   el.textContent = 'Error: ' + e.message + (e.lineno ? ' (line ' + e.lineno + ')' : '') + (el.textContent ? '\n' + el.textContent : '');
 });
-applySettings(window.XRISKB_SETTINGS);
+applySettings(window.XRISKB_SETTINGS || {});    // (without the file: the page's defaults, as a phone's narrow screen has them)
 startLang(((window.XRISKB_SETTINGS || {}).view || {}).lang);   // the language (see "language")
 if(document.body.classList.contains('author')) scenesLoad();
 applyShowToggles();
