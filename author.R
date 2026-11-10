@@ -12,6 +12,9 @@
 # GET /scenes reads them, POST /save-scenes writes them, the previous version kept as scenes.bak.json. A tour (a
 # set of scenes for readers, published with the page: index.html?tour=<name>) is tours/<name>.json instead: the
 # same two with ?set=<name>, its previous version kept in xriskscenes/tours/<name>.bak.json. GET /tours lists them.
+# A tour across the versions (versions.html?vtour=<name>, made at http://127.0.0.1:7789/versions.html) is
+# vtours/<name>.json: POST /save-vtour?set=<name> writes it, its previous version kept in
+# xriskscenes/vtours/<name>.bak.json, and GET /vtours lists them.
 # ────────────────────────────────────────────────────────────────────────────
 
 local({
@@ -22,6 +25,7 @@ local({
   SCENES_DIR <- file.path(dirname(DIR), "xriskscenes")              # sandbox/xriskscenes
   SCENES     <- file.path(SCENES_DIR, "scenes.json")
   TOURS_DIR  <- file.path(DIR, "tours")                               # tours/: published with the page
+  VTOURS_DIR <- file.path(DIR, "vtours")                              # vtours/: published with versions.html
   JSON       <- "application/json; charset=utf-8"
   # the set a request names (?set=<name>): "" for the presentation, NA for anything that isn't a tour's name
   set_of <- function(req) {
@@ -37,6 +41,29 @@ local({
              json = "application/json", svg = "image/svg+xml", png = "image/png")
   reply <- function(status, body, type = "text/plain; charset=utf-8")
     list(status = status, headers = list("Content-Type" = type, "Cache-Control" = "no-store"), body = body)
+  # the request's body to file f, f's previous version to bak
+  save_json <- function(req, f, bak) {
+    body <- req$rook.input$read()
+    txt  <- rawToChar(body); Encoding(txt) <- "UTF-8"
+    if (!isTRUE(jsonlite::validate(txt))) return(reply(400L, "not JSON"))
+    dir.create(dirname(f), showWarnings = FALSE, recursive = TRUE)
+    if (file.exists(f)) {
+      dir.create(dirname(bak), showWarnings = FALSE, recursive = TRUE)
+      file.copy(f, bak, overwrite = TRUE)
+    }
+    writeBin(body, f)
+    message(format(Sys.time(), "%H:%M:%S"), "  saved ", f)
+    reply(200L, "saved")
+  }
+  # the tours in a folder: [{name, title}], by name
+  tours_in <- function(dir) {
+    fs <- sort(list.files(dir, pattern = "^[a-z0-9][a-z0-9-]*\\.json$", full.names = TRUE))
+    tours <- lapply(fs, function(f) {
+      t <- tryCatch(jsonlite::fromJSON(f, simplifyVector = FALSE)$title, error = function(e) NULL)
+      list(name = sub("\\.json$", "", basename(f)), title = if (is.character(t) && length(t) == 1) t else "")
+    })
+    reply(200L, charToRaw(enc2utf8(as.character(jsonlite::toJSON(tours, auto_unbox = TRUE)))), JSON)
+  }
 
   app <- list(call = function(req) {
     path <- utils::URLdecode(req$PATH_INFO)
@@ -53,18 +80,12 @@ local({
     if (path == "/save-scenes") {                  # guarded as /save-settings
       if (req$REQUEST_METHOD != "POST" || is.null(req$HTTP_X_XRISKB_SAVE)) return(reply(405L, "not allowed"))
       s <- set_of(req); if (is.na(s)) return(reply(400L, "not a set name"))
-      body <- req$rook.input$read()
-      txt  <- rawToChar(body); Encoding(txt) <- "UTF-8"
-      if (!isTRUE(jsonlite::validate(txt))) return(reply(400L, "not JSON"))
-      f <- set_file(s); bak <- set_bak(s)
-      dir.create(dirname(f), showWarnings = FALSE, recursive = TRUE)
-      if (file.exists(f)) {
-        dir.create(dirname(bak), showWarnings = FALSE, recursive = TRUE)
-        file.copy(f, bak, overwrite = TRUE)
-      }
-      writeBin(body, f)
-      message(format(Sys.time(), "%H:%M:%S"), "  saved ", f)
-      return(reply(200L, "saved"))
+      return(save_json(req, set_file(s), set_bak(s)))
+    }
+    if (path == "/save-vtour") {                   # guarded as /save-settings
+      if (req$REQUEST_METHOD != "POST" || is.null(req$HTTP_X_XRISKB_SAVE)) return(reply(405L, "not allowed"))
+      s <- set_of(req); if (is.na(s) || s == "") return(reply(400L, "not a tour name"))
+      return(save_json(req, file.path(VTOURS_DIR, paste0(s, ".json")), file.path(SCENES_DIR, "vtours", paste0(s, ".bak.json"))))
     }
     if (req$REQUEST_METHOD != "GET") return(reply(405L, "not allowed"))
     if (path == "/scenes") {                       # none saved yet: an empty list
@@ -72,14 +93,8 @@ local({
       f <- set_file(s)
       return(reply(200L, if (file.exists(f)) readBin(f, "raw", file.info(f)$size) else '{"scenes":[]}', JSON))
     }
-    if (path == "/tours") {                        # [{name, title}], by name
-      fs <- sort(list.files(TOURS_DIR, pattern = "^[a-z0-9][a-z0-9-]*\\.json$", full.names = TRUE))
-      tours <- lapply(fs, function(f) {
-        t <- tryCatch(jsonlite::fromJSON(f, simplifyVector = FALSE)$title, error = function(e) NULL)
-        list(name = sub("\\.json$", "", basename(f)), title = if (is.character(t) && length(t) == 1) t else "")
-      })
-      return(reply(200L, charToRaw(enc2utf8(as.character(jsonlite::toJSON(tours, auto_unbox = TRUE)))), JSON))
-    }
+    if (path == "/tours") return(tours_in(TOURS_DIR))
+    if (path == "/vtours") return(tours_in(VTOURS_DIR))
     if (path == "/") path <- "/index.html"
     if (grepl("(^|/)\\.", path)) return(reply(404L, "not found"))   # nothing hidden (.git, .gitignore)
     f <- normalizePath(file.path(DIR, sub("^/+", "", path)), winslash = "/", mustWork = FALSE)
@@ -93,7 +108,8 @@ local({
   if (is.null(srv)) { port <- httpuv::randomPort(); srv <- httpuv::startServer("127.0.0.1", port, app) }   # 7789 taken
   url <- sprintf("http://127.0.0.1:%d/?author", port)
   message("Author mode: ", url, "\nSave settings writes ", SAVE, "\nScenes are kept in ", SCENES,
-          "\nTours are kept in ", TOURS_DIR, "\nPress Esc to stop.")
+          "\nTours are kept in ", TOURS_DIR, "\nTours of the versions are kept in ", VTOURS_DIR,
+          " (http://127.0.0.1:", port, "/versions.html)\nPress Esc to stop.")
   utils::browseURL(url)
   tryCatch(repeat httpuv::service(100),
            interrupt = function(e) message("Stopped."),

@@ -13,7 +13,33 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title data-tr="title">Extinction risk calculator</title>
+<!-- The site's bare address lands on the tour of the versions (versions.html, vtours/prototypes.json), while showing
+     the versions comes first. Only there: not framed (the articles, versions.html itself), not with a tour or a language
+     in the address, and not on this machine. To land on this page again, delete this one line. (One line on purpose:
+     check_parity.R takes the first line that is just the opening script tag.) -->
+<script>if(location.hostname === 'villeseppala.github.io' && window.parent === window && !location.search && !location.hash) location.replace('versions.html?vtour=prototypes');</script>
+<script>/* light mode before anything is drawn (startTheme decides for good) */ try { if((new URLSearchParams(location.search).get('theme') || localStorage.getItem('xrisk-theme')) === 'light') document.documentElement.classList.add('light'); } catch(e){}</script>
 <style>
+/* ── the page's colours, dark (as it always was) and light (html.light, the switch beside the flags: setTheme) ──
+   Every colour of the stylesheet is one of these; Author controls' colours go over them (--page-bg ..., each mode its
+   own: modeVars). --ov: the overlays' colour, white tints on dark, black on light. --d-*: the variables' colours
+   unless Author controls set them (COL_DEF / COL_DEF_L in the script). */
+:root{--ink:#e8eef4;--link:#8fd6f2;--hot:#ffd27f;--hotDim:#e8b96a;--edge:#2a6a8f;--edge2:#1e4e6c;--field:#0a2438;--pg:#0b3552;
+  --btn:#12405f;--btnHi:#1a4d72;--btnHov:#175981;--btnHov2:#0f3a57;--deep:#06192a;--trBg:#0e3e5e;--dotBg:#0b2a40;
+  --soft:#b7c6d3;--soft2:#cdd9e3;--soft3:#c9d6e1;--muted:#9fb0bf;--faint:#8496a4;--dim:#8a97a3;--dim2:#7d8fa0;--dim3:#6f8595;--dim4:#5f7484;
+  --pgrey:#a9b8c4;--arrow:#a3acb4;--tieC:#7590a4;--fx:#cbb68e;--good:#7fd18f;--bad:#ee4d4d;--armBg:#8a2a2f;--err:#ff8a8a;
+  --disBg:#26323c;--disEdge:#3c4a56;--disInk:#7d8a96;--gline:#ffffff;--vedit:rgba(4,20,34,.55);--ov:255,255,255;
+  --d-rate:#e8836f;--d-surv:#4fb8d6;--d-out:#e46ba6;}
+html.light{color-scheme:light;--ink:#1c2a36;--link:#1f6f9c;--hot:#b86e00;--hotDim:#a06000;--edge:#8fa9bd;--edge2:#b5c6d3;--field:#ffffff;--pg:#f2f5f8;
+  --btn:#dde7ef;--btnHi:#e9f0f5;--btnHov:#cddbe6;--btnHov2:#e3ebf1;--deep:#b3c3cf;--trBg:#e3edf5;--dotBg:#f4f7fa;
+  --soft:#3c4f60;--soft2:#2f4252;--soft3:#2f4252;--muted:#4f6273;--faint:#5d6f7e;--dim:#6e7c88;--dim2:#66788a;--dim3:#7a8b99;--dim4:#7d8e9c;
+  --pgrey:#6b7b88;--arrow:#7b8792;--tieC:#5b7387;--fx:#7a5f2a;--good:#2e8b45;--bad:#c62828;--armBg:#f6d4d6;--err:#c0392b;
+  --disBg:#e4e8eb;--disEdge:#c3cbd1;--disInk:#8a959e;--gline:#8fa3b3;--vedit:rgba(30,60,90,.08);--ov:0,0,0;
+  --d-rate:#c4442e;--d-surv:#1f7fa3;--d-out:#b8327a;}
+/* the switch: two small buttons left of the flags (.langb's look) */
+.themeb{background:none;border:1px solid transparent;border-radius:4px;color:var(--muted);font-size:14px;line-height:1;padding:3px 6px;cursor:pointer;}
+.themeb:hover{border-color:var(--edge);}
+.themeb.on{color:var(--ink);border-color:var(--link);cursor:default;}
 /* ── base: the parts of Shiny's Bootstrap 3 the page relied on, so it looks as it did under Shiny ── */
 *, *::before, *::after{box-sizing:border-box;}
 html{-webkit-text-size-adjust:100%;}
@@ -31,45 +57,59 @@ button,input{font:inherit;color:inherit;margin:0;}
 /* ── the app (as reference/app_xrisk/app.R) ── */
 /* the page's colour (Author controls' "Page background", --page-bg): the body's, and the fills that stand in for it
    over the arrows (the names column, the outcome band, the graphs' growth note) */
-body{background:var(--page-bg, #0b3552);color:#e8eef4;font-family:Arial,Helvetica,sans-serif;margin:0;}
+body{background:var(--grain, none) var(--page-bg, var(--pg));color:var(--ink);font-family:Arial,Helvetica,sans-serif;margin:0;}
+/* the page's grain (Author controls' "Grain": --grain-op, and the tile made from it, --grain: setGrain; none until
+   set): a fine noise over the page's colour, as many light specks as dark, so the colour stays as it is. A background
+   of what it textures, so it moves with it: the page's (above), scrolling with the page; the table's own
+   (.grid-scroll), scrolling sideways with the boxes; the names column's and the outcome band's own, which stay put
+   while the table scrolls under them (they stand in for the page's colour, so they take its grain too; inside the
+   table's zoom, the tile scaled back to the page's size). Whatever has a fill of its own (the value boxes and graphs
+   once their fills are set, the buttons, inputs and popovers) stays smooth on it; the groups' faint fill shows it. */
 .wrap{max-width:1600px;margin:0 auto;padding:18px 5px 70px;}
 h1{font-size:21px;font-weight:700;margin:0 0 4px;}
 /* the language flags (setLang), top right; the one shown outlined, the other faded */
 .langsel{float:right;display:flex;gap:4px;margin:0 0 6px 14px;}
 .langb{line-height:0;padding:3px;background:none;border:1px solid transparent;border-radius:4px;cursor:pointer;opacity:.5;}
 .langb:hover{opacity:.9;}
-.langb.on{opacity:1;border-color:#8fd6f2;cursor:default;}
+.langb.on{opacity:1;border-color:var(--link);cursor:default;}
 .langb svg{display:block;border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,.35);}
-.lead{font-size:13px;color:#b7c6d3;margin:0 0 14px;line-height:1.5;}
-.lead a{color:#8fd6f2;overflow-wrap:anywhere;}   /* the link to the article: the page's link colour, wrapping on a phone */
-.lead a:hover{color:#ffd27f;}
+.lead{font-size:13px;color:var(--soft);margin:0 0 14px;line-height:1.5;}
+.lead a{color:var(--link);overflow-wrap:anywhere;}   /* the link to the article: the page's link colour, wrapping on a phone */
+.lead a:hover{color:var(--hot);}
 .controls{display:flex;gap:10px;align-items:center;margin:12px 0 20px;flex-wrap:wrap;}
 .controls:has(+ .controls){margin-bottom:6px;}          /* two stacked control rows sit close together */
 .controls + .controls{margin-top:0;}
-.controls .btn{background:#12405f;color:#e8eef4;border:1px solid #2a6a8f;border-radius:6px;
+.controls .btn{background:var(--btn);color:var(--ink);border:1px solid var(--edge);border-radius:6px;
   padding:6px 13px;font-size:13px;cursor:pointer;}
-.controls .btn:hover{background:#175981;}
-.controls .btn:disabled{opacity:0.35;cursor:default;background:#12405f;box-shadow:none;}
+.controls .btn:hover{background:var(--btnHov);}
+.controls .btn:disabled{opacity:0.35;cursor:default;background:var(--btn);box-shadow:none;}
 /* "Reset comparison": lit while a click would change the comparison (B differs from A somewhere), grey while
    it wouldn't (B is A already, or "Comparison = previous value" is on) */
-.controls .btn#setref.hot{background:#1f77a8;border-color:#8fd6f2;color:#fff;box-shadow:0 0 0 2px rgba(143,214,242,.25);}
+.controls .btn#setref.hot{background:#1f77a8;border-color:var(--link);color:#fff;box-shadow:0 0 0 2px rgba(143,214,242,.25);}
 .controls .btn#setref.hot:hover{background:#2a8ac0;}
-.controls .btn#setref:disabled{opacity:1;background:#26323c;border-color:#3c4a56;color:#7d8a96;}
+.controls .btn#setref:disabled{opacity:1;background:var(--disBg);border-color:var(--disEdge);color:var(--disInk);}
 /* the control groups (Show elements, Show variables, Time scale, Controls, Comparison): one flow, as many to a line as
    fit, each whole (a group moves to the next line rather than wrap its own contents; it wraps them only when alone
    on a line too narrow for it), each an outline with its title in the border, round its own options */
 .boxrow{display:flex;flex-wrap:wrap;gap:12px;align-items:stretch;margin:12px 0 20px;}
 .boxrow > .controls{margin:0;}
-.controls.ctlbox{border:1px solid #2a6a8f;border-radius:8px;padding:6px 12px 10px;min-width:0;}
+.controls.ctlbox{border:1px solid var(--edge);border-radius:8px;padding:6px 12px 10px;min-width:0;}
+/* the groups' surface (Author controls' "Group fill", --grp-fill; none until set): a faint light fill, a little lighter
+   at the top, and the outline's top edge lighter, so a group reads as a panel lit from above, between the inputs'
+   darker wells and the raised popovers. (The top edge, not a line inside it: the border alone is cut round the title.) */
+.controls.ctlbox{background:linear-gradient(rgba(var(--ov),calc(var(--grp-fill, 0) * 1.6)), rgba(var(--ov),var(--grp-fill, 0)) 60px);
+  border-top-color:color-mix(in srgb, var(--link) calc(var(--grp-fill, 0) * 500%), var(--edge));}
 /* Author controls: labelled inputs in a row, and Save settings. Shown only in author mode (index.html?author:
    body.author, see "saved settings"); the textarea holds the settings when the page can't write the file itself */
 .authbox{margin:12px 0 10px;}
 body:not(.author) .authbox{display:none;}
+.aclight{flex-basis:100%;display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;padding-top:8px;border-top:1px solid var(--edge);}
+.aclh{flex-basis:100%;font-size:12.5px;font-weight:700;color:var(--muted);}
 .acsave{flex-basis:100%;display:flex;flex-wrap:wrap;align-items:center;gap:10px;}
-#acErr{flex-basis:100%;color:#ff8a8a;font:12px/1.4 Consolas,monospace;white-space:pre-wrap;}   /* script errors, author mode */
+#acErr{flex-basis:100%;color:var(--err);font:12px/1.4 Consolas,monospace;white-space:pre-wrap;}   /* script errors, author mode */
 #acErr:empty{display:none;}
-.acsave textarea{flex-basis:100%;height:150px;font:11.5px/1.4 Consolas,monospace;color:#e8eef4;background:#0a2438;
-  border:1px solid #2a6a8f;border-radius:4px;}
+.acsave textarea{flex-basis:100%;height:150px;font:11.5px/1.4 Consolas,monospace;color:var(--ink);background:var(--field);
+  border:1px solid var(--edge);border-radius:4px;}
 .acsave:not(.showtext) textarea{display:none;}
 /* Scenes (author mode): the scene menu with ◀ ▶, its number, Save / Delete and the Notes toggle in a row, the
    notes under them; the title's checkbox collapses the group to a bar (as the comparison box) */
@@ -78,88 +118,93 @@ body:not(.author) .scenebox{display:none;}
 .scenebox:not(.on){padding-top:0;padding-bottom:0;width:fit-content;max-width:100%;}   /* collapsed: as narrow as its title */
 .scenebox:not(.on) > :not(legend){display:none;}
 .scrow{flex-basis:100%;display:flex;flex-wrap:wrap;align-items:center;gap:8px;}
-#scList{min-width:220px;max-width:420px;font:inherit;font-size:13px;color:#e8eef4;background:#0a2438;border:1px solid #2a6a8f;
+#scList{min-width:220px;max-width:420px;font:inherit;font-size:13px;color:var(--ink);background:var(--field);border:1px solid var(--edge);
   border-radius:5px;padding:4px 6px;}
 #scNum{width:64px;}
-.scenebox .btn.armed{background:#8a2a2f;border-color:#d9363e;}   /* asking for the second click (armed) */
-#scNotes{flex-basis:100%;font:13px/1.45 Arial,sans-serif;color:#e8eef4;background:#0a2438;   /* one line, growing with its text (fitName) */
-  border:1px solid #2a6a8f;border-radius:5px;padding:6px 8px;resize:none;overflow:hidden;}
+.scenebox .btn.armed{background:var(--armBg);border-color:#d9363e;}   /* asking for the second click (armed) */
+#scNotes{flex-basis:100%;font:13px/1.45 Arial,sans-serif;color:var(--ink);background:var(--field);   /* one line, growing with its text (fitName) */
+  border:1px solid var(--edge);border-radius:5px;padding:6px 8px;resize:none;overflow:hidden;}
 .scenebox:not(.notes) #scNotes{display:none;}
 /* the set (scSet): a tour's title and its reader link shown while a tour is the set; the new tour's fields while
    "New tour…" is chosen */
 .scenebox:not(.tourset) .tourmeta, .scenebox:not(.newset) .scnew{display:none;}
 .scenebox.newset .tourmeta{display:none;}
 .tourmeta, .scnew{display:inline-flex;flex-wrap:wrap;align-items:center;gap:8px;}
-#scSet, #scTitle, #scNewName{font:inherit;font-size:13px;color:#e8eef4;background:#0a2438;border:1px solid #2a6a8f;
+#scSet, #scTitle, #scNewName{font:inherit;font-size:13px;color:var(--ink);background:var(--field);border:1px solid var(--edge);
   border-radius:5px;padding:4px 6px;}
 #scTitle{width:260px;}
 #scNewName{width:120px;}
-#scLink{font-size:12.5px;color:#8fd6f2;text-decoration:none;}
-#scLink:hover{color:#ffd27f;}
+#scLink{font-size:12.5px;color:var(--link);text-decoration:none;}
+#scLink:hover{color:var(--hot);}
 /* The tour bar (?tour=<name>, see "tours"): over the table, the tour's title and the steps' buttons on a line, the
    step's text (its scene's notes) under them */
-#tourbar{margin:4px 0 14px;padding:10px 14px 12px;border:1px solid #2f86b8;border-radius:8px;background:#0e3e5e;
+#tourbar{margin:4px 0 14px;padding:10px 14px 12px;border:1px solid #2f86b8;border-radius:8px;background:var(--trBg);
   box-shadow:0 1px 4px rgba(0,0,0,.3);}
 #tourbar[hidden]{display:none;}
 .trhead{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;}
-.trtitle{font-size:var(--title-fs, 15px);font-weight:700;color:#e8eef4;margin-right:auto;}
+.trtitle{font-size:var(--title-fs, 15px);font-weight:700;color:var(--ink);margin-right:auto;}
 .trnav{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0;}
-.trpos{font-size:13px;color:#9fb0bf;min-width:6.5em;text-align:center;}
-.trnav .btn.trnext{background:#1f77a8;border-color:#8fd6f2;color:#fff;}
+.trpos{font-size:13px;color:var(--muted);min-width:6.5em;text-align:center;}
+.trnav .btn.trnext{background:#1f77a8;border-color:var(--link);color:#fff;}
 .trnav .btn.trnext:hover{background:#2a8ac0;}
-.trtext{margin-top:8px;font-size:15px;line-height:1.5;color:#e8eef4;max-width:80ch;}
+.trtext{margin-top:8px;font-size:15px;line-height:1.5;color:var(--ink);max-width:80ch;}
 .trtext p{margin:0 0 .6em;}
 .trtext p:last-child{margin-bottom:0;}
-.trwho{display:block;font-size:12.5px;font-weight:400;color:#ffd27f;margin-top:2px;}   /* who made it: a reader (#tour=), or a preview */
+.trwho{display:block;font-size:12.5px;font-weight:400;color:var(--hot);margin-top:2px;}   /* who made it: a reader (#tour=), or a preview */
 /* Make a tour (Controls: Make a tour; see "reader tours"): the reader's own tour, over the table, a column of rows */
 #tourmaker{margin:4px 0 12px;flex-direction:column;align-items:stretch;gap:8px;}
 #tourmaker[hidden]{display:none;}
-#tourmaker .btn.armed, #tourbar .btn.armed{background:#8a2a2f;border-color:#d9363e;}   /* asking for the second click (armed) */
+#tourmaker .btn.armed, #tourbar .btn.armed{background:var(--armBg);border-color:#d9363e;}   /* asking for the second click (armed) */
 .tmrow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;}
-#tmTitle, #tmList, #tmText, #tmUrl{font:inherit;font-size:13px;color:#e8eef4;background:#0a2438;border:1px solid #2a6a8f;
+#tmTitle, #tmList, #tmText, #tmUrl{font:inherit;font-size:13px;color:var(--ink);background:var(--field);border:1px solid var(--edge);
   border-radius:5px;padding:4px 6px;box-sizing:border-box;}
 #tmTitle{width:420px;max-width:100%;font-size:14px;font-weight:700;}
 #tmList{min-width:220px;max-width:100%;}
 #tmText{width:100%;font:14px/1.45 Arial,sans-serif;padding:6px 8px;resize:none;overflow:hidden;}   /* grows with its text (fitName) */
 #tmText:disabled{opacity:.5;}
-#tmUrl{width:100%;font:12px/1.4 Consolas,monospace;color:#8fd6f2;}
+#tmUrl{width:100%;font:12px/1.4 Consolas,monospace;color:var(--link);}
 .tmhint{margin:0;}
-.acin{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:#cdd9e3;}
-.acin input[type=number]{width:56px;font:inherit;color:#e8eef4;background:#0a2438;border:1px solid #2a6a8f;border-radius:4px;padding:2px 4px;}
-.acin input[type=color]{width:34px;height:22px;padding:0;border:1px solid #2a6a8f;border-radius:4px;background:#0a2438;cursor:pointer;}
-.acin input[type=range]{width:90px;vertical-align:middle;accent-color:#8fd6f2;cursor:pointer;}
+.acin{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--soft2);}
+.acin input[type=number]{width:56px;font:inherit;color:var(--ink);background:var(--field);border:1px solid var(--edge);border-radius:4px;padding:2px 4px;}
+.acin input[type=color]{width:34px;height:22px;padding:0;border:1px solid var(--edge);border-radius:4px;background:var(--field);cursor:pointer;}
+.acin input[type=range]{width:90px;vertical-align:middle;accent-color:var(--link);cursor:pointer;}
 .acin output{display:inline-block;min-width:2ch;text-align:right;font-variant-numeric:tabular-nums;}   /* a slider's value (its id + "V") */
-.ctlbox > legend{padding:0 6px;margin:0;font-size:12.5px;font-weight:700;color:#9fb0bf;letter-spacing:.02em;}
+.ctlbox > legend{padding:0 6px;margin:0;font-size:12.5px;font-weight:700;color:var(--muted);letter-spacing:.02em;}
 /* Show variables / Show elements: toggle buttons, raised while off, pressed in (darker, sunk, text in the row's
    colour, or light for an element) while on */
 #vars, .vbtns{display:flex;flex-wrap:wrap;gap:6px;}
 .vbtn{position:relative;display:inline-flex;cursor:pointer;user-select:none;}
 .vbtn input{position:absolute;opacity:0;width:1px;height:1px;margin:0;pointer-events:none;}   /* still focusable: Space toggles */
-.vbtn span{display:inline-block;padding:5px 10px;font-size:12.5px;line-height:1.2;white-space:nowrap;color:#9fb0bf;
-  border:1px solid #2a6a8f;border-radius:6px;background:linear-gradient(#1a4d72,#12405f);
-  box-shadow:0 2px 0 #06192a, inset 0 1px 0 rgba(255,255,255,.10);transition:transform .06s, box-shadow .06s;}
-.vbtn:hover span{color:#e8eef4;}
-.vbtn input:checked + span{background:#0a2438;border-color:#1f77a8;transform:translateY(2px);
+.vbtn span{display:inline-block;padding:5px 10px;font-size:12.5px;line-height:1.2;white-space:nowrap;color:var(--muted);
+  border:1px solid var(--edge);border-radius:6px;background:linear-gradient(var(--btnHi),var(--btn));
+  box-shadow:0 2px 0 var(--deep), inset 0 1px 0 rgba(var(--ov),.10);transition:transform .06s, box-shadow .06s;}
+.vbtn:hover span{color:var(--ink);}
+.vbtn input:checked + span{background:var(--field);border-color:#1f77a8;transform:translateY(2px);
   box-shadow:inset 0 2px 5px rgba(0,0,0,.6), inset 0 0 0 1px rgba(0,0,0,.25);}
-.vbtn.c-rate input:checked + span{color:var(--col-rate, #e8836f);}   /* the rows' colours (Author controls): the annual row's button in annual extinction's (COL_RATE) */
-.vbtn.c-surv input:checked + span{color:var(--col-surv-c, #4fb8d6);}   /* the cumulative row's in cumulative survival's (COL_SURV_CUM) */
-.vbtn.c-out  input:checked + span{color:var(--col-out, #e46ba6);}   /* the annual outcome row: pink, as every outcome (COL_POP) */
-.vbtn.c-cum  input:checked + span{color:var(--col-cum, #e46ba6);}   /* the cumulative one: pink too unless set apart (COL_CUM) */
-.vbtn.c-plain input:checked + span{color:#e8eef4;}
+.vbtn.c-rate input:checked + span{color:var(--col-rate, var(--d-rate));}   /* the rows' colours (Author controls): the annual row's button in annual extinction's (COL_RATE) */
+.vbtn.c-surv input:checked + span{color:var(--col-surv-c, var(--d-surv));}   /* the cumulative row's in cumulative survival's (COL_SURV_CUM) */
+.vbtn.c-out  input:checked + span{color:var(--col-out, var(--d-out));}   /* the annual outcome row: pink, as every outcome (COL_POP) */
+.vbtn.c-cum  input:checked + span{color:var(--col-cum, var(--d-out));}   /* the cumulative one: pink too unless set apart (COL_CUM) */
+.vbtn.c-plain input:checked + span{color:var(--ink);}
 .vbtn input:disabled + span{opacity:.4;cursor:default;}   /* Arrows while graphs are shown */
 .vbtn:has(input:disabled){cursor:default;}
-.vbtn input:focus-visible + span{outline:2px solid #8fd6f2;outline-offset:1px;}
-.varbox .vall{font-size:12px;color:#5f7484;align-self:center;}
-.varbox .vall a{color:#8fd6f2;text-decoration:none;}
-.varbox .vall a:hover{color:#ffd27f;}
+.vbtn input:focus-visible + span{outline:2px solid var(--link);outline-offset:1px;}
+.varbox .vall{font-size:12px;color:var(--dim4);align-self:center;}
+.varbox .vall a{color:var(--link);text-decoration:none;}
+.varbox .vall a:hover{color:var(--hot);}
 /* "Choose outcome" (panelHtml): a band in the table over the outcome rows, apart from its columns: not a grid row but
    a line from the left edge of the names column, its title then the outcomes (four pills, white, as the rows' view
    switches, but bigger), wrapping when narrow. fitColumns skips it (no cells). Over the arrows (z-index), on the
    table's fill, so an arrow down through the band passes under it. (#panel: over the packed rows' rule for cells.) */
 #panel .grow.outsel{display:flex;align-items:center;}
-#panel .grow.outsel > .outch{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;width:auto;position:relative;z-index:3;
-  margin:8px 0;padding:0 8px 0 4px;background:var(--page-bg, #0b3552);font-size:var(--title-fs, 15px);}
-.outlab{color:#e8eef4;font-weight:600;}
+/* It stays at the left as the names do (sticky), once the table has scrolled far enough to show its end (--outover:
+   pinChooser), so scrolling the names out doesn't take its title with them, and a band wider than the screen still
+   scrolls to its last outcome. */
+#panel .grow.outsel > .outch{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;width:auto;position:sticky;
+  left:calc(-1 * var(--outover, 0px));z-index:3;
+  margin:8px 0;padding:0 8px 0 4px;font-size:var(--title-fs, 15px);
+  background:var(--grain, none) var(--page-bg, var(--pg));background-size:calc(200px / var(--tzoom, 1));}   /* the page's grain, its own (see body) */
+.outlab{color:var(--ink);font-weight:600;}
 .outch .seg{white-space:normal;flex-wrap:wrap;}
 .outch .segb{padding:3px 12px;}
 .cmpbox:not(.on) .cmpopt{display:none;}   /* "Show comparison scenario" unticked: the box collapses to its title */
@@ -167,14 +212,14 @@ body:not(.author) .scenebox{display:none;}
 /* collapsed: a flat bar (the title on the outline, no empty inside), as narrow as its title, so more groups fit on a
    line (one before it may then move up beside it) */
 .cmpbox:not(.on){padding-top:0;padding-bottom:0;width:fit-content;max-width:100%;}
-/* the other groups (.grpbox: Author controls, Show elements, Show variables, Time scale, Controls, Make a tour): the
+/* the other groups (.grpbox: Author controls, Show elements, Show variables, Time scale, Controls, Make a tour, Summary): the
    title's checkbox (.grpchk) collapses the group to a flat bar, its title on the outline, as narrow as its title, as
    the comparison's and the scenes'; nothing inside changes */
 .grpbox:not(.on){padding-top:0;padding-bottom:0;width:fit-content;max-width:100%;}
 .grpbox:not(.on) > :not(legend){display:none !important;}
 .ctlbox > legend .lgchk{display:inline-flex;align-items:center;gap:5px;cursor:pointer;}
 .ctlbox > legend .lgchk input{margin:0;cursor:pointer;}
-.khint{font-size:12.5px;color:#9fb0bf;}
+.khint{font-size:12.5px;color:var(--muted);}
 .grid-wrap{margin-top:4px;position:relative;zoom:var(--tzoom,1);}   /* the table zoom (setTableZoom sets --tzoom on #panel) */
 .zprobe{position:absolute;left:0;top:0;width:100px;height:0;visibility:hidden;pointer-events:none;}   /* gridScale's ruler */
 /* each value is a box sized to its content; "Show arrows" adds an SVG overlay (drawArrows) linking
@@ -182,11 +227,11 @@ body:not(.author) .scenebox{display:none;}
    row, which run between box centres, stay level whatever each box's height. */
 .grid-wrap .vcell{position:relative;justify-self:center;align-self:center;margin:7px 3px;padding:6px calc(5px + .5ch);   /* sides: + half a digit each */
   border:0;border-radius:6px;   /* the outline: the graphs' (Author controls), drawn inside; the padding has the 1 px a border had */
-  box-shadow:inset 0 0 0 var(--g-line-w, .5px) var(--g-line-col, #ffffff);
+  box-shadow:inset 0 0 0 var(--g-line-w, .5px) var(--g-line-col, var(--gline));
   background:var(--v-bg, transparent);}   /* the fill: the same for every box, editable or not (Author controls; none until set) */
 /* a box's caption (.vcap, capHtml: "by 2036", "at 2036", "2026 to 2036"): the box's first line, centred, so the box's
    outline and fill take it in. The box's margins are even, as the graphs' and growth notes', so centres stay level. */
-.grid-wrap .vcell > .vcap{margin-bottom:3px;font-size:15px;line-height:1.2;font-weight:400;font-style:normal;color:#b7c6d3;
+.grid-wrap .vcell > .vcap{margin-bottom:3px;font-size:15px;line-height:1.2;font-weight:400;font-style:normal;color:var(--soft);
   white-space:nowrap;pointer-events:none;}
 /* ...and, with the formulas shown, the value's symbol before it ("S": "S by 2036:"), in the formulas' type and colours (the
    boxes re-fit when the formulas are toggled: watchArrows) */
@@ -199,7 +244,7 @@ body.nofx .vcsym{display:none;}
 .grid-wrap .gcell{grid-row:1;justify-self:center;align-self:center;margin:7px 3px;padding:0;position:relative;   /* the boxes' margins, so a graph as tall as a box spans it (stretchGraphs) */
   border:0;border-radius:6px;line-height:0;
   background:var(--g-bg, transparent);   /* the fill: none until set in Author controls */
-  box-shadow:inset 0 0 0 var(--g-line-w, .5px) var(--g-line-col, #ffffff);}   /* the outline (Author controls; default white, half a px: a 0.5 px border would round up to 1 px) */
+  box-shadow:inset 0 0 0 var(--g-line-w, .5px) var(--g-line-col, var(--gline));}   /* the outline (Author controls; default white, half a px: a 0.5 px border would round up to 1 px) */
 /* the plot covers the whole box, its outline (an inset shadow, painted under it) included, and isn't clipped at
    the edges, so a line at the very top or bottom of the scale draws over the outline */
 .gplot{display:block;overflow:visible;}
@@ -209,26 +254,27 @@ body.nofx .vcsym{display:none;}
 /* the area under an annual outcome's curve (o.area; A's, and B's while it is drawn), each on its own, so where they
    overlap the two stack: its opacity the Author controls' "Graph fill" (--area-op), by default 20% */
 .gplot .garea{stroke:none;fill-opacity:var(--area-op, .2);}
+.gplot .garea.ghatch{fill-opacity:1;}   /* hatched (Author controls: "Hatched fill"): stripes in the full colour, the % their share (graphHatch) */
 .gplot .gsoft{opacity:.5;}   /* the x-risk line when it shares the survival line's colour (riskOverlay) */
 .gplot .ga.gsoft{opacity:.3;}
 /* the growth note over the plot, top left: on a patch of the page's colour so a line under it can't blur it */
 .gnote{position:absolute;left:3px;top:3px;z-index:1;padding:0 3px;border-radius:3px;background:rgba(11,53,82,.8);
-  background:color-mix(in srgb, var(--page-bg, #0b3552) 80%, transparent);   /* the same, in the page's colour where supported */
-  font-size:10.5px;line-height:1.2;font-style:italic;color:#8496a4;white-space:nowrap;pointer-events:none;}
+  background:color-mix(in srgb, var(--page-bg, var(--pg)) 80%, transparent);   /* the same, in the page's colour where supported */
+  font-size:10.5px;line-height:1.2;font-style:italic;color:var(--faint);white-space:nowrap;pointer-events:none;}
 /* "Years under graphs" (Author controls: body.graph-years; never the labels' own class, .gyears, on the body: the rule
    hiding them would hide the whole page): each graph's first and last year under its two ends, in the captions' grey;
    the boxes and graphs of the rows with graphs get the room for them under them (both alike, so their middles stay
    level) */
 .gyears{display:none;}
 body.graph-years .gyears{display:flex;justify-content:space-between;position:absolute;left:0;right:0;top:100%;margin-top:3px;
-  font-size:13px;line-height:1.2;color:#b7c6d3;white-space:nowrap;pointer-events:none;}
+  font-size:13px;line-height:1.2;color:var(--soft);white-space:nowrap;pointer-events:none;}
 body.graphs.graph-years .grid-wrap .grow:has(> .gcell) > .vcell, body.graphs.graph-years .grid-wrap .gcell{margin-bottom:26px;}
 /* What the reader can edit gets its own, darker fill (--v-edit-bg, Author controls), inside a box filled like all the
    others: each editable number — the value, the change and B in the x-risk, survival and population potential boxes,
    sign and unit included (.dfill: buildSlots' fill) — and the X of "1 in X" (.oddsx, below); not the lines' labels,
    "1 in" or the Δ|% switch. The fill reaches past the number as the odds' X's does (4 px each side, 2 px over and
    under): the side margins take theirs back, so the numbers stay lined up; the lines grow by the rest. */
-.dfill{display:inline-flex;align-items:flex-end;background:var(--v-edit-bg, rgba(4,20,34,.55));border-radius:3px;padding:2px 4px;margin:0 -4px;}
+.dfill{display:inline-flex;align-items:flex-end;background:var(--v-edit-bg, var(--vedit));border-radius:3px;padding:2px 4px;margin:0 -4px;}
 /* the population potential set in an annual population box (potInBoxes), over the box's own value, as a product
    (potSet, setterSum), in rows of the value's stack, a multiplication down the numbers' column: "0.951218 ×" (A's
    survival probability, or "(1 − 0.048782)" in the extinction view), centred over the value; the setter,
@@ -238,12 +284,12 @@ body.graphs.graph-years .grid-wrap .grow:has(> .gcell) > .vcell, body.graphs.gra
    padding) */
 .grid-wrap .vctr{grid-column:1 / -1;justify-self:stretch;contain:inline-size;white-space:nowrap;text-align:left;}
 .grid-wrap .vctr > span{display:inline-block;}   /* measured */
-.vpotlab{font-size:11px;line-height:1.25;font-style:italic;color:#8496a4;}
+.vpotlab{font-size:11px;line-height:1.25;font-style:italic;color:var(--faint);}
 .vpotlab .vcsym{font-size:13px;line-height:1;margin:0 0 0 .3em;}   /* the formula symbol at the label's end: "pp" */
-.vpotmul{margin:2px 0 3px;line-height:1.25;font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;color:#8496a4;}
+.vpotmul{margin:2px 0 3px;line-height:1.25;font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--faint);}
   /* "0.951218 ×", centred over the value (centreLabels); the numbers' size */
 /* the multiplication's "=", beside the setter's A, in the side column (outside the setter's fill) */
-.vop{font-size:13px;font-weight:700;color:#8496a4;}
+.vop{font-size:13px;font-weight:700;color:var(--faint);}
 /* the setter (the .xedit its editing finds) draws no box of its own: its lines (the label, A, the change, B, and
    beside them "=" and its Δ|% switch) are rows of the value's stack, so its digits stay in the numbers' column and
    what stands beside them in the side column */
@@ -261,8 +307,8 @@ body.graphs.graph-years .grid-wrap .grow:has(> .gcell) > .vcell, body.graphs.gra
 /* (both its column lines given: an absolutely positioned item's line left out, "grid-column: 1"'s end, is the grid's
    padding edge, not the next line, so the fill would reach over the side column too) */
 .grid-wrap .vpotfill{position:absolute;grid-column:1 / 2;top:0;bottom:-3px;left:-4px;right:-4px;z-index:-1;
-  background:var(--v-edit-bg, rgba(4,20,34,.55));border-radius:4px;}
-.grid-wrap .vpot.xedit:not(.sel):hover > .vpotfill{background-image:linear-gradient(rgba(255,255,255,.07),rgba(255,255,255,.07));}
+  background:var(--v-edit-bg, var(--vedit));border-radius:4px;}
+.grid-wrap .vpot.xedit:not(.sel):hover > .vpotfill{background-image:linear-gradient(rgba(var(--ov),.07),rgba(var(--ov),.07));}
 .grid-wrap .vpot.xedit.sel > .vpotfill{outline:2px solid rgba(255,210,127,.55);outline-offset:-2px;}
 /* no side column in use (no comparison): no gap for it either, so the box's lines stay centred */
 .grid-wrap .vstack.vside:has(> .vpot):not(:has(.vx:not(:empty))){column-gap:0;}
@@ -270,9 +316,9 @@ body.graphs.graph-years .grid-wrap .grow:has(> .gcell) > .vcell, body.graphs.gra
 /* captions under the number (vsub) wrap to the number's width instead of widening the box: inline-size containment
    makes them contribute no width of their own, and stretch fills whatever the number sets */
 .grid-wrap .vcell > .vsub{contain:inline-size;align-self:stretch;}
-.grid-wrap .xedit:not(.sel):hover{background-image:linear-gradient(rgba(255,255,255,.07),rgba(255,255,255,.07));}   /* over the box's own fill */
+.grid-wrap .xedit:not(.sel):hover{background-image:linear-gradient(rgba(var(--ov),.07),rgba(var(--ov),.07));}   /* over the box's own fill */
 svg.arrows{position:absolute;left:0;top:0;pointer-events:none;overflow:visible;z-index:2;}
-svg.arrows path.e{fill:none;stroke:#a3acb4;stroke-width:var(--ar-w, 1.3px);opacity:.75;}   /* grey: apart from survival's blue; width: Author controls */
+svg.arrows path.e{fill:none;stroke:var(--arrow);stroke-width:var(--ar-w, 1.3px);opacity:.75;}   /* grey: apart from survival's blue; width: Author controls */
 /* the hovered box's arrows, in and out (markArrows): three times as thick, nearly opaque, and their heads in proportion
    (the -hl markers, sized by the stroke: drawArrows) */
 svg.arrows path.e.hl{stroke-width:calc(3 * var(--ar-w, 1.3px));opacity:.95;}
@@ -283,12 +329,12 @@ svg.arrows path.e.hd.hl.bad{marker-end:url(#ah-bad-hl);}
    added to the boxes, so the two stay level) */
 body.garrows .grid-wrap .vcell{margin-top:19px;}
 body.garrows .grid-wrap .gcell{margin-top:19px;}
-svg.arrows marker path{fill:#a3acb4;opacity:.9;}
+svg.arrows marker path{fill:var(--arrow);opacity:.9;}
 /* arrows leaving a box where a change starts (an input that differs from the baseline): the delta's green / red (arrowTones) */
-svg.arrows path.e.good{stroke:#7fd18f;opacity:.9;}
-svg.arrows path.e.bad{stroke:#ee4d4d;opacity:.9;}
-svg.arrows #ah-good path, svg.arrows #ah-good-hl path{fill:#7fd18f;}
-svg.arrows #ah-bad path, svg.arrows #ah-bad-hl path{fill:#ee4d4d;}
+svg.arrows path.e.good{stroke:var(--good);opacity:.9;}
+svg.arrows path.e.bad{stroke:var(--bad);opacity:.9;}
+svg.arrows #ah-good path, svg.arrows #ah-good-hl path{fill:var(--good);}
+svg.arrows #ah-bad path, svg.arrows #ah-bad-hl path{fill:var(--bad);}
 /* two half-columns per checkpoint (values sit on the years, rates in the gaps between them);
    --ncols1 (the half-columns after the first) is set on .grid-wrap per render from the number of checkpoints */
 /* Cap the column pitch so a short horizon doesn't spread three checkpoints across the whole width.
@@ -311,6 +357,9 @@ svg.arrows #ah-bad path, svg.arrows #ah-bad-hl path{fill:#ee4d4d;}
    the column never narrower */
 body:not(.nofx) .rformula{white-space:nowrap;}
 .grid-scroll{overflow-x:auto;overflow-y:hidden;cursor:grab;}   /* drag to scroll (see "drag to scroll") */
+/* the page's grain under the table its own, scrolling sideways with the boxes ('local': the whole width it scrolls
+   through), over the page's colour so the page's own doesn't show through it (see body) */
+.grid-scroll{background:var(--grain, none) var(--page-bg, var(--pg));background-attachment:local;}
 /* a finger on the table pans the page and the table, but neither double-tap zooms the page (taps there edit) nor does a
    pinch: a pinch zooms the table instead (see "table zoom") */
 .grid-scroll{touch-action:pan-x pan-y;}
@@ -329,7 +378,7 @@ body.dragging, body.dragging *{cursor:grabbing !important;user-select:none !impo
   /* the line between variables (Author controls' width and colour), from the labels' indent (--labind) on, so "Choose
      outcome" stands out past the lines too: a strip of background in the row's bottom padding, where a border was */
   padding-bottom:var(--row-line-w, 2px);
-  background:linear-gradient(var(--row-line-col, rgba(255,255,255,.4)), var(--row-line-col, rgba(255,255,255,.4))) no-repeat;
+  background:linear-gradient(var(--row-line-col, rgba(var(--ov),.4)), var(--row-line-col, rgba(var(--ov),.4))) no-repeat;
   background-position:var(--labind, 0px) 100%;background-size:calc(100% - var(--labind, 0px)) var(--row-line-w, 2px);}
 /* Packed (fitColumns, once the cells are measured; the half-columns above are only the first layout): one track per
    column of cells (--gtpl, their widths), the row exactly as wide as they are (--gsum); each cell one track wide,
@@ -344,9 +393,9 @@ body.dragging, body.dragging *{cursor:grabbing !important;user-select:none !impo
    present's two fixed. The line in two halves on either side of the dot (the dot's row, ::before, ::after), each
    filled while inside the horizon (lin, rin) */
 .tpts{display:grid;grid-template-columns:repeat(7, 64px);}
-.tpt{display:flex;flex-direction:column;align-items:center;gap:3px;color:#9fb0bf;}
+.tpt{display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--muted);}
 .tdrow{position:relative;align-self:stretch;display:flex;justify-content:center;}
-.tdrow::before, .tdrow::after{content:'';position:absolute;top:7px;height:4px;background:#12405f;}
+.tdrow::before, .tdrow::after{content:'';position:absolute;top:7px;height:4px;background:var(--btn);}
 .tdrow::before{left:0;right:50%;}
 .tdrow::after{left:50%;right:0;}
 .tpt:first-child .tdrow::before, .tpt:last-child .tdrow::after{display:none;}
@@ -354,19 +403,19 @@ body.dragging, body.dragging *{cursor:grabbing !important;user-select:none !impo
 .tdotb{position:relative;z-index:1;display:block;margin:0;padding:0;border:0;background:none;line-height:0;cursor:pointer;}
 .tpt.only .tdotb{cursor:default;}                 /* the only point shown stays */
 .tdot{position:relative;z-index:1;display:block;box-sizing:border-box;width:18px;height:18px;border-radius:50%;
-  border:2px solid #2a6a8f;background:#0b2a40;}
-.tpt.on .tdot{background:#8fd6f2;border-color:#8fd6f2;box-shadow:1px 1px 3px rgba(255,255,255,.3);}
-.tpt.tnow .tdot{width:12px;height:12px;margin:3px 0;background:#8fd6f2;border-color:#8fd6f2;}
-.tpt:not(.only) .tdotb:hover .tdot{border-color:#8fd6f2;}
+  border:2px solid var(--edge);background:var(--dotBg);}
+.tpt.on .tdot{background:var(--link);border-color:var(--link);box-shadow:1px 1px 3px rgba(var(--ov),.3);}
+.tpt.tnow .tdot{width:12px;height:12px;margin:3px 0;background:var(--link);border-color:var(--link);}
+.tpt:not(.only) .tdotb:hover .tdot{border-color:var(--link);}
 .tdotb:focus{outline:none;}
 .tdotb:focus-visible .tdot{box-shadow:0 0 0 3px rgba(143,214,242,.35);}
 /* the fields (and the present's fixed year and "now", as tall): the point's numbers, light while it is shown */
 .tin, .tfix{box-sizing:border-box;width:60px;height:20px;font:11px/1.2 Arial,Helvetica,sans-serif;text-align:center;}
-.tin{margin:0;padding:1px 2px;color:#9fb0bf;background:#0a2438;border:1px solid #1e4e6c;border-radius:4px;}
-.tin:hover{border-color:#2a6a8f;}
-.tin:focus{outline:none;border-color:#8fd6f2;color:#e8eef4;}
+.tin{margin:0;padding:1px 2px;color:var(--muted);background:var(--field);border:1px solid var(--edge2);border-radius:4px;}
+.tin:hover{border-color:var(--edge);}
+.tin:focus{outline:none;border-color:var(--link);color:var(--ink);}
 .tfix{display:flex;align-items:center;justify-content:center;white-space:nowrap;}
-.tpt.on .tin, .tpt.tnow .tin, .tpt.tnow .tfix{color:#e8eef4;}
+.tpt.on .tin, .tpt.tnow .tin, .tpt.tnow .tfix{color:var(--ink);}
 /* a phone's narrow screen: the groups' sides closer, the points a little narrower, and the line of them scrolling
    sideways inside its group where it is still too wide (rather than widening the page) */
 @media (max-width:560px){
@@ -377,19 +426,25 @@ body.dragging, body.dragging *{cursor:grabbing !important;user-select:none !impo
 /* .erow marks the rows with editable values (x-risk, survival, population potential); no band of their own now:
    the fill of their editable parts (--v-edit-bg, above) shows what can be edited */
 .rlabel{grid-column:1;grid-row:1;display:flex;align-items:center;gap:5px;font-size:12.5px;line-height:1.35;font-weight:600;
-  align-self:stretch;padding:9px 8px 9px var(--labind, 0px);border-right:1px solid rgba(255,255,255,.10);}
+  align-self:stretch;padding:9px 8px 9px var(--labind, 0px);border-right:1px solid rgba(var(--ov),.10);}
 /* the label: the formula on the left (.rfx) and the title on the right (with the view switches in it), each as
    wide as it needs: the formula takes its width on one line, unless the title would then not fit its longest
-   word or switch (the formula then wraps), and the title the rest. The Scale menu goes under whichever of the two
-   that leaves the label shorter (placeScales). Formulas hidden, the title takes it all. */
+   word or switch (the formula then wraps), and the title the rest. The Scale menu goes under the title, with the
+   switches: the part left in view as the names scroll out. Formulas hidden, the title takes it all. */
 .rlblwrap{flex:1;min-width:0;text-align:right;display:grid;grid-template-columns:auto minmax(min-content,1fr);
   column-gap:10px;align-items:center;}
 body.nofx .rlblwrap{grid-template-columns:minmax(0,1fr);}
 .rtitle{grid-column:-2;min-width:0;}             /* the last column, of two or of one */
 .rlbl{font-size:var(--title-fs, 15px);}   /* the variable's name and its italic second line (Author controls; 15 px: 20% over the column's 12.5) */
-/* the row labels scroll sideways with the values (the table's scrollbar moves the names column too): opaque, and
-   over the arrows. Positioned, so the × and the column grip inside place themselves on it */
-.rlabel{position:relative;z-index:3;background:var(--page-bg, #0b3552);}
+/* the row labels scroll sideways with the values until only their view switches and Scale menus are left in view,
+   then stay there while the values scroll on under them (sticky; see "names column: scrolling out"): --labhide on
+   #panel, how far they go (here at most the column less a strip, NAMES_STRIP's 14 px, however its width changes); the
+   table can always scroll at least that far (min-width: --labroom, its window's width and that), so a table that fits
+   the page can scroll its names out of the way too. Opaque, and over the arrows. Positioned, so the × and the column
+   grip inside place themselves on it */
+.rlabel{position:sticky;left:calc(-1 * max(0px, min(var(--labhide, 0px), var(--labw) - 14px)));z-index:3;
+  background:var(--grain, none) var(--page-bg, var(--pg));background-size:calc(200px / var(--tzoom, 1));}   /* the page's grain, its own (see body) */
+.grid-wrap{min-width:var(--labroom);}   /* none while unset */
 /* the grip on the names column's right edge (one per row, lit together): drag to resize, double-click to reset */
 .colgrip{position:absolute;top:0;bottom:0;right:-4px;width:7px;cursor:col-resize;z-index:4;touch-action:none;}
 .grid-wrap:has(.colgrip:hover) .colgrip, body.colresize .colgrip{background:rgba(143,214,242,.35);}
@@ -401,15 +456,15 @@ body.colresize, body.colresize *{cursor:col-resize !important;user-select:none !
   color:#fff;font:700 19px/1 Arial,sans-serif;display:flex;align-items:center;justify-content:center;cursor:pointer;
   box-shadow:0 1px 2px rgba(0,0,0,.35);}   /* a bigger ×, centred */
 .rclose:hover{background:#b8262e;}
-.rclose:focus-visible{outline:2px solid #8fd6f2;outline-offset:1px;}
+.rclose:focus-visible{outline:2px solid var(--link);outline-offset:1px;}
 .rfx{grid-column:1;min-width:0;text-align:center;}
-body.nofx .rfx{display:none;}          /* "Formulas" off (placeScales moves the Scale menu to the title first) */
+body.nofx .rfx{display:none;}          /* "Formulas" off */
 /* a phone's narrow screen: the names column narrower still, as narrow as its words allow, but no narrower than keeps
    every view switch on one line (fitLabels), and the formula, when shown, over the title instead of beside it. Its
    width its own (--labw-narrow, dragged there), not the one dragged or saved on a wider screen (--labw-user). It
-   scrolls sideways with the values, as on a wide screen, so the boxes keep their symbols ("S by 2036:") with the
-   formulas hidden too: they still say which row they are once the names are out of sight. "Choose outcome" and its
-   choices on one line, scrolling with the rest where wider than the screen */
+   scrolls out down to its switches, as on a wide screen, so the boxes keep their symbols ("S by 2036:")
+   with the formulas hidden too: they still say which row they are once the names are out of sight. "Choose outcome" and its
+   choices on one line, scrolling with the rest where wider than the screen, until its last one is in view */
 @media (max-width:560px){
   .grid-wrap{--labind:6px;--labw:max(var(--labw-narrow, 120px), var(--labw-fit, 0px));}
   #panel .grow.outsel > .outch, #panel .grow.outsel > .outch .seg{flex-wrap:nowrap;white-space:nowrap;}
@@ -420,31 +475,31 @@ body.nofx .rfx{display:none;}          /* "Formulas" off (placeScales moves the 
   .rlabel .xchk{white-space:normal;text-align:left;}
   body.nofx .vcsym{display:inline;}
 }
-.rformula{font-size:var(--formula-fs, 14.4px);color:#cbb68e;padding-left:0;font-weight:400;
+.rformula{font-size:var(--formula-fs, 14.4px);color:var(--fx);padding-left:0;font-weight:400;
   line-height:1.6;font-family:Cambria,Georgia,"Times New Roman",serif;font-style:italic;}
 /* a row's two views in its title (seg): two pills side by side, a small gap between, each view outlined in its
    colour (--c); the view shown on the right, pressed, its word in its colour; the other's word grey (its colour on
    hover). Choose outcome's four the same way. */
 .seg{display:inline-flex;gap:4px;white-space:nowrap;vertical-align:middle;margin:2px 0;}
 .segb{font:inherit;font-size:.9333em;font-weight:600;line-height:1.3;padding:1px 7px;margin:0;border:0;background:transparent;
-  color:#6f8595;box-shadow:inset 0 0 0 1px var(--c);border-radius:5px;cursor:pointer;user-select:none;}
-.segb.on{color:var(--c);background:#12405f;cursor:default;box-shadow:inset 0 0 0 2.5px var(--c);}   /* the view shown: a thicker outline (both keep their colour) */
-.segb:not(.on):hover{color:var(--c);background:#0f3a57;}
-.segb:focus-visible{outline:2px solid #8fd6f2;outline-offset:-2px;}
-/* a row's "Scale" menu (with graphs shown), under its formula or its title (placeScales). "Scale:" is drawn inside
+  color:var(--dim3);box-shadow:inset 0 0 0 1px var(--c);border-radius:5px;cursor:pointer;user-select:none;}
+.segb.on{color:var(--c);background:var(--btn);cursor:default;box-shadow:inset 0 0 0 2.5px var(--c);}   /* the view shown: a thicker outline (both keep their colour) */
+.segb:not(.on):hover{color:var(--c);background:var(--btnHov2);}
+.segb:focus-visible{outline:2px solid var(--link);outline-offset:-2px;}
+/* a row's "Scale" menu (with graphs shown), under its title. "Scale:" is drawn inside
    the closed menu, before the chosen scale (.gsl over the menu's left padding), and the closed menu shows at most
    15 characters with it; the open list shows the options in full, and the menu's tooltip the chosen one. */
-.gscale{display:block;margin-top:6px;font-size:11.5px;font-weight:400;font-style:normal;color:#9fb0bf;}
+.gscale{display:block;margin-top:6px;font-size:11.5px;font-weight:400;font-style:normal;color:var(--muted);}
 .gsbox{position:relative;display:inline-block;}
 .gsl{position:absolute;left:6px;top:50%;transform:translateY(-50%);pointer-events:none;}
 .gscale select{width:calc(15ch + 22px);margin:0;padding:2px 4px 2px calc(3px + 7ch);text-overflow:ellipsis;
-  white-space:nowrap;overflow:hidden;font:inherit;font-size:11.5px;color:#cdd9e3;
-  background:#12405f;border:1px solid #2a6a8f;border-radius:5px;cursor:pointer;}
+  white-space:nowrap;overflow:hidden;font:inherit;font-size:11.5px;color:var(--soft2);
+  background:var(--btn);border:1px solid var(--edge);border-radius:5px;cursor:pointer;}
 /* "Exclude from comparison": the population row's (and the value potential's), under its formula */
-.xchk{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:400;font-style:normal;color:#9fb0bf;
+.xchk{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:400;font-style:normal;color:var(--muted);
   cursor:pointer;user-select:none;white-space:nowrap;line-height:1.3;}
 .xchk input{margin:0;cursor:pointer;}
-.xchk:hover{color:#cdd9e3;}
+.xchk:hover{color:var(--soft2);}
 .xchk.xchk-row{display:flex;justify-content:flex-end;margin-top:7px;}
 .vcell > .xchk{margin-bottom:4px;}
 body.nospin .ar, body.nospin .arsp{display:none;}   /* "▲ and ▼ controls" unticked: digits still select, keys and wheel still edit */
@@ -459,16 +514,16 @@ body.nospin .ar, body.nospin .arsp{display:none;}   /* "▲ and ▼ controls" un
 .ycol{grid-row:1;text-align:center;padding:2px 6px 7px;justify-self:center;}   /* row 1, as the period labels: they overlap by a half-column, so the grid would otherwise stack them */
 .ycol .yr{font-size:26px;font-weight:700;}
 /* the period's length between two years in the header ("← 10 years →"); padded as the years, so both centre alike */
-.ivlcell{grid-row:1;text-align:center;font-size:16.5px;color:#9fb0bf;padding:2px 4px 7px;align-self:center;justify-self:center;white-space:nowrap;}
+.ivlcell{grid-row:1;text-align:center;font-size:16.5px;color:var(--muted);padding:2px 4px 7px;align-self:center;justify-self:center;white-space:nowrap;}
 .vcell{grid-row:1;padding:8px 7px;display:flex;flex-direction:column;align-items:center;text-align:center;min-width:0;}
 .vstack{display:inline-flex;flex-direction:column;align-items:stretch;max-width:100%;}
 .vmain{font-size:13px;line-height:1.2;font-weight:700;word-break:break-word;font-variant-numeric:tabular-nums;text-align:right;}
 /* a value's potential (gcellRo o.pot): a last row in the value's type, in the grey of the word "potential" beside it */
-.vpotn{font-size:13px;line-height:1.2;font-weight:700;font-variant-numeric:tabular-nums;text-align:right;margin-top:3px;color:#8496a4;}
-.vmain .per{font-size:10px;color:#9fb0bf;font-weight:400;}
+.vpotn{font-size:13px;line-height:1.2;font-weight:700;font-variant-numeric:tabular-nums;text-align:right;margin-top:3px;color:var(--faint);}
+.vmain .per{font-size:10px;color:var(--muted);font-weight:400;}
 .vdelta{font-size:13px;margin-top:1px;font-weight:600;font-variant-numeric:tabular-nums;text-align:right;line-height:1.15;}
-.vdelta .d0{color:#8a97a3;}
-.vsub{font-size:11px;color:#8496a4;margin-top:3px;font-style:italic;line-height:1.35;}
+.vdelta .d0{color:var(--dim);}
+.vsub{font-size:11px;color:var(--faint);margin-top:3px;font-style:italic;line-height:1.35;}
 /* baseline value (the comparison scenario: "Show comparison scenario", on by default): its own line, under the
    delta, digits under the value's; the value's colour and weight, a little faded. Editable (arrows, keys, wheel)
    where the value is. The rate box's odds ("1 in …") then move from above the value to beside it, the baseline's
@@ -487,22 +542,22 @@ body.nospin .ar, body.nospin .arsp{display:none;}   /* "▲ and ▼ controls" un
 /* a survival box's working over A's number (survCalc, gcellEdit's o.work): in the numbers' column, ending where the
    digits do (the column widened when it's the wider), grey as the population boxes' "× S =" line, its numbers in
    their rows' colours */
-.vcalc{margin:0 0 4px;line-height:1.25;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;color:#8496a4;}
+.vcalc{margin:0 0 4px;line-height:1.25;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--faint);}
 .vcalc.vbig{font-size:13px;}   /* the numbers' size: the generations' "0.951218 ÷ 75 =" */
 .vstack.vside > .vwork{justify-self:end;white-space:nowrap;}
 .vcalc.vwup{margin-bottom:1px;}   /* its upper line ("0.951218 ×"): close over the next, one working */
 /* "risk" over the odds beside a survival (gcellEdit o.topLab): small, in the odds' colour; beside the value, over A's
    odds and centred on them (.oddw), reaching up into the row over A's line: the working's (beside it), or a row of its
    own, its side cell (.vx-h) the word's height */
-.olab{font-size:11px;line-height:1.1;font-weight:600;color:var(--col-rate, #e8836f);}
-.grow[data-row="surv"] .olab{color:var(--col-rate-c, #e8836f);}
+.olab{font-size:11px;line-height:1.1;font-weight:600;color:var(--col-rate, var(--d-rate));}
+.grow[data-row="surv"] .olab{color:var(--col-rate-c, var(--d-rate));}
 .oddw{position:relative;display:inline-block;}
 .oddw > .olab{position:absolute;left:50%;bottom:100%;line-height:1;transform:translateX(-50%);white-space:nowrap;pointer-events:none;}
 .vx.vx-h{height:12px;}
 /* ...and the odds' column, beside the value, further from the numbers: in a survival box from the working's "=", so
    the word reads as theirs, not as the working's result; in the x-risk row's boxes alike; with the word or without */
 .vstack.vside:has(> .vx-m .odds){column-gap:12px;}
-.vtie{--tie:#7590a4;}
+.vtie{--tie:var(--tieC);}
 /* room for it inside the box, a few px clear of the box's edge: the box's stack of lines moved in (its own, or one
    holding a setter's, the population or value potential in an outcome box) */
 .vcell > .vtie, .vcell > .vstack:has(.vtie){margin-left:8px;}
@@ -556,15 +611,15 @@ body.nospin .ar, body.nospin .arsp{display:none;}   /* "▲ and ▼ controls" un
 .vx.vx-d{margin-top:1px;}   /* level with the delta row, which has the same top margin */
 .vx.vx-b{margin-top:3px;}   /* ...and with the baseline row */
 .vx.vx-p{margin-top:3px;}   /* level with the potential's row */
-.vpotl{font-size:11px;line-height:1.2;font-style:italic;color:#8496a4;text-align:right;}   /* "potential", under it */
+.vpotl{font-size:11px;line-height:1.2;font-style:italic;color:var(--faint);text-align:right;}   /* "potential", under it */
 /* a box's values in years, days, hours and minutes (dhmsBlock: the Years outcome's two rows), centred in the box; a
    line per value, its label then the four parts in columns, each right-aligned so the units line up (a dropped
    part's empty cell adds no width) */
-.vdhms{display:grid;grid-template-columns:repeat(5, auto);margin-top:5px;font-size:12.5px;line-height:1.25;color:#8496a4;
+.vdhms{display:grid;grid-template-columns:repeat(5, auto);margin-top:5px;font-size:12.5px;line-height:1.25;color:var(--faint);
   font-variant-numeric:tabular-nums;white-space:nowrap;}
 .vdhms > span{text-align:right;}
 .vdhms .dpt{padding-left:.3em;}
-.vdhms .dlab{font-size:11px;font-weight:600;color:#9fb0bf;align-self:center;}   /* as the numbers' labels (.vlab) */
+.vdhms .dlab{font-size:11px;font-weight:600;color:var(--muted);align-self:center;}   /* as the numbers' labels (.vlab) */
 .vdhms .dghost{visibility:hidden;}             /* the comma a line's last part leaves out, holding its place */
 .vdhms .druler{height:0;visibility:hidden;}    /* the ruler under the lines (dhmsBlock): its widths, no height */
 /* ...as a box's main readout (the Years outcome's annual row: dhmsBlock 'big'), under its working: the numbers' size,
@@ -574,8 +629,8 @@ body.nospin .ar, body.nospin .arsp{display:none;}   /* "▲ and ▼ controls" un
 /* ...with its operators (dhmsBlock op): a column of their own after the parts; a factor's line (.dspan) across the
    label's and the parts' columns, ending where the parts do */
 .vdhms.ops{grid-template-columns:repeat(6, auto);}
-.vdhms .dop{text-align:left;padding-left:.4em;font-weight:700;color:#8496a4;}
-.vdhms .dspan{grid-column:1 / 6;text-align:right;font-weight:700;color:#8496a4;}
+.vdhms .dop{text-align:left;padding-left:.4em;font-weight:700;color:var(--faint);}
+.vdhms .dspan{grid-column:1 / 6;text-align:right;font-weight:700;color:var(--faint);}
 .vdhms .dspan.dmid{grid-column:1 / -1;text-align:center;}   /* centred over the whole block (mid) */
 /* ...a running total's potential (the Years outcome's cumulative row): a line of its own, grey, a little apart from the
    lines over it (gap), "potential" under it, ending where the parts do, as the numbers' boxes' (.vpotn, .vpotl) */
@@ -585,30 +640,32 @@ body.nospin .ar, body.nospin .arsp{display:none;}   /* "▲ and ▼ controls" un
 .vdhms .dop .dtog{margin-left:.1em;vertical-align:middle;}            /* the Δ | % switch as the change's "operator" */
 /* the Σ before a running total's A and B (sumb): a small button in the line's label, the sum it opens (#sumpop) a
    box over the page, its lines a column addition: operator, year (or "by 2126"), number (the year's share of a
-   year, the totals in years), a note; the years left out a line of their own, the total last, also in y/d/h/m */
-.sumb{box-sizing:border-box;width:15px;font:700 12px/1 Arial,Helvetica,sans-serif;text-align:center;color:#a9b8c4;
-  background:rgba(255,255,255,.06);border:1px solid rgba(159,176,191,.35);border-radius:3px;padding:1px 0;margin-right:4px;
-  cursor:pointer;vertical-align:middle;}
+   year, the totals, all in years), a note; the years left out a line of their own, the total last, also in y/d/h/m.
+   The button in its row's colour (--c, sigma): the Σ, its outline and a faint fill; solid while its sum is open */
+.sumb{box-sizing:border-box;width:15px;font:700 12px/1 Arial,Helvetica,sans-serif;text-align:center;color:var(--c, var(--pgrey));
+  background:rgba(var(--ov),.06);background:color-mix(in srgb, var(--c, var(--pgrey)) 18%, transparent);
+  border:1px solid rgba(159,176,191,.35);border-color:color-mix(in srgb, var(--c, var(--pgrey)) 70%, transparent);
+  border-radius:3px;padding:1px 0;margin-right:4px;cursor:pointer;vertical-align:middle;}
 /* ...in a number box's labels (gcellRo's o.sum): every label of the box a Σ wider, so their colons stay in line; without
    B's line, A's Σ a label of its own, just its width */
 .vstack:has(.sumb) .vlab{width:calc(2.6em + 19px);}
 .vstack:has(.sumb) .vlab.vlsum{width:auto;}
-.sumb:hover, .sumb.on{color:#ffd27f;border-color:rgba(255,210,127,.6);}
+.sumb:hover, .sumb.on{color:var(--page-bg, var(--pg));background:var(--c, var(--hot));border-color:var(--c, var(--hot));}
 #sumpop{position:fixed;z-index:50;max-width:calc(100vw - 16px);padding:8px 10px 9px;border-radius:6px;
-  background:#0a2438;border:1px solid rgba(159,176,191,.45);box-shadow:0 4px 14px rgba(0,0,0,.45);
-  font-size:13px;line-height:1.35;color:#c9d6e1;font-variant-numeric:tabular-nums;pointer-events:auto;}
+  background:var(--field);border:1px solid rgba(159,176,191,.45);box-shadow:0 4px 14px rgba(0,0,0,.45);
+  font-size:13px;line-height:1.35;color:var(--soft3);font-variant-numeric:tabular-nums;pointer-events:auto;}
 /* the title and the note of what is added up wrap to the sum's width (inline-size containment: they add none), so the
    sum sets the box's width and its numbers end at its right edge, by the Σ */
-#sumpop .stitle{contain:inline-size;font-weight:700;color:#e8eef4;margin-bottom:2px;}
-#sumpop .snote{contain:inline-size;font-size:11px;line-height:1.3;font-style:italic;color:#8496a4;margin-bottom:5px;}
+#sumpop .stitle{contain:inline-size;font-weight:700;color:var(--ink);margin-bottom:2px;}
+#sumpop .snote{contain:inline-size;font-size:11px;line-height:1.3;font-style:italic;color:var(--faint);margin-bottom:5px;}
 #sumpop .sgrid{display:grid;grid-template-columns:auto auto auto;column-gap:8px;align-items:baseline;white-space:nowrap;}
-#sumpop .sop{font-weight:700;color:#8496a4;}
-#sumpop .slab{color:#9fb0bf;}
+#sumpop .sop{font-weight:700;color:var(--faint);}
+#sumpop .slab{color:var(--muted);}
 #sumpop .snum{font-weight:700;text-align:right;}
-#sumpop .sgap{grid-column:1 / -1;font-size:11px;font-style:italic;color:#8496a4;text-align:center;padding:1px 0;}
+#sumpop .sgap{grid-column:1 / -1;font-size:11px;font-style:italic;color:var(--faint);text-align:center;padding:1px 0;}
 #sumpop .sdhms{grid-column:2 / -1;font-weight:700;}
 .vlab{flex:none;box-sizing:content-box;width:2.6em;text-align:right;align-self:center;margin-right:auto;padding-right:5px;
-  font-size:11px;font-weight:600;color:#9fb0bf;white-space:nowrap;}
+  font-size:11px;font-weight:600;color:var(--muted);white-space:nowrap;}
 /* the delta as a percentage of A, the baseline: its label is the fraction (B−A over A) */
 .vlab .frac, .dlab .frac{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;font-size:10px;line-height:1.05;}
 .vlab .frac > span:first-child, .dlab .frac > span:first-child{border-bottom:1px solid currentColor;padding:0 1px 1px;}
@@ -626,42 +683,47 @@ body.graphs .grow:not([data-row="rate"]) .vkey.vkey-b{background:repeating-linea
 .scnames{display:none;flex-wrap:wrap;gap:10px 24px;margin:0 0 14px;}
 body.names .scnames{display:flex;}
 /* the note over the table (Controls: Note), as the names' fields: one line, growing with its text (fitName) */
-#note{display:none;width:100%;box-sizing:border-box;margin:0 0 14px;font:inherit;font-size:15px;line-height:1.35;color:#fff;
-  background:#0a2438;border:1px solid #2a6a8f;border-radius:6px;padding:5px 10px;resize:none;overflow:hidden;}
+#note{display:none;width:100%;box-sizing:border-box;margin:0 0 14px;font:inherit;font-size:15px;line-height:1.35;color:var(--ink);
+  background:var(--field);border:1px solid var(--edge);border-radius:6px;padding:5px 10px;resize:none;overflow:hidden;}
 body.note #note{display:block;}
-#note:focus{outline:none;border-color:#8fd6f2;}
-#note::placeholder{color:#6f8595;}
+#note:focus{outline:none;border-color:var(--link);}
+#note::placeholder{color:var(--dim3);}
 /* the two share the page's width; a name too long for its field wraps, and the field grows a line (fitName) */
 .scn{flex:1 1 0;min-width:240px;display:flex;align-items:flex-start;gap:8px;}
-.scl{font-size:15px;font-weight:700;color:#cdd9e3;padding-top:6px;}   /* level with the first line */
-.scn textarea{flex:1;min-width:0;box-sizing:border-box;font:inherit;font-size:15px;line-height:1.35;color:#fff;background:#0a2438;
-  border:1px solid #2a6a8f;border-radius:6px;padding:5px 10px;resize:none;overflow:hidden;}
-.scn textarea:focus{outline:none;border-color:#8fd6f2;}
-.scn textarea::placeholder{color:#6f8595;}   /* the taller fraction: the change centred on it, not at its foot */
-.dch.nrel{color:#8a97a3;}         /* no relative change: the baseline is 0 */
+.scl{font-size:15px;font-weight:700;color:var(--soft2);padding-top:6px;}   /* level with the first line */
+.scn textarea{flex:1;min-width:0;box-sizing:border-box;font:inherit;font-size:15px;line-height:1.35;color:var(--ink);background:var(--field);
+  border:1px solid var(--edge);border-radius:6px;padding:5px 10px;resize:none;overflow:hidden;}
+.scn textarea:focus{outline:none;border-color:var(--link);}
+.scn textarea::placeholder{color:var(--dim3);}   /* the taller fraction: the change centred on it, not at its foot */
+.dch.nrel{color:var(--dim);}         /* no relative change: the baseline is 0 */
 /* delta switch, beside each delta: the difference (Δ; percentage points for percentages) or the change as a
    percentage of the baseline (%). The lit half is the one shown; a click flips every delta in the row. */
-.dtog{display:inline-flex;vertical-align:middle;margin:0;padding:0;border:1px solid #2a6a8f;border-radius:4px;
-  overflow:hidden;background:#0a2438;cursor:pointer;font:inherit;font-size:9.5px;font-weight:600;line-height:1;}
-.dtog span{padding:2px 3px;color:#7d8fa0;}
+.dtog{display:inline-flex;vertical-align:middle;margin:0;padding:0;border:1px solid var(--edge);border-radius:4px;
+  overflow:hidden;background:var(--field);cursor:pointer;font:inherit;font-size:9.5px;font-weight:600;line-height:1;}
+.dtog span{padding:2px 3px;color:var(--dim2);}
 .dtog span.on{background:#1f77a8;color:#fff;}
-.dtog:hover span:not(.on){color:#ffd27f;}
-.controls .checkbox{margin:0;} .controls .checkbox label{color:#cdd9e3;font-size:13px;font-weight:400;cursor:pointer;}
+.dtog:hover span:not(.on){color:var(--hot);}
+/* the change's lock (lockHtml), after the switch: open, grey; locked, gold */
+.dlock{display:inline-flex;align-items:center;vertical-align:middle;margin:0 0 0 4px;padding:1px 2px;border:0;
+  background:none;color:var(--dim4);cursor:pointer;line-height:0;}
+.dlock:hover, .dlock.on{color:var(--hot);}
+.dlock:focus-visible{outline:2px solid var(--link);outline-offset:1px;border-radius:2px;}
+.controls .checkbox{margin:0;} .controls .checkbox label{color:var(--soft2);font-size:13px;font-weight:400;cursor:pointer;}
 .controls .checkbox input{margin-right:5px;}
 .controls .checkbox label:has(input:disabled){opacity:.45;cursor:default;}   /* e.g. Show arrows while graphs are shown */
-.vgrowth{grid-row:1;align-self:center;justify-self:center;text-align:center;font-size:12px;color:#8496a4;   /* level with the boxes' centres */
+.vgrowth{grid-row:1;align-self:center;justify-self:center;text-align:center;font-size:12px;color:var(--faint);   /* level with the boxes' centres */
   font-style:italic;white-space:nowrap;padding:0 3px;pointer-events:none;}
 
-.ratio{color:var(--col-rate, #e8836f);font-size:13px;font-weight:600;font-style:normal;}   /* the odds 1 in X: the annual extinction's colour, */
-.grow[data-row="surv"] .ratio{color:var(--col-rate-c, #e8836f);}   /* ...the cumulative's in its row */
+.ratio{color:var(--col-rate, var(--d-rate));font-size:13px;font-weight:600;font-style:normal;}   /* the odds 1 in X: the annual extinction's colour, */
+.grow[data-row="surv"] .ratio{color:var(--col-rate-c, var(--d-rate));}   /* ...the cumulative's in its row */
 /* the odds' X is click-to-type: a darker field-like patch (same box as the text field that replaces it while
    typing, so nothing shifts), outlined on hover */
 .odds{cursor:text;}
-.oddsx{display:inline-block;background:var(--v-edit-bg, #0a2438);border:1px solid transparent;border-radius:3px;padding:0 3px;line-height:1.2;}
+.oddsx{display:inline-block;background:var(--v-edit-bg, var(--field));border:1px solid transparent;border-radius:3px;padding:0 3px;line-height:1.2;}
 .odds:hover .oddsx{border-color:rgba(143,214,242,.55);}
-.oddsin{font:inherit;color:inherit;background:#0a2438;border:1px solid #8fd6f2;border-radius:3px;padding:0 3px;margin:0;
+.oddsin{font:inherit;color:inherit;background:var(--field);border:1px solid var(--link);border-radius:3px;padding:0 3px;margin:0;
   font-variant-numeric:tabular-nums;outline:none;}
-.rng{font-size:12px;font-style:italic;color:#8496a4;}
+.rng{font-size:12px;font-style:italic;color:var(--faint);}
 .vtop{line-height:1.1;margin-bottom:1px;white-space:nowrap;}
 .vstack + .vtop{margin:3px 0 0;}   /* under the value (this page's cells, editInner) */
 .ital{font-style:italic;font-weight:400;opacity:.85;}
@@ -670,35 +732,39 @@ body.note #note{display:block;}
 .dig,.sep{display:flex;flex-direction:column;align-items:center;line-height:1;}
 .dig{width:1ch;}                 /* digit width fixed; larger arrows overflow it */
 .dch{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;padding:0;}
-.dch.suf{color:#9fb0bf;}
-.dig.lead .dch{color:#8a97a3;}
-.ar{cursor:pointer;font-size:11px;color:#8a97a3;user-select:none;height:13px;line-height:13px;padding:0;}
-.ar:hover{color:#ffd27f;}
+.dch.suf{color:var(--muted);}
+.dig.lead .dch{color:var(--dim);}
+.ar{cursor:pointer;font-size:11px;color:var(--dim);user-select:none;height:13px;line-height:13px;padding:0;}
+.ar:hover{color:var(--hot);}
 .arsp{height:13px;}
 /* a fixed value's box (gcellFixed) has the ▲ row's spacer only above its number: the same room below keeps the
    number at the box's centre, where the arrows meet it */
 body:not(.nospin) .vstack:has(> .arsp:first-child){padding-bottom:13px;}
-.dig.digsel .dch{color:#ffd27f !important;}
-.dig.digsel .ar{color:#e8b96a;}
+.dig.digsel .dch{color:var(--hot) !important;}
+.dig.digsel .ar{color:var(--hotDim);}
 /* ▲ / ▼ in the delta's colours: green the way that makes the value better, red the way that makes it worse (data-good:
    which way is better). The same on all three lines: raising B, or B − A, is the same move. Hover: gold */
-.xedit[data-good="more_good"] .ar.up, .xedit[data-good="more_bad"] .ar.dn{color:#7fd18f;}
-.xedit[data-good="more_bad"] .ar.up, .xedit[data-good="more_good"] .ar.dn{color:#ee4d4d;}
-.xedit[data-good] .ar:hover{color:#ffd27f;}
+.xedit[data-good="more_good"] .ar.up, .xedit[data-good="more_bad"] .ar.dn{color:var(--good);}
+.xedit[data-good="more_bad"] .ar.up, .xedit[data-good="more_good"] .ar.dn{color:var(--bad);}
+.xedit[data-good] .ar:hover{color:var(--hot);}
 .xedit .vdelta .sgn{cursor:pointer;}   /* a click on the change's sign turns the change the other way */
-.xedit .vdelta .sgn:hover{color:#ffd27f !important;}
+.xedit .vdelta .sgn:hover{color:var(--hot) !important;}
 /* the ▲ / ▼ faded, by the Author controls' fade (--ar-off: their opacity; default 60% faded), except on the line being
    edited: the selected box's value, change or B, whichever holds the selected digit (.digsel); one hovered shows in full */
 .xedit .ar{opacity:var(--ar-off, .4);}
 .xedit .digits:has(.digsel) .ar, .xedit .ar:hover{opacity:1;}
 .xedit{cursor:pointer;border-radius:6px;}
-.xedit:not(.sel):hover{background-image:linear-gradient(rgba(255,255,255,.045),rgba(255,255,255,.045));}   /* a tint over the fill, which stays */
+.xedit:not(.sel):hover{background-image:linear-gradient(rgba(var(--ov),.045),rgba(var(--ov),.045));}   /* a tint over the fill, which stays */
 .xedit.sel{outline:2px solid rgba(255,210,127,.55);outline-offset:-2px;}   /* the gold outline only: the fill stays the editable boxes' own */
-.novars{font-size:13px;color:#9fb0bf;font-style:italic;padding:14px 0;}
-.summary{margin:18px 0 0;font-size:13px;color:#cdd9e3;line-height:1.55;
-  border-top:1px solid rgba(255,255,255,.10);padding-top:12px;}
-.summary b{color:#ffd27f;}
-.foot{margin-top:22px;font-size:11.5px;color:#7d8fa0;line-height:1.5;}
+.novars{font-size:13px;color:var(--muted);font-style:italic;padding:14px 0;}
+/* the summary: the last of the groups (.sumbox, in .boxrow), taking the rest of their last line, or a line of its own
+   when less than 340 px is left; the sentence the whole of its width. Collapsed: as narrow as its title, as the others. */
+.sumbox{flex:1 1 340px;}
+.sumbox:not(.on){flex:0 1 auto;}
+#summary{flex:1 1 100%;min-width:0;}
+.summary{font-size:13px;color:var(--soft2);line-height:1.55;}
+.summary b{color:var(--hot);}
+.foot{margin-top:22px;font-size:11.5px;color:var(--dim2);line-height:1.5;}
 .foot.credit{margin-top:6px;}                     /* the credit, a line under the script's footer */
 
 /* ── touch screens: the keypad, the tooltips' bubble, room for a finger ── */
@@ -706,21 +772,21 @@ body:not(.nospin) .vstack:has(> .arsp:first-child){padding-bottom:13px;}
    over the digits 1–5 and 6–0, Done down the right. Its buttons take a held finger as theirs (no pan), so ▲ / ▼ held
    keep stepping */
 #keypad{position:absolute;z-index:40;display:grid;grid-template-columns:repeat(5, minmax(34px, 44px)) minmax(44px, 54px);
-  grid-auto-rows:40px;gap:4px;padding:6px;max-width:calc(100vw - 16px);border-radius:8px;background:#0a2438;
+  grid-auto-rows:40px;gap:4px;padding:6px;max-width:calc(100vw - 16px);border-radius:8px;background:var(--field);
   border:1px solid rgba(159,176,191,.45);box-shadow:0 4px 14px rgba(0,0,0,.45);touch-action:manipulation;}
 #keypad[hidden]{display:none;}
-#keypad button{margin:0;padding:0;min-width:0;font:700 17px/1 Arial,Helvetica,sans-serif;color:#e8eef4;
-  background:linear-gradient(#1a4d72,#12405f);border:1px solid #2a6a8f;border-radius:6px;cursor:pointer;
+#keypad button{margin:0;padding:0;min-width:0;font:700 17px/1 Arial,Helvetica,sans-serif;color:var(--ink);
+  background:linear-gradient(var(--btnHi),var(--btn));border:1px solid var(--edge);border-radius:6px;cursor:pointer;
   touch-action:none;-webkit-user-select:none;user-select:none;}
-#keypad button:active{background:#0a2438;}
+#keypad button:active{background:var(--field);}
 #keypad button:disabled{opacity:.3;cursor:default;}
-#keypad .kpdone{grid-column:6;grid-row:1 / span 3;font-size:13px;background:#1f77a8;border-color:#8fd6f2;color:#fff;}
+#keypad .kpdone{grid-column:6;grid-row:1 / span 3;font-size:13px;background:#1f77a8;border-color:var(--link);color:#fff;}
 /* ▲ / ▼ as on the digits: green the way that makes the value better, red the way that makes it worse (the box's data-good) */
-#keypad[data-good="more_good"] .kpup, #keypad[data-good="more_bad"] .kpdn{color:#7fd18f;}
-#keypad[data-good="more_bad"] .kpup, #keypad[data-good="more_good"] .kpdn{color:#ee4d4d;}
+#keypad[data-good="more_good"] .kpup, #keypad[data-good="more_bad"] .kpdn{color:var(--good);}
+#keypad[data-good="more_bad"] .kpup, #keypad[data-good="more_good"] .kpdn{color:var(--bad);}
 /* a tooltip's text on a touch screen (see "tooltips on a touch screen"), over what it explains */
-#tippop{position:fixed;z-index:60;max-width:min(320px, calc(100vw - 16px));padding:6px 9px;border-radius:6px;background:#0a2438;
-  border:1px solid rgba(159,176,191,.45);box-shadow:0 4px 14px rgba(0,0,0,.45);font-size:13px;line-height:1.4;color:#e8eef4;
+#tippop{position:fixed;z-index:60;max-width:min(320px, calc(100vw - 16px));padding:6px 9px;border-radius:6px;background:var(--field);
+  border:1px solid rgba(159,176,191,.45);box-shadow:0 4px 14px rgba(0,0,0,.45);font-size:13px;line-height:1.4;color:var(--ink);
   white-space:pre-line;pointer-events:none;}
 #tippop[hidden]{display:none;}
 .boxrow, #tourbar, #tourmaker{touch-action:manipulation;}   /* quick taps on the controls: no double-tap zoom */
@@ -735,6 +801,7 @@ body:not(.nospin) .vstack:has(> .arsp:first-child){padding-bottom:13px;}
   .sumb::before{inset:-6px -4px;}
   /* ...or roomier themselves: the Δ|% switch (its outline clips anything past it), the toggle buttons, the flags */
   .dtog span{padding:4px 5px;}
+  .dlock{padding:4px 5px;}
   .vbtn span{padding:7px 11px;}
   .langb{padding:6px;}
   /* no text selection or callout from a finger held on the table: a held name or graph shows its tooltip instead */
@@ -748,6 +815,7 @@ body:not(.nospin) .vstack:has(> .arsp:first-child){padding-bottom:13px;}
   <!-- Language: English or Finnish (setLang; the page's text: data-tr and FI_UI, the script's: tr and FI). Flags drawn
        here, as Windows shows no flag emoji -->
   <div class="langsel" role="group" aria-label="Language / Kieli">
+    <button type="button" class="themeb" data-theme="light" data-tr-title="theme_l" title="Light mode" data-tr-aria="theme_l" aria-label="Light mode">&#9728;</button><button type="button" class="themeb" data-theme="dark" data-tr-title="theme_d" title="Dark mode" data-tr-aria="theme_d" aria-label="Dark mode" style="margin-right:6px">&#9790;</button>
     <button type="button" class="langb" data-lang="en" title="English" aria-label="English"><svg viewBox="0 0 60 30" width="28" height="14" aria-hidden="true">
       <clipPath id="ukc"><path d="M0,0 v30 h60 v-30 z"/></clipPath><clipPath id="ukt"><path d="M30,15 h30 v15 z v15 h-30 z h-30 v-15 z v-15 h30 z"/></clipPath>
       <g clip-path="url(#ukc)"><path d="M0,0 v30 h60 v-30 z" fill="#012169"/><path d="M0,0 L60,30 M60,0 L0,30" stroke="#fff" stroke-width="6"/>
@@ -772,8 +840,11 @@ body:not(.nospin) .vstack:has(> .arsp:first-child){padding-bottom:13px;}
     <label class="acin" title="The annual outcome row (value, population, years, generations) and its button">Annual outcome <input id="acColOut" type="color" value="#e46ba6"></label>
     <label class="acin" title="The cumulative outcome row (value, lives, years, generations) and its button">Cumulative outcome <input id="acColCum" type="color" value="#e46ba6"></label>
     <label class="acin" title="The page's colour, behind everything">Page background <input id="acPbg" type="color" value="#0b3552"></label>
+    <label class="acin" title="A fine grain on the page, moving with it as it scrolls (and with the table as it scrolls sideways), as many light specks as dark: 0 none">Grain <input id="acGrain" type="range" min="0" max="30" step="1" value="0"> <output id="acGrainV">0</output> %</label>
+    <label class="acin" title="The groups' surface: a faint light fill, lighter at the top, and a lighter top edge, so each reads as a panel on the page: 0 none">Group fill <input id="acGrpFill" type="range" min="0" max="15" step="1" value="0"> <output id="acGrpFillV">0</output> %</label>
     <label class="acin">Graph background <input id="acGbg" type="color" value="#0b3552"></label>
-    <label class="acin" title="The fill under the annual outcome's curve (in the cumulative outcome's colour): 0 none, 100 solid">Graph fill <input id="acAreaOp" type="range" min="0" max="100" step="5" value="20"> <output id="acAreaOpV">20</output> %</label>
+    <label class="acin" title="The fill under the annual outcome's curve (in the cumulative outcome's colour): 0 none, 100 solid; hatched, how much of the area the stripes cover">Graph fill <input id="acAreaOp" type="range" min="0" max="100" step="5" value="20"> <output id="acAreaOpV">20</output> %</label>
+    <label class="acin" title="The graph fill as diagonal stripes in the cumulative outcome's full colour, the graph showing between them, instead of a faint tint; the comparison's (B's) stripes go the other way"><input id="acGhatch" type="checkbox" autocomplete="off">Hatched fill</label>
     <!-- the swatches start at what the defaults look like: no fill (the page's colour), and the editable parts' dark
          fill (black-blue at 55%) over the page -->
     <label class="acin" title="The fill of every value box, editable or not">Box background <input id="acVbg" type="color" value="#0b3552"></label>
@@ -789,6 +860,21 @@ body:not(.nospin) .vstack:has(> .arsp:first-child){padding-bottom:13px;}
     <label class="acin" title="The formulas in the names column">Formula font <input id="acFfs" type="number" min="8" max="30" step="0.4" value="14.4"> px</label>
     <label class="acin" title="The numbers in the value boxes; everything else inside a box (not its caption) scales with them">Box text <input id="acBoxt" type="number" min="8" max="26" step="0.5" value="13"> px</label>
     <label class="acin" title="The first and last year of each graph's period, under its two ends"><input id="acGyears" type="checkbox" autocomplete="off">Years under graphs</label>
+    <!-- light mode's colours: each mode keeps its own (modeVars); a change here shows light mode, one above dark -->
+    <div class="aclight"><span class="aclh" title="The colours above are dark mode's; these light mode's (the ☀ / ☾ switch beside the flags). A change shows that mode">Light mode colours</span>
+      <label class="acin">Annual risk <input id="acColRateL" type="color" value="#c4442e"></label>
+      <label class="acin">Annual survival <input id="acColSurvL" type="color" value="#1f7fa3"></label>
+      <label class="acin">Cumulative risk <input id="acColRateCL" type="color" value="#c4442e"></label>
+      <label class="acin">Cumulative survival <input id="acColSurvCL" type="color" value="#1f7fa3"></label>
+      <label class="acin">Annual outcome <input id="acColOutL" type="color" value="#b8327a"></label>
+      <label class="acin">Cumulative outcome <input id="acColCumL" type="color" value="#b8327a"></label>
+      <label class="acin">Page background <input id="acPbgL" type="color" value="#f2f5f8"></label>
+      <label class="acin">Graph background <input id="acGbgL" type="color" value="#f2f5f8"></label>
+      <label class="acin">Box background <input id="acVbgL" type="color" value="#f2f5f8"></label>
+      <label class="acin">Editable parts <input id="acVebgL" type="color" value="#e1e6eb"></label>
+      <label class="acin">Box outline colour <input id="acGcolL" type="color" value="#8fa3b3"></label>
+      <label class="acin">Line colour <input id="acRcolL" type="color" value="#919395"></label>
+    </div>
     <div class="acsave">
       <button id="acSave" type="button" class="btn" title="Save these controls, and the page as it is now as what readers first see, to xriskb_settings.js. Shift-click: pick the file again">Save settings</button>
       <span id="acSaved" class="khint"></span>
@@ -883,6 +969,12 @@ body:not(.nospin) .vstack:has(> .arsp:first-child){padding-bottom:13px;}
     <div class="checkbox cmpopt"><label><input id="showref" type="checkbox" checked autocomplete="off"><span data-tr="showref">Show B</span></label></div>
     <div class="checkbox cmpopt namesopt"><label><input id="shownames" type="checkbox" autocomplete="off"><span data-tr="shownames">Name the scenarios</span></label></div>
   </fieldset>
+  <!-- The summary (summaryHtml, filled on every change): what the table comes to, in a sentence; the last group, in
+       the rest of its line, its title's checkbox collapsing it as the others' (saved as view.show.groupSummary) -->
+  <fieldset class="controls ctlbox grpbox sumbox on">
+    <legend><label class="lgchk"><input id="grpSummary" class="grpchk" type="checkbox" checked autocomplete="off"><span data-tr="summary">Summary</span></label></legend>
+    <div id="summary"></div>
+  </fieldset>
   </div>
   <!-- Make a tour (Controls: Make a tour): the reader's own tour, steps of the page as it was, each with its text; kept
        in this browser, shared as a link that holds all of it (#tour=…). See "reader tours" in the script. -->
@@ -924,7 +1016,6 @@ body:not(.nospin) .vstack:has(> .arsp:first-child){padding-bottom:13px;}
   </div>
   <!-- filled by the script on every change -->
   <div id="panel"></div>
-  <div id="summary"></div>
   <div id="foot"></div>
   <div class="foot credit" data-tr="credit">Site made by Ville Seppälä, with Claude AI</div>
 </div></div>
@@ -967,6 +1058,7 @@ var COL_RATE_CUM = COL_RATE, COL_SURV_CUM = COL_SURV;                     // cum
 var COL_VAL = COL_POP;                            // value: pink, as every outcome (Choose outcome: all four rows pink)
 var COL_CUM = COL_POP;                            // the cumulative outcome row (years, lives, value): pink too unless set apart (Author controls)
 var GOOD = '#7fd18f', BAD = '#ee4d4d', ZERO = '#8a97a3';
+var INK = '#e8eef4', INK_POT = '#a9b8c4', INK_FAINT = '#8496a4';   // the summary's year, the sums' greys (light mode: setTheme)
 var FAINT = 'rgba(138,151,163,.6)';    // padding zeros (see buildSlots): subdued, still plainly zeros; app_xrisk greys them as ZERO
 var FAINT_TRAIL = false;               // the decimals' trailing zeros faint too (buildSlots): this page's, set on in its state
                                        // section, so app_xrisk's markup (the parity check, which loads only this part) stays as it is
@@ -1127,6 +1219,10 @@ var FI = {
   'Difference in percentage points. Click for the change as a percentage of A':
     'Erotus prosenttiyksikköinä. Napsauta nähdäksesi muutoksen prosentteina A:sta',
   'Change as a percentage of A. Click for the difference': 'Muutos prosentteina A:sta. Napsauta nähdäksesi erotuksen',
+  'Lock the change: editing A then moves B with it, and the change stays':
+    'Lukitse muutos: kun A:ta muutetaan, B siirtyy mukana ja muutos pysyy ennallaan',
+  'The change is locked: editing A moves B with it. Click to unlock':
+    'Muutos on lukittu: A:n muuttaminen siirtää myös B:tä. Avaa lukitus napsauttamalla',
   'Change as a percentage of A. Click for the difference in percentage points':
     'Muutos prosentteina A:sta. Napsauta nähdäksesi erotuksen prosenttiyksikköinä',
   // the table's frame
@@ -1446,6 +1542,18 @@ function dtogHtml(row, rel, pct){
            : 'Difference' + (pct ? ' in percentage points' : '') + '. Click for the change as a percentage of A') + '">' +
     '<span' + (rel ? '' : ' class="on"') + '>&Delta;</span><span' + (rel ? ' class="on"' : '') + '>%</span></button>';
 }
+// The change's lock, after its Δ | % switch on the page's own editable cells (gcellEdit's o.lock: locked or not; left
+// out, none): open, an edit of A leaves B where it is and the change follows; locked, B moves with A and the change
+// stays as it is (the difference, or with the switch on %, the percentage of A: editA). key: the value's row and
+// index ("rate:0"), as lockedChg has it.
+function lockHtml(key, on){
+  var t = tr(on ? 'The change is locked: editing A moves B with it. Click to unlock'
+                : 'Lock the change: editing A then moves B with it, and the change stays');
+  return '<button type="button" class="dlock' + (on ? ' on' : '') + '" data-lock="' + key + '" aria-pressed="' + on +
+         '" title="' + t + '" aria-label="' + t + '"><svg viewBox="0 0 10 12" width="9" height="11" aria-hidden="true">' +
+         '<path d="M2.5 5.5V3.5a2.5 2.5 0 0 1 5 0' + (on ? 'v2' : '') + '" fill="none" stroke="currentColor" stroke-width="1.4"/>' +   // open: the shackle's right leg left out
+         '<rect x="1" y="5.5" width="8" height="6" rx="1" fill="currentColor"/></svg></button>';
+}
 // Decimals that give x (>= 0) n digits in all, the integer part's included ("0.0123" is 5). Fewer when its
 // integer part is longer, down to none: an integer part longer than n still shows whole.
 function fitDecimals(x, n){
@@ -1528,7 +1636,8 @@ function editInner(o){
   var val = '<div class="vmain digits"' + sty(o.color) + '>' + vlab(o.base, vkey(false, o.color) + 'A:') +
               buildSlots(o.cur, o.toDisp, o.decimals, o.suffix, {pad: o.pad, fill: !!o.dmode, lit: !!o.dmode}) + '</div>' + side(oddsSide ? odds : '', ' vx-m');
   var chg = !delta ? '' : deltaRow(o, o.pad, o.good, 1e-12, !!o.dmode) +   // ▲/▼ on the page's own cells (app_xrisk's delta has none)
-              side(o.dmode ? dtogHtml(o.row, o.dmode === 'rel', o.suffix === '%') : '', ' vx-d');
+              side(o.dmode ? dtogHtml(o.row, o.dmode === 'rel', o.suffix === '%') +
+                             (o.lock != null ? lockHtml(o.row + ':' + (o.vi - 1), o.lock) : '') : '', ' vx-d');
   var cmp = !o.base ? '' : '<div class="vbase digits"' + sty(o.color) + '>' + vlab(true, vkey(true, o.color) + 'B:') +
               buildSlots(o.ref, o.toDisp, o.decimals, o.suffix, {pad: o.pad, fill: !!o.dmode, lit: !!o.dmode}) + '</div>' + side(oddsSide ? o.topBase : '', ' vx-b');
   // the odds when not beside the value: over it (app_xrisk's), or under it on this page's own cells (o.dmode)
@@ -1608,6 +1717,12 @@ function metricGrow(label, color, cells, cls, row, formula, toggle, tip){
 // With the arrows on too, the arrows go round the graphs (drawArrows).
 var GRAPH_W = 120, GRAPH_H = 116, GRAPH_K = 60;   // box = plot size (px), and samples per period
 var GRAPH_STEP = 101;                             // periods this long or shorter: sampled every year, drawn as steps
+// The area's hatched fill (o.area; Author controls: "Hatched fill", setHatch): diagonal stripes in the full colour, the
+// plot showing between them, instead of one faint tint, so the colour stays the cumulative outcome's own; B's stripes
+// the other way, so where the two areas overlap they cross. HATCH_P px from stripe to stripe on screen (stretchGraphs
+// keeps them so however the plot is stretched); graphHatch the stripes' share of that (the Graph fill's %: as much
+// colour as the tint, gathered into stripes), null for the tint.
+var HATCH_P = 5, graphHatch = null;
 function sameSeries(a, b){
   return a.every(function(p, i){ return p.every(function(v, k){
     var w = b[i][k]; return Math.abs(v - w) <= 1e-12 * Math.max(Math.abs(v), Math.abs(w), 1e-300); }); });
@@ -1619,7 +1734,7 @@ function sameSeries(a, b){
 // ends of the vertical scale; an end left out is the data's own), hiAt(i) (period i's own fixed top, instead of
 // hi), perPeriod (each period on its own scale: its own data's range, or hiAt's), extra(i) (more values period i's
 // scale must hold, or, on one scale, every period's: an overlay drawn on the row's own scale), area (a colour: the
-// area under the curves, A's and B's, filled with it, faint; every annual outcome row's (population, value, years,
+// area under the curves, A's and B's, filled with it, faint or hatched (graphHatch); every annual outcome row's (population, value, years,
 // generations), in the cumulative outcome's colour, as what adds up to it). overlay gets
 // box.yOf, the period's scale, for that.
 function graphCells(row, val, cur, ref, withB, gcol, o){
@@ -1659,9 +1774,16 @@ function graphCells(row, val, cur, ref, withB, gcol, o){
     function line(t, s, color, dashed){
       return '<polyline points="' + points(t, s).join(' ') + '" stroke="' + color + '"' + (dashed ? ' class="ga"' : '') + '/>';
     }
-    function area(t, s, color){                     // o.area: the area under a curve, down to the plot's foot (CSS: faint)
-      return '<polygon class="garea" points="' + left + ',' + bot + ' ' + points(t, s).join(' ') + ' ' + right + ',' + bot +
-             '" fill="' + color + '"/>';
+    function area(t, s, color, k){                  // o.area: the area under a curve, down to the plot's foot (CSS: faint);
+      var fill = color, defs = '', id = 'gh-' + row + '-' + (i + 1) + k, rot = k === 'b' ? -45 : 45;   // k: 'a' / 'b'
+      if(graphHatch != null){                       // hatched: its own pattern, as stretchGraphs scales each plot's
+        defs = '<defs><pattern id="' + id + '" patternUnits="userSpaceOnUse" width="' + HATCH_P + '" height="' + HATCH_P +
+               '" patternTransform="rotate(' + rot + ')" data-rot="' + rot + '"><rect width="' + (HATCH_P * graphHatch).toFixed(2) +
+               '" height="' + HATCH_P + '" fill="' + color + '"/></pattern></defs>';
+        fill = 'url(#' + id + ')';
+      }
+      return defs + '<polygon class="garea' + (graphHatch != null ? ' ghatch' : '') + '" points="' + left + ',' + bot + ' ' +
+             points(t, s).join(' ') + ' ' + right + ',' + bot + '" fill="' + fill + '"/>';
     }
     var box = {left: left, right: right, top: top, bot: bot, yOf: yOf};
     var sa = sA[i], y1 = t.yr[t.yr.length - 1];
@@ -1673,7 +1795,7 @@ function graphCells(row, val, cur, ref, withB, gcol, o){
       // first is the year after the checkpoint it starts from (2027 after 2026), as in the tooltip
       '<div class="gyears"><span>' + fmtYear(t.yr[0] + 1) + '</span><span>' + fmtYear(y1) + '</span></div>' +
       '<svg class="gplot" width="' + GRAPH_W + '" height="' + GRAPH_H + '" viewBox="0 0 ' + GRAPH_W + ' ' + GRAPH_H + '" preserveAspectRatio="none" aria-hidden="true">' +
-        (o.area ? (sB ? area(ref.track[i], sB[i], o.area) : '') + area(t, sa, o.area) : '') +   // B's too: where they overlap, both
+        (o.area ? (sB ? area(ref.track[i], sB[i], o.area, 'b') : '') + area(t, sa, o.area, 'a') : '') +   // B's too: where they overlap, both
         (o.overlay ? o.overlay(i, box) : '') + (sB ? line(ref.track[i], sB[i], o.color, true) : '') + line(t, sa, o.color) +
       '</svg></div>';
   }).join('');
@@ -1832,6 +1954,9 @@ function panelHtml(cur, ref){
   function ycol(j){ return 2 * j; }                       // grid start for year j
   function gcol(i){ return 2 * i + 1; }                   // grid start for gap i (between years i and i+1)
   function dm(r){ return relRows[r] ? 'rel' : 'abs'; }    // the row's delta mode (its switch, deltaRow)
+  // an editable value's change locked or not (its lock: lockHtml, gcellEdit's o.lock; vi as gcellEdit's); none while
+  // the comparison is the previous value, B then A as it was whatever is locked
+  function lk(r, vi){ return mode === 'current' ? !!lockedChg[r + ':' + (vi - 1)] : null; }
   // the row's graphs in its gaps (graphCells), when "Show graphs" is on and compute() sampled the periods
   var gOn = !!(showsGraphs() && cur.track && ref.track);
   function graphs(row, color, label, fmt, val, more){
@@ -1878,7 +2003,7 @@ function panelHtml(cur, ref){
     var ex = popExcluded || j === 1;
     return Object.assign({cur: cur.popPot[j - 1], ref: ref.popPot[j - 1], kind: 'pop', vi: j, toDisp: 1 / 1e6,
       decimals: 0, suffix: 'm', pad: 5, good: 'more_good', color: COL_POP, delta: sd && !ex, base: sr && !ex,
-      dmode: dm('pop'), row: 'pop'}, more);
+      dmode: dm('pop'), row: 'pop', lock: lk('pop', j)}, more);
   }
   // ...written out as the product it is, a multiplication down the numbers' column (setterSum): the survival
   // probability by then, "0.951218 ×", then the setter, "Population if survived pp" over its digits on one editable
@@ -1897,7 +2022,7 @@ function panelHtml(cur, ref){
   function valOpts(j){
     var ex = valExcluded || j === 1;
     return {cur: cur.valPot[j - 1], ref: ref.valPot[j - 1], kind: 'val', vi: j, toDisp: 1, decimals: VAL_DEC, suffix: '',
-      pad: VAL_PAD, good: 'more_good', color: COL_VAL, delta: sd && !ex, base: sr && !ex, dmode: dm('val'), row: 'val'};
+      pad: VAL_PAD, good: 'more_good', color: COL_VAL, delta: sd && !ex, base: sr && !ex, dmode: dm('val'), row: 'val', lock: lk('val', j)};
   }
   function valSet(j, lost){ return setterSum(j, valOpts(j), tr('Value if survived'), csym('pv', COL_VAL), lost); }
   // A's share at checkpoint j, of being here (lived) or gone (lost) by then, as the survival row shows its
@@ -1927,9 +2052,11 @@ function panelHtml(cur, ref){
   }
   // A running total's Σ, before A's or B's line (s: 'a', 'b') in row's box at checkpoint j: a click (a hover) opens
   // the sum the total is (sumHtml: the total by the checkpoint before, plus each year of the period). No title: the
-  // browser's tooltip would cover the sum the hover opens. sigmas: both, for gcellRo's o.sum
+  // browser's tooltip would cover the sum the hover opens. In the running total's colour (--c: the cumulative outcome
+  // row's, all three rows'), so it stands out from the grey labels. sigmas: both, for gcellRo's o.sum
   function sigma(row, j, s){
-    return '<button type="button" class="sumb" data-sum="' + row + ':' + j + ':' + s + '" aria-label="' + tr('How this adds up') + '">&Sigma;</button>';
+    return '<button type="button" class="sumb" data-sum="' + row + ':' + j + ':' + s + '" style="--c:' + COL_CUM + ';" aria-label="' +
+           tr('How this adds up') + '">&Sigma;</button>';
   }
   function sigmas(row, j){ return {a: sigma(row, j, 'a'), b: sigma(row, j, 'b')}; }
   // the product, for either: o the setter's (potOpts / valOpts), label and sym over its digits. A's share (shareOf;
@@ -2004,7 +2131,7 @@ function panelHtml(cur, ref){
         // (no "Exclude from comparison" here: leaving a period's x-risk out of the comparison is editing A alone)
         return gcellEdit({col: gcol(i), cur: cv, ref: rv, kind: rc ? 'rate_c' : 'rate', vi: i, toDisp: 100, decimals: PCT_DEC,
           suffix: '%', good: rc ? 'more_good' : 'more_bad', color: rateCol, delta: sd, base: sr,
-          dmode: dm('rate'), row: 'rate', node: 'rate:' + i, cap: trf('{a} to {b}, per year:', {a: fmtYear(m.segStart[i - 1]), b: fmtYear(m.cps[i])}), sym: sym(rc ? 's' : 'e', 't', rateCol),
+          dmode: dm('rate'), row: 'rate', lock: lk('rate', i), node: 'rate:' + i, cap: trf('{a} to {b}, per year:', {a: fmtYear(m.segStart[i - 1]), b: fmtYear(m.cps[i])}), sym: sym(rc ? 's' : 'e', 't', rateCol),
           top: oddsHtml('cur', cur.rates[i - 1], 'ratio'), oddsSide: cmp, // odds of extinction either way; beside
                                                                           // the value in every box while comparing
           topLab: rc ? tr('risk|odds') : null,          // ...named as a risk beside a survival
@@ -2026,7 +2153,7 @@ function panelHtml(cur, ref){
         if(j === 1) return gcellFixed(ycol(1), sc ? 0 : cur.surv[0], 100, 0, '%', survCol, 1, 'surv:1', by(1), csym(sc ? 'E' : 'S', survCol), true);   // exactly 100% / 0%
         var cv = sc ? 1 - cur.surv[j - 1] : cur.surv[j - 1], rv = sc ? 1 - ref.surv[j - 1] : ref.surv[j - 1];
         return gcellEdit({col: ycol(j), cur: cv, ref: rv, kind: sc ? 'surv_c' : 'surv', vi: j - 1, toDisp: 100, decimals: PCT_DEC,
-          suffix: '%', pad: 2, good: sc ? 'more_bad' : 'more_good', color: survCol, delta: sd, base: sr, dmode: dm('surv'), row: 'surv', node: 'surv:' + j, cap: by(j), sym: csym(sc ? 'E' : 'S', survCol),
+          suffix: '%', pad: 2, good: sc ? 'more_bad' : 'more_good', color: survCol, delta: sd, base: sr, dmode: dm('surv'), row: 'surv', lock: lk('surv', j - 1), node: 'surv:' + j, cap: by(j), sym: csym(sc ? 'E' : 'S', survCol),
           relLess: 1,                                   // its change as a % of A a digit shorter than the value: +1.0042%
           // the odds of cumulative extinction, "1 in X", in either view (as the x-risk row's), placed and typed into as
           // those; named as a risk beside a survival
@@ -2074,19 +2201,20 @@ function panelHtml(cur, ref){
       // year over a generation's 75), centred over the value (a .vctr line: centreLabels), in the numbers' size
       function genCalc(j){ return frameA(j, 2) + '<div class="vcalc vbig vctr"><span>' + shareOf(j, lost) + ' &divide; 75 =</span></div>'; }
       function timeCell(j){
-        var first = j === 1, a = v(cur, j), b = v(ref, j), share = shareOf(j, lost);
-        var lab = sr && !first;                           // labelled while B is shown, as the numbers' lines
+        var a = v(cur, j), b = v(ref, j), share = shareOf(j, lost);
+        var lab = sr;                                     // labelled while B is shown, as the numbers' lines
         var ls = [{span: share, op: '&times;', mid: true, mark: 'dwk'},   // centred over the box
-                  {x: 1, noYears: true, ncol: '#a9b8c4', op: '='},   // a year: its potential, grey
+                  {x: 1, noYears: true, ncol: INK_POT, op: '='},   // a year: its potential, grey
                   {lab: lab ? 'A:' : '', x: a, ncol: col, mark: 'dval'}];
-        if(sd && !first) ls.push(timeChange('yrexp', a, b, lost, lab));
+        if(sd) ls.push(timeChange('yrexp', a, b, lost, lab));
         if(lab) ls.push({lab: 'B:', x: b, ncol: col});
-        return vcellHtml(ycol(j), capHtml(at(j), csym(nm, col)) + dhmsBlock(ls, 'big', lab || sd && !first), 'vcell', nodeAttr('yrexp:' + j));
+        return vcellHtml(ycol(j), capHtml(at(j), csym(nm, col)) + dhmsBlock(ls, 'big', lab || sd), 'vcell', nodeAttr('yrexp:' + j));
       }
+      // no box at the start year (j = 1): a whole year still ahead there, which the box after it and the graph between
+      // them show, and the room it took (its "365d, 5h, 49m") the table's. No arrows to lose: they start at j = 2.
       var cells = J.map(function(j){
+        if(j === 1) return '';
         if(!gen) return timeCell(j);
-        if(j === 1) return ro({col: ycol(1), cur: v(cur, 1), ref: v(cur, 1), toDisp: 1, decimals: dec, suffix: unit,
-                               delta: false, color: col, node: 'yrexp:1', cap: at(1), sym: csym(nm, col), pre: genCalc(1)});
         return ro({col: ycol(j), cur: v(cur, j), ref: v(ref, j), toDisp: 1, decimals: dec, suffix: unit, kind: lost ? 'more_bad' : 'more_good',
           color: col, delta: sd, base: sr, dmode: dm('yrexp'), row: 'yrexp', node: 'yrexp:' + j, cap: at(j), sym: csym(nm, col),
           pre: genCalc(j)});
@@ -2119,19 +2247,20 @@ function panelHtml(cur, ref){
       // it: the difference as a time, or the change as a percentage of A. The sum each total is, a Σ before A's and
       // B's line (sigma)
       function timeCell(j){
-        var first = j === 1, a = v(cur, j), b = v(ref, j), lab = sr && !first;
+        var a = v(cur, j), b = v(ref, j), lab = sr;
         var ls = [];
-        ls.push({lab: (first ? '' : sigma('years', j, 'a')) + (lab ? 'A:' : ''), x: a, ncol: col, mark: 'dval'});
-        if(sd && !first) ls.push(timeChange('years', a, b, lost, lab));
+        ls.push({lab: sigma('years', j, 'a') + (lab ? 'A:' : ''), x: a, ncol: col, mark: 'dval'});
+        if(sd) ls.push(timeChange('years', a, b, lost, lab));
         if(lab) ls.push({lab: sigma('years', j, 'b') + 'B:', x: b, ncol: col});
-        if(!first) ls.push({gap: true}, {x: elapsed[j - 1], ncol: '#8496a4'}, {span: tr('potential'), mark: 'dpotl'});   // the potential, grey
+        ls.push({gap: true}, {x: elapsed[j - 1], ncol: INK_FAINT}, {span: tr('potential'), mark: 'dpotl'});   // the potential, grey
         return vcellHtml(ycol(j), capHtml(by(j), csym(ynm, col)) + dhmsBlock(ls, 'big', false, elapsed[j - 1]), 'vcell',
                          nodeAttr('years:' + j));   // ymax: the years so far, the most a total or a change can be
       }
       var cells = J.map(function(j){
+        // the start year: none yet, just "0y" (in generations "0"), in its colour as the survival row's 100% (a value of
+        // 0 is a value), not a time's every column: the room is the table's
+        if(j === 1) return gcellFixed(ycol(1), v(cur, 1), 1, 0, unit, col, 1, 'years:1', by(1), csym(ynm, col), true);
         if(!gen) return timeCell(j);
-        if(j === 1) return ro({col: ycol(1), cur: v(cur, 1), ref: v(cur, 1), toDisp: 1, decimals: 0, suffix: unit,
-                                    delta: false, color: col, node: 'years:1', cap: by(1), sym: csym(ynm, col)});
         return ro({col: ycol(j), cur: v(cur, j), ref: v(ref, j), toDisp: 1, decimals: 4, suffix: unit, kind: lost ? 'more_bad' : 'more_good',
           pot: elapsed[j - 1] / per,   // the potential: all the years so far (in generations: over 75)
           color: col, delta: sd, base: sr, dmode: dm('years'), row: 'years', node: 'years:' + j, cap: by(j), sym: csym(ynm, col),
@@ -2321,8 +2450,8 @@ function summaryHtml(cur){
   function hl(t, c){ return "<b style='color:" + c + ";'>" + lnum(t) + '</b>'; }   // value in its row's colour
   return '<div class="summary">' + trf('With these rates, humanity survives to {year} with {p} probability, is expected to ' +
     'live {y} of the next {n} years, and to accrue {l} human lives ({ly} life-years).', {
-      year: hl(fmtYear(M.cps[n - 1]), '#e8eef4'), p: hl(fPct(cur.surv[n - 1]), COL_SURV_CUM),
-      y: hl(fYears(cur.cumYears[n - 1]), COL_SURV_CUM), n: fInt(total),
+      year: hl(fmtYear(M.cps[n - 1]), INK), p: hl(fPct(cur.surv[n - 1]), COL_SURV_CUM),
+      y: hl(fYears(cur.cumYears[n - 1]), COL_POP), n: fInt(total),   // the years: in the annual years row's colour
       l: hl(fInt(cur.lives[n - 1]), COL_CUM), ly: hl(fInt(cur.cumLy[n - 1]), COL_CUM)}) + '</div>';
 }
 function footHtml(){
@@ -2370,6 +2499,7 @@ var GSCALE_RATE_SURV = {pow: '100% − power of ten/100%', max: 'min/100%, all p
 var graphScale = {rate: 'cum', surv: 'full', yrexp: 'full', years: 'potall', popexp: 'pot', lives: 'potall', valexp: 'pot', valcum: 'potall',
                   pop: 'all'};
 var relRows = {};                                // rows whose deltas show the change as a % of the baseline (the pp|% / Δ|% switches)
+var lockedChg = {};                              // editable values whose change is locked ("rate:0": lockHtml; editA): B moves with A
 function snap(){ return {rates: rates.slice(), pops: pops.slice(), vals: vals.slice()}; }
 var mode = 'current', refStatic = snap(), histPrev = snap(), histLast = snap();
 // What is excluded from the comparison ("Exclude from comparison"): the population potential as a whole (an
@@ -2635,11 +2765,11 @@ function writeBase(kind, i, v){                   // B's (after freezeBase); no 
   else { var arr = kind === 'rate' ? b.rates : kind === 'val' ? b.vals : b.pops; arr[i] = Math.max(0, +v.toFixed(12)); }
 }
 function setBaseAbs(v){ freezeBase(); writeBase(sel.kind, sel.i, v); recordHistory(); scheduleRender(); }
-// A is the baseline and B the new scenario: an edit of A leaves the change as it was. B moves with A, by the same
-// difference, or where the row's switch is on %, the same percentage of A. That is the edited value's own change
-// only: the values downstream follow the model, so their changes may move. Not while the comparison is the previous
-// value (B is then A as it was), nor for a value excluded from the comparison (B is A there anyway). One undo step.
-// write(): the edit of A itself.
+// B is the comparison: an edit of A leaves it where it is, and the change follows (B − A). Unless the value's change
+// is locked (its lock, lockedChg): then B moves with A, by the same difference, or where the row's switch is on %, the
+// same percentage of A. That is the edited value's own change only: the values downstream follow the model, so their
+// changes may move. Neither while the comparison is the previous value (B is then A as it was), nor for a value
+// excluded from the comparison (B is A there anyway). One undo step. write(): the edit of A itself.
 function excludedVal(kind, i){
   if(kind === 'pop') return popExcluded || i === 0;
   if(kind === 'val') return valExcluded || i === 0;
@@ -2647,7 +2777,7 @@ function excludedVal(kind, i){
   return false;                                   // a survival: its periods' exclusions are kept by baseSurvFix
 }
 function editA(kind, i, write){
-  var keep = mode === 'current' && !excludedVal(kind, i);
+  var keep = mode === 'current' && !excludedVal(kind, i) && !!lockedChg[KIND_ROW[kind] + ':' + i];
   var a0 = valOf(kind, i, rates, pops, vals), r = refState(), b0 = valOf(kind, i, r.rates, r.pops, r.vals);
   write();
   if(keep){
@@ -2661,8 +2791,8 @@ function editA(kind, i, write){
 var flashB = null;
 function setValAbs(v){ var k = sel.kind, i = sel.i; editA(k, i, function(){ writeVal(k, i, v); }); }
 // The selected row decides what an edit changes: the value (A), the change, or the comparison (B) itself. The
-// change is measured from A, the baseline: B − A, or (B − A) / A where the row's switch is on %; so editing it
-// moves B and leaves A where it is (and editing A leaves it as it is: editA).
+// change is measured from A: B − A, or (B − A) / A where the row's switch is on %; so editing it moves B and leaves A
+// where it is (and editing A leaves B where it is, the change following, unless the change is locked: editA).
 var KIND_ROW = {rate:'rate', rate_c:'rate', surv:'surv', surv_c:'surv', pop:'pop', val:'val'};
 function relDelta(){ return !!relRows[KIND_ROW[sel.kind]]; }
 function editVal(){
@@ -2735,7 +2865,7 @@ document.addEventListener('keydown', function(e){
   moveDigit(k === 'ArrowRight' ? 1 : -1, true);   // arrows may walk on into the next/previous cell
 });
 document.addEventListener('click', function(e){
-  if(e.target.closest('.dtog, .xchk, #keypad')) return;   // the delta switch and exclude boxes (controls, below), the keypad's keys don't select
+  if(e.target.closest('.dtog, .dlock, .xchk, #keypad')) return;   // the delta switch and lock, the exclude boxes (controls, below), the keypad's keys don't select
   var cell = e.target.closest('.xedit');
   if(!cell){ if(selOn){ selOn = false; applyHighlight(); } return; }   // a click outside the boxes: the selection off
   selOn = true;
@@ -2770,7 +2900,7 @@ function setOdds(which, i, x, kind){
     if(surv) baseSurvFix(i, 1 - 1 / x); else refStatic.rates[i] = 1 / x;
     recordHistory(); scheduleRender();
   }
-  else editA(kind, i, function(){ if(surv) survFix(rates, i, 1 - 1 / x); else rates[i] = 1 / x; });   // B keeps its change
+  else editA(kind, i, function(){ if(surv) survFix(rates, i, 1 - 1 / x); else rates[i] = 1 / x; });   // B as editA has it
 }
 document.addEventListener('click', function(e){
   var od = e.target.closest('.odds'); if(!od || od.querySelector('input')) return;
@@ -3205,30 +3335,6 @@ function stackUnit(s){
   ruler.remove();
   return u;
 }
-// From the third variable on (not the x-risk or survival rows), each box's value — its A line's number, from its first
-// digit to its unit — stands in the middle of the box: what sits beside it (the A / B−A / B labels on its left, the
-// Δ|% switch on its right) rarely balances, so the box's stack of lines gets the difference as padding on the side with
-// less; the stack sits centred in the box, so then the number does. Measured afresh each time (the padding cleared
-// first), and only inside the stack, in its own px (u: stackUnit).
-function centreValues(gw){
-  var stacks = Array.prototype.slice.call(gw.querySelectorAll('.grow:not([data-row="rate"]):not([data-row="surv"]) .vcell > .vstack'));
-  stacks.forEach(function(s){ s.style.paddingLeft = s.style.paddingRight = ''; });
-  if(!stacks.length) return;
-  var u = stackUnit(stacks[0]); if(!(u > 0)) return;
-  stacks.map(function(s){                           // all measured, then all padded (one layout pass)
-    var vm = s.querySelector(':scope > .vmain'), d0 = vm && vm.querySelector('.dig'), gs = vm ? vm.querySelectorAll('.dgroup') : [];
-    if(!d0 || !gs.length) return null;
-    var l = Infinity, r = -Infinity;                 // the stack's lines' extent (its rows and side column)
-    Array.prototype.forEach.call(s.children, function(c){
-      if(c.classList.contains('vframe')) return;    // A's frame: round the lines, not one of them
-      var b = c.getBoundingClientRect(); if(b.width > 0){ l = Math.min(l, b.left); r = Math.max(r, b.right); }
-    });
-    return {s: s, d: ((r - gs[gs.length - 1].getBoundingClientRect().right) - (d0.getBoundingClientRect().left - l)) / u};
-  }).forEach(function(c){
-    if(!c || Math.abs(c.d) < 0.5) return;
-    if(c.d > 0) c.s.style.paddingLeft = c.d + 'px'; else c.s.style.paddingRight = -c.d + 'px';   // more room right / left
-  });
-}
 // The labels over a box's numbers: the setter's in an annual population or value box (setterSum), "Population if
 // survived pp", centred over the setter's number, and a generations box's working (genCalc), centred over its value (a
 // multiplier, a .vctr line with a .vpota, would start its first number where the box's value's first digit does;
@@ -3236,8 +3342,7 @@ function centreValues(gw){
 // own (CSS), so each stack's columns get minimums that hold them (grid-template-columns), and each label is moved in
 // from the left (its padding). The numbers end at the numbers' column's right edge (R), so everything is measured
 // from there; a number from its first significant digit (faint padding zeros left out) to its last. Measured afresh
-// each time (all cleared first), in the stack's own px (u: stackUnit); before centreValues, which then centres the
-// value in its box.
+// each time (all cleared first), in the stack's own px (u: stackUnit).
 function centreLabels(gw){
   var stacks = Array.prototype.slice.call(gw.querySelectorAll('.vcell > .vstack')).filter(function(s){ return s.querySelector('.vctr'); });
   stacks.forEach(function(s){
@@ -3287,7 +3392,6 @@ function fitColumns(){
   gw.style.setProperty('--gtpl', 'repeat(' + K + ', 0px)'); gw.style.setProperty('--gsum', '0px');
   gw.querySelectorAll('.gcell svg').forEach(function(s){ s.style.width = ''; s.style.height = ''; });
   centreLabels(gw);                                 // the sum's labels over their numbers: widens the stacks' columns
-  centreValues(gw);                                 // before the widths are measured: it widens boxes
   var R = [];                                       // per row: its cells by column, {el, k, w (outer), g (a graph)}
   rows.forEach(function(row){
     var list = [];
@@ -3373,32 +3477,23 @@ function stretchGraphs(){
   });
   H = Math.min(Math.max(H, GRAPH_MIN_H), GRAPH_MAX_H);   // never flatter than this, nor taller than that
   gs.forEach(function(g){ if(H > 0) g.querySelector('svg').style.height = Math.round(H) + 'px'; });
+  // a hatched fill's stripes (graphCells' area) as drawn, HATCH_P px apart at 45°: each plot's stretch undone in its
+  // patterns (the plot's size in the table's px, as set here and by fitColumns, over its viewBox's)
+  gs.forEach(function(g){
+    var s = g.querySelector('svg'), sx = (parseFloat(s.style.width) || GRAPH_W) / GRAPH_W, sy = (parseFloat(s.style.height) || GRAPH_H) / GRAPH_H;
+    s.querySelectorAll('pattern').forEach(function(p){
+      p.setAttribute('patternTransform', 'scale(' + (1 / sx).toFixed(4) + ' ' + (1 / sy).toFixed(4) + ') rotate(' + p.getAttribute('data-rot') + ')');
+    });
+  });
 }
 // Redraw the arrows whenever the table's box changes size (window resize, formulas toggled, fonts
 // loading). Each render replaces .grid-wrap, so the observer is re-attached every time.
 var arrowRO = window.ResizeObserver ? new ResizeObserver(function(){ requestAnimationFrame(drawArrows); }) : null;
-// Each row's Scale menu goes under its formula or under its title, whichever leaves the label shorter: both are
-// tried and measured (a tie: the title); under the title while formulas are hidden. On every redraw and re-fit
-// (watchArrows), since the label's wrapping depends on the column width and the fonts.
-function placeScales(){
-  var fx = isChecked('showfx');
-  document.querySelectorAll('.grid-wrap .rlabel').forEach(function(lb){
-    var g = lb.querySelector('.gscale'); if(!g) return;
-    var f = lb.querySelector('.rfx'), t = lb.querySelector('.rtitle'), w = lb.querySelector('.rlblwrap');
-    if(g.contains(document.activeElement)) return;             // its menu in use: leave it where it is
-    t.appendChild(g);
-    if(!fx || !f) return;
-    var hT = w.getBoundingClientRect().height;
-    f.appendChild(g);
-    if(hT <= w.getBoundingClientRect().height) t.appendChild(g);
-  });
-}
 // The names column at least as wide as keeps every view switch (seg: its two words, never broken) and, with the
 // formulas shown, every formula on one line (CSS: nowrap): --labw-fit on #panel, which --labw takes over the default
 // or dragged width when wider. Measured at that width (the fit cleared first): the most any of them then lacks of
 // its line (a switch: past its title's width; a phone's narrow default needs it), in the column's own px
-// (offsetWidth, scrollWidth, clientWidth: the table zoom left out, as in --labw). Before placeScales, which places by
-// the labels' heights.
+// (offsetWidth, scrollWidth, clientWidth: the table zoom left out, as in --labw).
 function fitLabels(){
   var p = document.getElementById('panel'), gw = document.querySelector('.grid-wrap');
   p.style.removeProperty('--labw-fit');
@@ -3410,15 +3505,16 @@ function fitLabels(){
 }
 function watchArrows(){
   fitLabels();
-  placeScales();
   var gw = document.querySelector('.grid-wrap');
   if(arrowRO){ arrowRO.disconnect(); if(gw) arrowRO.observe(gw); }
   fitColumns();
   drawArrows();
   placePad();                                       // the boxes may have moved: the keypad with its box
+  namesFit();                                       // the names column's width may have changed: how far it scrolls out
+  pinChooser();
 }
-window.addEventListener('resize', function(){ requestAnimationFrame(function(){ fitColumns(); drawArrows(); placeSum(); placePad(); }); });
-if(document.fonts && document.fonts.ready) document.fonts.ready.then(function(){ fitLabels(); placeScales(); fitColumns(); drawArrows(); });
+window.addEventListener('resize', function(){ requestAnimationFrame(function(){ fitColumns(); drawArrows(); placeSum(); placePad(); namesFit(); pinChooser(); }); });
+if(document.fonts && document.fonts.ready) document.fonts.ready.then(function(){ fitLabels(); fitColumns(); drawArrows(); namesFit(); pinChooser(); });
 
 // ── a running total's sum (Σ) ──
 // The running totals' boxes (years or generations, lives or life-years, value; lived or lost) show their totals
@@ -3440,7 +3536,7 @@ function sumHtml(key){
   function S(k){ return s0 * Math.pow(f, k); }                         // the chance of being here in the year y0 + k
   function lin(a, k){ return a[i] + (a[i + 1] - a[i]) * k / len; }    // a potential that year (a: at the checkpoints)
   // the row's: its terms (term(k), the year y0 + k's) and totals (total(jj), by checkpoint jj), their decimals, their
-  // colours, the totals' unit; the title; what is added up (what: each year's ...)
+  // colours, the unit (terms' and totals'); the title; what is added up (what: each year's ...)
   var term, total, dec, tcol = COL_POP, unit = '', title, what, years = false;
   if(row === 'years'){
     var gen = outcome === 'generation', lost = yearsComp, per = gen ? LIFE_EXP : 1;
@@ -3476,7 +3572,7 @@ function sumHtml(key){
       out += '<span class="sgap">&hellip; ' + trf('{n} more years', {n: fInt(len - SUM_HEAD - SUM_TAIL)}) + ' &hellip;</span>';
       k = len - SUM_TAIL + 1;
     }
-    out += line(out ? '+' : '', fmtYear(y0 + k), term(k), tcol);
+    out += line(out ? '+' : '', fmtYear(y0 + k), term(k), tcol, unit);   // a year's term in years too ("0.999500y")
   }
   var t = total(j);
   out += line('=', '', t, COL_CUM, unit);
@@ -3658,6 +3754,12 @@ document.addEventListener('click', function(e){  // Choose outcome (the band in 
 document.addEventListener('click', function(e){
   var b = e.target.closest('.dtog'); if(!b) return;
   var r = b.getAttribute('data-row'); relRows[r] = !relRows[r];
+  scheduleRender();
+});
+// the changes' locks (lockHtml): one value's change kept as A is edited, or not (editA)
+document.addEventListener('click', function(e){
+  var b = e.target.closest('.dlock'); if(!b) return;
+  var k = b.getAttribute('data-lock'); if(lockedChg[k]) delete lockedChg[k]; else lockedChg[k] = true;
   scheduleRender();
 });
 // "Show comparison scenario" (the Comparison box's title): unticked, the box collapses and its display options
@@ -3874,14 +3976,50 @@ document.addEventListener('pointerup', endColDrag);
 document.addEventListener('pointercancel', endColDrag);
 document.addEventListener('dblclick', function(e){ if(e.target.closest && e.target.closest('.colgrip')) setLabW(null, narrowScreen()); });
 
+// ── names column: scrolling out ──
+// The names scroll sideways with the values (the table's scrollbar, a drag, a swipe) until only their view switches
+// and Scale menus are left in view, then stay there while the values scroll on under them (CSS: sticky); scrolled back
+// to the start, they are all in view again. --labhide on #panel, how far they go (the table's px): the names' width
+// less what reaches from their right edge to the furthest left of their title's switches and menus, NAMES_PAD more;
+// with none in the names, all but a strip (NAMES_STRIP: CSS's 14 px). And --labroom, the table's room to scroll that
+// far: its window's width and that, so a table that fits the page can scroll its names out of the way too. After
+// every layout (watchArrows, resize, the fonts).
+var NAMES_STRIP = 14, NAMES_PAD = 6;
+function namesFit(){
+  var sc = document.querySelector('.grid-scroll'), gw = sc && sc.querySelector('.grid-wrap'), ps = document.getElementById('panel').style;
+  if(!gw) return;
+  var k = gridScale(gw), w = 0, keep = 0;
+  gw.querySelectorAll('.rlabel').forEach(function(l){
+    var r = l.getBoundingClientRect(); w = Math.max(w, r.width / k);
+    l.querySelectorAll('.rtitle .seg, .rtitle .gsbox').forEach(function(c){
+      var cr = c.getBoundingClientRect(); if(cr.width) keep = Math.max(keep, (r.right - cr.left) / k + NAMES_PAD);
+    });
+  });
+  var hide = Math.max(0, w - Math.max(keep, NAMES_STRIP));
+  if(hide > 0){
+    ps.setProperty('--labhide', hide.toFixed(1) + 'px');
+    ps.setProperty('--labroom', (sc.clientWidth / k + hide).toFixed(1) + 'px');
+  } else { ps.removeProperty('--labhide'); ps.removeProperty('--labroom'); }
+  sc.classList.toggle('hscroll', sc.scrollWidth > sc.clientWidth + 1);   // a table that fits may now scroll: its scrollbar's room
+}
+// "Choose outcome" (.outch) stays at the left too (CSS: sticky), but only once its end is in view: --outover, how much
+// wider than the table's window it is (the table's px), as far as it then scrolls before it stays
+function pinChooser(){
+  var sc = document.querySelector('.grid-scroll'), gw = sc && sc.querySelector('.grid-wrap'), oc = gw && gw.querySelector('.outch');
+  if(!oc) return;
+  var k = gridScale(gw);
+  gw.style.setProperty('--outover', Math.max(0, (oc.getBoundingClientRect().width - sc.clientWidth) / k).toFixed(1) + 'px');
+}
+
 // ── author controls ──
-// The Author controls group: each input sets a CSS variable on the root that the stylesheet reads (the page's colour, the graph and
-// box outline's colour and width, the lines between variables, the fills of graphs, boxes and the boxes' editable
-// parts), so a change shows at once, with no redraw.
+// The Author controls group: each input sets a CSS variable on the root that the stylesheet reads (the page's colour
+// and grain, the groups' fill, the graph and box outline's colour and width, the lines between variables, the fills of
+// graphs, boxes and the boxes' editable parts), so a change shows at once, with no redraw.
 var AUTHOR_VARS = {acPbg: ['--page-bg', ''], acGbg: ['--g-bg', ''],acGcol: ['--g-line-col', ''], acGw: ['--g-line-w', 'px'], acRw: ['--row-line-w', 'px'],
                    acRcol: ['--row-line-col', ''], acVbg: ['--v-bg', ''], acVebg: ['--v-edit-bg', ''],
                    acArFade: ['--ar-off', 'fade'],   // 'fade': the input's % faded, the variable the opacity it leaves
                    acAreaOp: ['--area-op', 'pct'],   // 'pct': the input's % the opacity itself (the graphs' fill: a slider)
+                   acGrain: ['--grain-op', 'pct'], acGrpFill: ['--grp-fill', 'pct'],   // the page's grain, the groups' fill (sliders)
                    acTfs: ['--title-fs', 'px'], acFfs: ['--formula-fs', 'px'],   // the names column's title and formula sizes
                    acArW: ['--ar-w', 'px'],   // the arrows' width
                    // the variables' colours ('col'): the stylesheet's (Show variables, the odds) and the script's, which
@@ -3892,16 +4030,76 @@ var AUTHOR_VARS = {acPbg: ['--page-bg', ''], acGbg: ['--g-bg', ''],acGcol: ['--g
 var COL_DEF = {rate: COL_RATE, surv: COL_SURV, rateC: COL_RATE_CUM, survC: COL_SURV_CUM, out: COL_POP, cum: COL_CUM};   // as the script has them
 // the script's colours from the variables set (Author controls, saved settings), else the defaults
 function varColours(){
-  var st = document.documentElement.style;
+  var st = document.documentElement.style, D = theme === 'light' ? COL_DEF_L : COL_DEF;
   function get(p, d){ var x = st.getPropertyValue(p).trim(); return /^#[0-9a-f]{6}$/i.test(x) ? x : d; }
-  COL_RATE = get('--col-rate', COL_DEF.rate); COL_SURV = get('--col-surv', COL_DEF.surv);
-  COL_RATE_CUM = get('--col-rate-c', COL_DEF.rateC); COL_SURV_CUM = get('--col-surv-c', COL_DEF.survC);
-  COL_POP = COL_VAL = get('--col-out', COL_DEF.out); COL_CUM = get('--col-cum', COL_DEF.cum);
+  COL_RATE = get('--col-rate', D.rate); COL_SURV = get('--col-surv', D.surv);
+  COL_RATE_CUM = get('--col-rate-c', D.rateC); COL_SURV_CUM = get('--col-surv-c', D.survC);
+  COL_POP = COL_VAL = get('--col-out', D.out); COL_CUM = get('--col-cum', D.cum);
 }
+
+// ── light and dark ──
+// The switch beside the flags (setTheme): the stylesheet's colours by html.light (see its top), the script's own here
+// (THEME_INK: the digits' greens, reds and greys, the white of the summary's year and Choose outcome's options), and
+// Author controls' colours each mode its own (modeVars): the mode shown has its on the root, as before; the other's
+// kept, swapped in when it's shown. Light mode's swatches are the "Light mode colours" (ids + "L"); a change in either
+// set shows its mode. Saved as author (dark, as always) and author.light. The choice is the reader's, in the browser
+// (xrisk-theme, as v3's and versions.html's: one switch for all; in versions.html's frame told to it, which tells the
+// other frames), ?theme= in the address first. Not a scene's or a tour step's.
+var theme = 'dark', THEME_KEY = 'xrisk-theme';
+var COL_DEF_L = {rate: '#c4442e', surv: '#1f7fa3', rateC: '#c4442e', survC: '#1f7fa3', out: '#b8327a', cum: '#b8327a'};
+var THEME_INK = {dark: {GOOD: GOOD, BAD: BAD, ZERO: ZERO, FAINT: FAINT, INK: INK, INK_POT: INK_POT, INK_FAINT: INK_FAINT},
+                 light: {GOOD: '#2e8b45', BAD: '#c62828', ZERO: '#6e7c88', FAINT: 'rgba(90,105,118,.55)', INK: '#1c2a36',
+                         INK_POT: '#6b7b88', INK_FAINT: '#5d6f7e'}};
+var MODE_IDS = Object.keys(AUTHOR_VARS).filter(function(id){ var el = document.getElementById(id); return el && el.type === 'color'; });
+var modeVars = {dark: {}, light: {}};
+function modeNow(){                                // the shown mode's Author colours, as set on the root
+  var o = {}, root = document.documentElement.style;
+  MODE_IDS.forEach(function(id){ var p = AUTHOR_VARS[id][0], x = root.getPropertyValue(p).trim(); if(x) o[p] = x; });
+  return o;
+}
+function modeSwatches(){                           // both sets of swatches as their modes have them (unset: as the mode's default)
+  var now = modeNow(), dk = theme === 'dark' ? now : modeVars.dark, lt = theme === 'light' ? now : modeVars.light;
+  MODE_IDS.forEach(function(id){
+    var p = AUTHOR_VARS[id][0], d = document.getElementById(id), l = document.getElementById(id + 'L');
+    if(d && dk[p]) d.value = dk[p];
+    if(l){ if(!l.hasAttribute('data-def')) l.setAttribute('data-def', l.value); l.value = lt[p] || l.getAttribute('data-def'); }
+  });
+}
+function setTheme(t, remember, tell){
+  if(t !== 'light' && t !== 'dark') return;
+  if(t !== theme){
+    var root = document.documentElement.style;
+    modeVars[theme] = modeNow();
+    MODE_IDS.forEach(function(id){ root.removeProperty(AUTHOR_VARS[id][0]); });
+    Object.keys(modeVars[t]).forEach(function(p){ root.setProperty(p, modeVars[t][p]); });
+    theme = t;
+    var k = THEME_INK[t];
+    GOOD = k.GOOD; BAD = k.BAD; ZERO = k.ZERO; FAINT = k.FAINT; INK = k.INK; INK_POT = k.INK_POT; INK_FAINT = k.INK_FAINT;
+    COL_PICK = INK; OUTCOME_LIST.forEach(function(o){ o[2] = COL_PICK; });
+    document.documentElement.classList.toggle('light', t === 'light');
+    varColours(); modeSwatches(); scheduleRender();
+  }
+  document.querySelectorAll('.themeb').forEach(function(b){ var on = b.getAttribute('data-theme') === theme; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
+  if(remember){ try { localStorage.setItem(THEME_KEY, theme); } catch(err){} }
+  if(tell && window.parent !== window) window.parent.postMessage({xriskTheme: theme}, '*');
+}
+document.addEventListener('click', function(e){
+  var b = e.target.closest('.themeb'); if(b) setTheme(b.getAttribute('data-theme'), true, true);
+});
+window.addEventListener('storage', function(e){ if(e.key === THEME_KEY) setTheme(e.newValue, false, false); });
+function startTheme(){
+  var asked = urlParam('theme'), mine = null;
+  try { mine = localStorage.getItem(THEME_KEY); } catch(err){}
+  setTheme(asked === 'light' || asked === 'dark' ? asked : mine === 'light' ? 'light' : 'dark', false, false);
+}
+
 // a slider's value shown beside it (an <output>: its id + "V")
 function sliderShow(el){ if(el.type !== 'range') return; var o = document.getElementById(el.id + 'V'); if(o) o.textContent = el.value; }
 document.addEventListener('input', function(e){
-  var v = AUTHOR_VARS[e.target.id]; if(!v) return;
+  var id = e.target.id, lightOne = /L$/.test(id) && MODE_IDS.indexOf(id.slice(0, -1)) >= 0;
+  if(lightOne) id = id.slice(0, -1);
+  var v = AUTHOR_VARS[id]; if(!v) return;
+  if(MODE_IDS.indexOf(id) >= 0) setTheme(lightOne ? 'light' : 'dark', true, true);   // a mode's colour: that mode shown
   var x = e.target.value;
   if(v[1] === 'px'){ x = parseFloat(x); if(!(x >= 0)) return; x = x + 'px'; }
   else if(v[1] === 'fade'){ x = parseFloat(x); if(!(x >= 0 && x <= 100)) return; x = String((100 - x) / 100); }   // % faded -> opacity
@@ -3910,11 +4108,39 @@ document.addEventListener('input', function(e){
   document.documentElement.style.setProperty(v[0], x);
   if(e.target.id === 'acTfs' || e.target.id === 'acFfs') requestAnimationFrame(watchArrows);   // the labels' heights: re-fit (Scale menus, graphs, arrows)
   else if(e.target.id === 'acArW') requestAnimationFrame(drawArrows);   // side-by-side arrows: spaced by their width
+  else if(e.target.id === 'acAreaOp') setHatch();   // hatched: the stripes' width
+  else if(e.target.id === 'acGrain') setGrain();     // the grain's tile, at its new strength
   else if(v[1] === 'col'){ varColours(); scheduleRender(); }
 });
-// ...and one that changes the table's look: years under the graphs; saved as author.graphYears
+// The graphs' hatched fill (graphCells' graphHatch): on with "Hatched fill", the stripes' share the Graph fill's %
+// (--area-op; by default 20%). A new share only widens the stripes drawn; on or off, the table is redrawn. Saved as
+// author.graphHatch.
+function setHatch(){
+  var c = document.getElementById('acGhatch'), x = parseFloat(document.documentElement.style.getPropertyValue('--area-op'));
+  graphHatch = c && c.checked ? (x >= 0 && x <= 1 ? x : 0.2) : null;
+  if(graphHatch != null) document.querySelectorAll('.gplot pattern rect').forEach(function(r){ r.setAttribute('width', (HATCH_P * graphHatch).toFixed(2)); });
+}
+// The page's grain ("Grain", --grain-op): its tile, --grain, which the stylesheet uses as the background of what it
+// textures (the page, the table, the names column, the outcome band: see body there), so it moves with each. A
+// background has no opacity of its own, so the strength is in the tile: noise (feTurbulence) whose grey turns into
+// white above the middle and black below it, the further from the middle the more opaque, up to the Grain's %. (The
+// filter's region is the tile, so stitchTiles joins the tiles without a seam.) None at 0 or unset.
+function setGrain(){
+  var root = document.documentElement.style, op = parseFloat(root.getPropertyValue('--grain-op'));
+  if(!(op > 0 && op <= 1)){ root.removeProperty('--grain'); return; }
+  var a = op.toFixed(3), svg = "<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'>" +
+    "<filter id='n' x='0' y='0' width='1' height='1' color-interpolation-filters='sRGB'>" +
+    "<feTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='3' stitchTiles='stitch'/>" +
+    "<feColorMatrix values='1 0 0 0 0  1 0 0 0 0  1 0 0 0 0  1 0 0 0 0'/>" +   // grey, and as opaque as it is light
+    "<feComponentTransfer><feFuncR type='discrete' tableValues='0 1'/><feFuncG type='discrete' tableValues='0 1'/>" +
+    "<feFuncB type='discrete' tableValues='0 1'/><feFuncA type='table' tableValues='" + [a, a, a, 0, a, a, a].join(' ') + "'/>" +
+    "</feComponentTransfer></filter><rect width='100%' height='100%' filter='url(#n)'/></svg>";
+  root.setProperty('--grain', 'url("data:image/svg+xml,' + encodeURIComponent(svg) + '")');
+}
+// ...and those that change the table's look: years under the graphs (saved as author.graphYears), the hatched fill
 document.addEventListener('change', function(e){
   if(e.target.id === 'acGyears'){ document.body.classList.toggle('graph-years', e.target.checked); requestAnimationFrame(watchArrows); }   // rows taller: re-fit
+  else if(e.target.id === 'acGhatch'){ setHatch(); scheduleRender(); }
 });
 
 // ── box text size ──
@@ -3944,7 +4170,8 @@ document.addEventListener('input', function(e){
 var dragScroll = null, DRAG_START = 5;
 document.addEventListener('pointerdown', function(e){
   if(e.pointerType !== 'mouse' || e.button !== 0) return;
-  if(e.target.closest('button, input, select, textarea, label, a, summary, .tpts, .colgrip')) return;
+  // (but from the names' view switches and "Scale:" too, often all of the names in view: a drag scrolls, a click picks)
+  if(e.target.closest('button, input, select, textarea, label, a, summary, .tpts, .colgrip') && !e.target.closest('.rlabel .segb, .rlabel .gsl')) return;
   dragScroll = {x: e.screenX, y: e.screenY, id: e.pointerId, on: false, table: e.target.closest('.grid-scroll')};
 });
 document.addEventListener('pointermove', function(e){
@@ -4103,13 +4330,18 @@ var SHOW_IDS = {graphs: 'showgraphs', arrows: 'showarrows', spin: 'showspin', fo
                 change: 'showchg', b: 'showref', names: 'shownames', note: 'shownote',
                 // the reader's groups open or collapsed (their title checkboxes; Author controls and Make a tour not saved)
                 groupElements: 'grpElements', groupVariables: 'grpVariables', groupTimeScale: 'grpTimescale',
-                groupControls: 'grpControls'};
+                groupControls: 'grpControls', groupSummary: 'grpSummary'};
 function currentSettings(){
   var author = {}, root = document.documentElement.style;
   Object.keys(AUTHOR_VARS).forEach(function(id){
+    if(MODE_IDS.indexOf(id) >= 0) return;          // the colours: each mode's, below
     var p = AUTHOR_VARS[id][0], x = root.getPropertyValue(p).trim(); if(x) author[p] = x;   // only those set
   });
+  var dark = theme === 'dark' ? modeNow() : modeVars.dark, light = theme === 'light' ? modeNow() : modeVars.light;
+  Object.keys(dark).forEach(function(p){ author[p] = dark[p]; });   // dark mode's where they always were
+  if(Object.keys(light).length) author.light = Object.assign({}, light);
   if(document.body.classList.contains('graph-years')) author.graphYears = true;
+  if(graphHatch != null) author.graphHatch = true;
   if(Math.abs(boxText - 1) > 1e-9) author.boxTextPx = Math.round(boxText * BOXT_BASE * 10) / 10;
   var show = {};
   Object.keys(SHOW_IDS).forEach(function(k){
@@ -4127,7 +4359,7 @@ function currentSettings(){
     views: {rateComp: rateComp, survComp: survComp, yearsComp: yearsComp, yrexpComp: yrexpComp,
             livesLy: livesLy, livesLoss: livesLoss, popexpLoss: popexpLoss, valexpLoss: valexpLoss,
             valcumLoss: valcumLoss},
-    relative: rel
+    relative: rel, locked: Object.keys(lockedChg)
   }};
 }
 function applySettings(s){                       // at start-up, before the first render
@@ -4140,9 +4372,19 @@ function applySettings(s){                       // at start-up, before the firs
                                                             v[1] === 'pct' ? Math.round(parseFloat(x) * 100) : x;
     if(el) sliderShow(el);
   });
+  // light mode's colours (author.light: settings saved before it have none, light mode then its defaults)
+  modeVars.light = {};
+  MODE_IDS.forEach(function(id){
+    var p = AUTHOR_VARS[id][0], x = a.light && a.light[p];
+    if(typeof x === 'string' && /^#[0-9a-f]{6}$/i.test(x)) modeVars.light[p] = x;
+  });
+  modeSwatches();
   varColours();                                     // the variables' colours, into the script's
+  setGrain();                                       // the grain's tile, from its strength
   var gy = a.graphYears === true; document.body.classList.toggle('graph-years', gy);
   var gc = document.getElementById('acGyears'); if(gc) gc.checked = gy;
+  var gh = document.getElementById('acGhatch'); if(gh) gh.checked = a.graphHatch === true;   // missing: the tint, as before
+  setHatch();
   // the box text, in px; settings saved before it was an Author control have it as the reader's factor (view.boxText)
   var bt = a.boxTextPx > 0 ? a.boxTextPx : (s.view && s.view.boxText > 0 ? s.view.boxText * BOXT_BASE : 0);
   if(bt) setBoxText(bt / BOXT_BASE);
@@ -4184,7 +4426,7 @@ function viewStart(v){
 // that turns narrow (a phone turned upright, a window narrowed) gets the same at once, the page as it is otherwise
 // kept; widened again, the page stays as it then is.
 var NARROW_MQ = window.matchMedia ? window.matchMedia('(max-width: 560px)') : null, NARROW_ZOOM = 0.75;
-var NARROW_OFF = ['formulas', 'groupElements', 'groupVariables', 'groupTimeScale', 'groupControls'];   // (SHOW_IDS' keys)
+var NARROW_OFF = ['formulas', 'groupElements', 'groupVariables', 'groupTimeScale', 'groupControls', 'groupSummary'];   // (SHOW_IDS' keys)
 function narrowScreen(){ return !!(NARROW_MQ && NARROW_MQ.matches); }
 function narrowView(v){
   if(!narrowScreen()) return v;
@@ -4240,6 +4482,8 @@ function applyView(v){
   livesLy = !!w.livesLy; livesLoss = !!w.livesLoss;
   popexpLoss = !!w.popexpLoss; valexpLoss = !!w.valexpLoss; valcumLoss = !!w.valcumLoss;   // (older views: alive, realised)
   relRows = {}; Object.keys(v.relative || {}).forEach(function(r){ if(v.relative[r] === true) relRows[r] = true; });
+  lockedChg = {};                                   // older views: none locked
+  (Array.isArray(v.locked) ? v.locked : []).forEach(function(k){ if(typeof k === 'string') lockedChg[k] = true; });
   if(typeof v.zoom === 'number') setTableZoom(v.zoom);
   if(typeof v.namesWidth === 'number') setLabW(v.namesWidth);
   else if(v.namesWidth === null) setLabW(null);    // saved at the default width
@@ -4840,7 +5084,7 @@ document.addEventListener('click', function(e){
 // table is redrawn. Not the Author controls or the scenes (author mode only). The language: ?lang=fi or ?lang=en in the
 // address, else the reader's last choice (this browser), else the saved settings' (view.lang), else English.
 var FI_UI = {
-  title: 'Sukupuuttoriskilaskuri',
+  title: 'Sukupuuttoriskilaskuri', theme_l: 'Vaalea tila', theme_d: 'Tumma tila',
   h1: 'Ihmiskunnan odotettu elinaika sukupuuttoriskin alla',
   lead: 'Kunkin jakson vuotuinen sukupuuton todennäköisyys kertautuu selviytymistodennäköisyydeksi, väestöksi ja ' +
         'kumulatiiviseksi eletyksi ihmiselämäksi. Muutoksia verrataan vertailuskenaarioon. Lue lisää sivustosta ' +
@@ -4848,7 +5092,7 @@ var FI_UI = {
         'rel="noopener">https://villeseppala.github.io/interests/articles/201.html</a>',
   kp: 'Muokkaa numeroa', kp_left: 'Edellinen numero', kp_right: 'Seuraava numero', kp_up: 'Suurenna numeroa',
   kp_dn: 'Pienennä numeroa', kp_sign: 'Käännä muutos toisin päin', kp_done: 'Valmis',
-  elements: 'Näytä osat', graphs: 'Kuvaajat', arrows: 'Nuolet', spin: '&#9650;- ja &#9660;-painikkeet', formulas: 'Kaavat',
+  summary: 'Yhteenveto', elements: 'Näytä osat', graphs: 'Kuvaajat', arrows: 'Nuolet', spin: '&#9650;- ja &#9660;-painikkeet', formulas: 'Kaavat',
   spin_t: '▲/▼-painikkeet jokaisessa numerossa; ilman niitä napsauta numeroa ja käytä nuolinäppäimiä, hiiren rullaa tai 0–9',
   variables: 'Näytä muuttujat', v_rate: 'Vuotuinen riski/selviytyminen', v_surv: 'Kumulatiivinen riski/selviytyminen',
   v_ann: 'Vuotuinen tulos', v_cum: 'Kumulatiivinen tulos',
@@ -4918,6 +5162,7 @@ if(document.body.classList.contains('author')) window.addEventListener('error', 
 });
 applySettings(window.XRISKB_SETTINGS || {});    // (without the file: the page's defaults, as a phone's narrow screen has them)
 startLang(((window.XRISKB_SETTINGS || {}).view || {}).lang);   // the language (see "language")
+startTheme();                                     // light or dark (see "light and dark")
 if(document.body.classList.contains('author')) scenesLoad();
 applyShowToggles();
 updateHistBtns();
@@ -4926,6 +5171,16 @@ drawScale();
 tmLoad();                                          // the reader's own tour, if this browser keeps one (see "reader tours")
 tourStart();                                       // ?tour=<name> or #tour=…: the tour's first step over this (see "tours")
 
+
+// versions.html's tours (see its top): this page's state for a step, and a step's state set, by messages, as a page
+// opened as a file can't reach into its frames
+window.addEventListener('message', function(e){
+  var d = e.data;
+  if(window.parent === window || e.source !== window.parent || !d) return;
+  if(d.xriskTheme) setTheme(d.xriskTheme, false, false);   // the versions page's switch, or another frame's
+  else if(d.xriskGet) e.source.postMessage({xriskState: d.xriskGet, state: sceneState()}, '*');
+  else if(d.xriskSet) applyScene(d.xriskSet);
+});
 
 // Shown in an article's iframe: report the page's height whenever it changes (a re-render, rows shown or
 // hidden, the window narrowing), so the article can size the frame to fit and

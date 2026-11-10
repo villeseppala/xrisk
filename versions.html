@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<!--
+  The calculator's installments on one page: tabs switch between v1 (index.html), v2 (v2/index.html) and v3
+  (v3/index.html), in a bar at the top, or during a tour in the tour bar, under its buttons (on the site the bar is
+  then gone; off it, it keeps Make a tour and versions_local.js's). For now v2 has no tab (TABS), only its address.
+  Each runs in its own frame, as it is, so nothing here copies them and the three can't clash: the
+  old page's frame handling (its height posts, read by no one here) falls back to scrolling inside the frame, as in
+  Positron's viewer. No Save settings here: author mode stays each version's own author.R. The site's bare address
+  lands here on a tour (the check at the top of index.html): vtours/prototypes.json. Off the site it also loads
+  versions_local.js, if it's there: this machine's own additions to the bar, kept out of the repository.
+  A frame is made the first time its version is shown, and then kept, under the others, at full size (visibility, not
+  display: none, so a board isn't laid out at no width while hidden): what's been edited in one is still there on the
+  way back. The address says which is shown (versions.html#v2), so a version can be linked and Back goes to the last
+  one. Opened with no version: the newest, or v1 for one of its own tours (?tour=, #tour=: it reads them from this
+  address as it does from an article's, and its Copy link gives this page's address).
+
+  A tour across the versions, as v1's tours but each step also says which version it shows (see "tours" in the
+  script): a file published with the page, vtours/<name>.json, opened with ?vtour=<name> (not ?tour=, which v1 would
+  take for its own). Make a tour in the bar makes one: not on the site, and saved through the root's author.R
+  (http://127.0.0.1:7789/versions.html); opened as a file it downloads the tour instead. A step's state comes from its
+  version's frame and goes back to it by messages (xriskGet, xriskSet; each page's listener, by its start-up or its
+  article's frame code), because a page opened as a file can't reach into its frames; on arriving a step sets only its
+  own version.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Extinction risk calculator</title>
+<script>/* light mode on before anything is drawn (setTheme) */
+try { if((new URLSearchParams(location.search).get('theme') || localStorage.getItem('xrisk-theme')) === 'light') document.documentElement.classList.add('light'); } catch(e){}</script>
+<style>
+/* its own colours (the frames have theirs), dark, and light with the pages' light mode (html.light: setTheme) */
+:root{color-scheme:dark;--bg:#14181c;--fg:#e8eef4;--tab:#cfd6dc;--hov:#262d33;--line:#3a424a;--panelBg:#1c2126;--btnBg:#262d33;--btnHov:#323a42;
+  --armBg:#8a2a2f;--field:#12161a;--link:#8fd6f2;--hint:#9aa5ae;}
+html.light{color-scheme:light;--bg:#f3f5f7;--fg:#1c2329;--tab:#3f4a54;--hov:#e1e6eb;--line:#c5ced6;--panelBg:#e9edf1;--btnBg:#e1e6eb;--btnHov:#d4dbe2;
+  --armBg:#f6d4d6;--field:#ffffff;--link:#1f6f9c;--hint:#5d6973;}
+*, *::before, *::after{box-sizing:border-box;}
+html, body{height:100%;}
+body{margin:0;display:flex;flex-direction:column;height:100vh;height:100dvh;overflow:hidden;background:var(--bg);
+  color:var(--fg);font-family:Arial,Helvetica,sans-serif;font-size:14px;}
+button, input, select, textarea{font:inherit;color:inherit;}
+.bar{flex:none;display:flex;align-items:center;gap:4px;padding:6px 10px;background:var(--bg);border-bottom:1px solid var(--line);}
+/* the version tabs: in the bar, or during a tour in the tour bar, under its buttons (body.touring); the bar then
+   left to what's only off the site (Make a tour, versions_local.js), and on the site not shown at all */
+.vtab{padding:5px 16px;border-radius:6px;color:var(--tab);text-decoration:none;}
+.vtab:hover{background:var(--hov);}
+.vtab[aria-current]{background:var(--fg);color:var(--bg);font-weight:bold;}
+body.touring .bar .vtab, body.touring.onsite .bar{display:none;}
+/* light and dark (setTheme), at the bar's right end */
+.themes{margin-left:auto;display:flex;gap:2px;}
+.themeb{background:none;border:1px solid transparent;border-radius:4px;color:var(--tab);font-size:14px;padding:3px 8px;cursor:pointer;}
+.themeb:hover{border-color:var(--line);}
+.themeb.on{color:var(--fg);border-color:var(--link);cursor:default;}
+.tmshow{margin-left:8px;display:flex;align-items:center;gap:6px;padding:5px 6px;color:var(--tab);cursor:pointer;}
+.tmshow input{margin:0;cursor:pointer;}
+.tmshow[hidden]{display:none;}
+@media (max-width: 900px){ .vtab{padding:8px 20px;} }
+#stage{flex:1 1 auto;min-height:0;position:relative;}
+#stage iframe{position:absolute;top:0;left:0;width:100%;height:100%;border:0;visibility:hidden;}
+#stage iframe.on{visibility:visible;}
+
+/* the tour's panels, under the bar and over the frames (which scroll on their own), never taking the whole window */
+.panel{flex:none;max-height:45vh;overflow:auto;padding:8px 12px;background:var(--panelBg);border-bottom:1px solid var(--line);}
+#tourmaker{display:flex;flex-direction:column;gap:6px;}
+#tourmaker[hidden]{display:none;}
+.btn{background:var(--btnBg);border:1px solid var(--line);border-radius:6px;padding:4px 11px;font-size:13px;white-space:nowrap;cursor:pointer;}
+.btn:hover:not(:disabled){background:var(--btnHov);}
+.btn:disabled{opacity:.45;cursor:default;}
+.btn.trnext{background:#1f77a8;border-color:#8fd6f2;color:#fff;}
+.btn.trnext:hover:not(:disabled){background:#2a8ac0;}
+.btn.armed{background:var(--armBg);border-color:#d9363e;}              /* asking for the second click (armed) */
+.tmrow{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;}
+#tmTitle, #tmList, #tmText, #tmName, #tmSaved{font-size:13px;background:var(--field);border:1px solid var(--line);border-radius:5px;padding:4px 6px;}
+#tmTitle{flex:1 1 200px;max-width:340px;min-width:0;}
+#tmList{flex:0 1 320px;min-width:0;}
+#tmName{flex:0 1 140px;min-width:0;}
+#tmSaved{max-width:220px;}
+#tmSee{font-size:13px;color:var(--link);}
+#tmText{width:100%;resize:vertical;display:block;}
+.hint{font-size:12px;color:var(--hint);}
+/* the tour bar: on the left its buttons, mostly stacked (where it is, Back and Next, ↺ and Exit), the version tabs
+   side by side under them; on the right the title and the step's text (Ville's notes on the first layout, which had
+   the buttons at the right end of the title's line and the tabs in the bar over it) */
+.trgrid{display:grid;grid-template-columns:auto minmax(0, 1fr);gap:6px 20px;}
+.trside{display:flex;flex-direction:column;align-items:stretch;gap:6px;}
+.trpair{display:flex;gap:6px;}
+.trpair .btn{flex:1 1 0;}
+.trvers{display:flex;gap:4px;margin-top:4px;padding-top:8px;border-top:1px solid var(--line);}
+.trvers .vtab{flex:1 1 0;text-align:center;padding:5px 10px;}
+.trmain{display:flex;flex-direction:column;min-width:0;}
+.trtitle{font-size:15px;font-weight:700;}
+.trpos{font-size:13px;color:var(--hint);text-align:center;}
+/* the step's text: across the room right of the buttons and as high as it needs, at least as high as they are (the
+   panel scrolling past 45% of the window); the frames under it move down for a longer one (Ville's choice over a fixed
+   three lines with a scrollbar) */
+.trtext{margin-top:6px;font-size:15px;line-height:1.5;flex:1 1 auto;}
+@media (max-width: 560px){                        /* a phone: the buttons in a row over the text */
+  .trgrid{grid-template-columns:minmax(0, 1fr);}
+  .trside{flex-flow:row wrap;align-items:center;}
+  .trvers{margin:0;padding:0;border:0;}
+}
+.trtext p{margin:0 0 .6em;}
+.trtext p:last-child{margin-bottom:0;}
+</style>
+</head>
+<body>
+<nav class="bar" aria-label="Version">
+  <a class="vtab" href="#v1">v1</a>
+  <a class="vtab" href="#v3">v3</a>
+  <span class="themes"><button type="button" class="themeb" data-theme="light" title="Light mode" aria-label="Light mode">&#9728;</button><button type="button" class="themeb" data-theme="dark" title="Dark mode" aria-label="Dark mode">&#9790;</button></span>
+  <label class="tmshow" title="Make a tour of the versions and save it for the site" hidden><input id="showtm" type="checkbox" autocomplete="off">Make a tour</label>
+</nav>
+<div id="tourmaker" class="panel" hidden>
+  <div class="tmrow">
+    <input id="tmTitle" type="text" maxlength="200" autocomplete="off" placeholder="Title of your tour" aria-label="Title of your tour">
+    <button id="tmPrev" type="button" class="btn" title="Previous step" aria-label="Previous step">&#9664;</button>
+    <select id="tmList" aria-label="Step"></select>
+    <button id="tmNext" type="button" class="btn" title="Next step" aria-label="Next step">&#9654;</button>
+    <button id="tmAdd" type="button" class="btn" title="Add the version shown, as it is now, as a new step after the step chosen">+ Add step</button>
+    <button id="tmUpd" type="button" class="btn" title="Replace the chosen step with the version shown, as it is now (its text stays)">Use current view</button>
+    <button id="tmEarlier" type="button" class="btn" title="Swap the chosen step with the one before it">Move earlier</button>
+    <button id="tmLater" type="button" class="btn" title="Swap the chosen step with the one after it">Move later</button>
+    <button id="tmDel" type="button" class="btn" title="Delete the chosen step">Delete step</button>
+  </div>
+  <textarea id="tmText" rows="2" maxlength="10000" placeholder="Text for this step: what to look at, or what to try" aria-label="Text for this step"></textarea>
+  <div class="tmrow">
+    <span id="tmFiles" hidden>
+      <select id="tmSaved" aria-label="Saved tours"></select>
+      <button id="tmOpen" type="button" class="btn" title="Open the chosen tour here, in place of the one here">Open</button>
+    </span>
+    <input id="tmName" type="text" maxlength="40" autocomplete="off" spellcheck="false" placeholder="name" aria-label="The tour's name" title="Lowercase letters, digits and hyphens: its file's name and its ?vtour= in links">
+    <button id="tmWrite" type="button" class="btn" title="Download this tour as a file, to put in vtours/">Download file</button>
+    <button id="tmPlay" type="button" class="btn" title="Play the tour from the first step, as others will see it">&#9654;&nbsp;Play</button>
+    <a id="tmSee" href="#" target="_blank" hidden title="This tour as visitors see it, in a new tab">Open as a visitor &#8599;</a>
+    <span id="tmStatus" class="hint" aria-live="polite"></span>
+  </div>
+  <span class="hint">A draft stays in this browser. Save writes vtours/&lt;name&gt;.json, and a push publishes it at ?vtour=&lt;name&gt;, the same link after every change. The site lands on vtours/prototypes.json.</span>
+</div>
+<div id="tourbar" class="panel" hidden aria-live="polite"></div>
+<main id="stage"></main>
+<script>
+var PAGES = {v1: 'index.html', v2: 'v2/index.html', v3: 'v3/index.html'}, frames = {}, shown = null;
+// the versions with a tab (in the bar, and during a tour under its buttons): v2 left out for now (Ville's), still
+// opened by its address (#v2) or a tour's step; to bring it back, add it here and its <a class="vtab"> to the bar
+var TABS = ['v1', 'v3'];
+
+// the frame of a version, made the first time; its ready: a promise of its page loaded
+function frameOf(v){
+  var f = frames[v];
+  if(!f){
+    f = frames[v] = document.createElement('iframe');
+    f.title = v;
+    f.ready = new Promise(function(ok){ f.addEventListener('load', ok); });
+    f.src = PAGES[v];
+    document.getElementById('stage').appendChild(f);
+  }
+  return f;
+}
+function show(v){
+  shown = v; frameOf(v);
+  Object.keys(frames).forEach(function(k){ frames[k].classList.toggle('on', k === v); });
+  document.querySelectorAll('.vtab').forEach(function(a){
+    if(a.getAttribute('href') === '#' + v) a.setAttribute('aria-current', 'page');
+    else a.removeAttribute('aria-current');
+  });
+}
+// the version the address asks for (see the top)
+function wanted(){
+  var h = location.hash.slice(1);
+  if(PAGES.hasOwnProperty(h)) return h;
+  return /[?&]tour=/.test(location.search) || /^#tour=/.test(location.hash) ? 'v1' : 'v3';
+}
+// the tour the address names: its name
+function tourName(){
+  var m = /[?&]vtour=([a-z0-9][a-z0-9-]{0,39})(?:&|$)/.exec(location.search);
+  return m ? m[1] : null;
+}
+// the address following a step's version, without a step in Back; a tour's ?vtour= stays, for a reload to find it
+function addressIs(v){ if(location.hash !== '#' + v) location.replace('#' + v); }
+
+// the version shown as a step's two parts: which, and its state, asked of its frame
+var asks = {}, askNo = 0;
+function readStep(){
+  var v = shown, f = frameOf(v);
+  return f.ready.then(function(){
+    return new Promise(function(ok, no){
+      var id = ++askNo;
+      asks[id] = ok;
+      f.contentWindow.postMessage({xriskGet: id}, '*');
+      setTimeout(function(){ if(asks[id]){ delete asks[id]; no(new Error('no answer')); } }, 3000);
+    });
+  }).then(function(state){ return {version: v, state: state}; });
+}
+window.addEventListener('message', function(e){
+  var d = e.data, ok = d && asks[d.xriskState];
+  if(ok){ delete asks[d.xriskState]; ok(d.state); }
+  else if(d && d.xriskTheme) setTheme(d.xriskTheme, e.source);
+});
+
+// Light or dark: one switch for all (the pages' own, beside their EN / FI, and the bar's here), kept in the browser
+// (xrisk-theme, which the pages read as they load); a frame's switch comes here and goes on to the other frames, by
+// message as a page opened as a file can't reach into them. Not a tour step's: the reader's.
+var THEME_KEY = 'xrisk-theme', theme = 'dark';
+function setTheme(t, from){
+  if(t !== 'light' && t !== 'dark') return;
+  theme = t;
+  document.documentElement.classList.toggle('light', t === 'light');
+  document.querySelectorAll('.themeb').forEach(function(b){ var on = b.getAttribute('data-theme') === t; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
+  try { localStorage.setItem(THEME_KEY, t); } catch(err){}
+  Object.keys(frames).forEach(function(k){ if(frames[k].contentWindow !== from) frames[k].contentWindow.postMessage({xriskTheme: t}, '*'); });
+}
+document.querySelector('.bar').addEventListener('click', function(e){
+  var b = e.target.closest('.themeb'); if(b) setTheme(b.getAttribute('data-theme'), null);
+});
+window.addEventListener('storage', function(e){ if(e.key === THEME_KEY) setTheme(e.newValue, null); });
+(function(){
+  var mine = null;
+  try { mine = new URLSearchParams(location.search).get('theme') || localStorage.getItem(THEME_KEY); } catch(err){}
+  theme = mine === 'light' ? 'light' : 'dark';
+  document.documentElement.classList.toggle('light', theme === 'light');
+  document.querySelectorAll('.themeb').forEach(function(b){ var on = b.getAttribute('data-theme') === theme; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
+})();
+// a step on the page: its version set and shown, the last step asked for if they come quicker than a frame loads
+var goes = 0;
+function goStep(step){
+  var go = ++goes, f = frameOf(step.version);
+  f.ready.then(function(){
+    if(go !== goes) return;
+    f.contentWindow.postMessage({xriskSet: step.state}, '*');
+    show(step.version); addressIs(step.version);
+  });
+}
+
+// ── tours ──
+// As v1's (its "tours"), with steps {version, notes, state}. Two kinds (tour.kind): site, from a file (?vtour=<name>
+// loads vtours/<name>.json), and preview, one played from Make a tour. The tour bar: on the left where it is, Back /
+// Next (Finish on the last step), ↺ (the step again, as it began), Exit tour, and under them the version tabs, moved
+// there from the bar (still working during a tour); on the right the tour's title and the step's text. Exit leaves the
+// versions as they are, the tabs back in the bar, and takes ?vtour= off the address, so a reload doesn't start the
+// tour again.
+var tour = null, tourAt = 0;                      // the tour running ({kind, title, steps}), none: null; its step
+function esc(s){ return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+// only what a tour has: the title, up to 200 steps, each its version, text and state (read by its page as v1's scenes
+// and the pages' settings are, anything out of range ignored); from a file or from this browser
+function cleanTour(j){
+  if(!j || !Array.isArray(j.steps)) throw new Error('not a tour');
+  return {title: typeof j.title === 'string' ? j.title.slice(0, 200) : '',
+          steps: j.steps.slice(0, 200).filter(function(s){ return s && PAGES.hasOwnProperty(s.version) && s.state && typeof s.state === 'object'; })
+            .map(function(s){ return {version: s.version, notes: typeof s.notes === 'string' ? s.notes.slice(0, 10000) : '', state: s.state}; })};
+}
+function startTour(t, kind){
+  tour = {kind: kind, title: t.title, steps: t.steps};
+  tourGo(0);
+}
+function tourGo(k){
+  if(!tour || k < 0 || k >= tour.steps.length) return;
+  tourAt = k; goStep(tour.steps[k]); drawTour();
+}
+function tourExit(){
+  if(tour && tour.kind === 'site'){
+    var u = new URL(location.href); u.searchParams.delete('vtour'); history.replaceState(null, '', u);
+  }
+  tour = null; drawTour();
+}
+// the step's text: escaped, paragraphs at blank lines, line breaks kept
+function tourText(s){
+  return String(s || '').trim().split(/\n\s*\n/).filter(Boolean).map(function(p){
+    return '<p>' + esc(p).replace(/\n/g, '<br>') + '</p>';
+  }).join('');
+}
+function tourBtn(act, label, title, cls, off){
+  return '<button type="button" class="btn' + (cls ? ' ' + cls : '') + '" data-tour="' + act + '" title="' + esc(title) + '"' +
+         (off ? ' disabled' : '') + '>' + label + '</button>';
+}
+function drawTour(){
+  var bar = document.getElementById('tourbar');
+  document.body.classList.toggle('touring', !!tour);
+  if(!tour){ bar.hidden = true; bar.innerHTML = ''; }
+  else {
+    var n = tour.steps.length, k = tourAt, last = k === n - 1, text = tourText(tour.steps[k].notes);
+    var exit = 'End the tour; the versions stay as they are';
+    var tabs = TABS.map(function(v){
+      return '<a class="vtab" href="#' + v + '"' + (v === shown ? ' aria-current="page"' : '') + '>' + v + '</a>';
+    }).join('');
+    bar.innerHTML = '<div class="trgrid"><div class="trside">' +
+        '<span class="trpos">Step ' + (k + 1) + ' of ' + n + '</span>' +
+        '<span class="trpair">' + tourBtn('back', '&#9664;&nbsp;Back', 'Previous step', '', k === 0) +
+          (last ? tourBtn('exit', 'Finish', exit, 'trnext') : tourBtn('next', 'Next&nbsp;&#9654;', 'Next step', 'trnext')) + '</span>' +
+        '<span class="trpair">' + tourBtn('again', '&#8634;', 'This step again, as it began') +
+          (last ? '' : tourBtn('exit', 'Exit tour', exit)) + '</span>' +
+        '<nav class="trvers" aria-label="Version">' + tabs + '</nav>' +
+      '</div><div class="trmain"><span class="trtitle">' + esc(tour.title || 'Tour') + '</span>' +
+      '<div class="trtext">' + text + '</div></div></div>';
+    bar.hidden = false;
+  }
+  tmShow();
+}
+document.addEventListener('click', function(e){
+  var b = e.target.closest('[data-tour]'); if(!b) return;
+  var a = b.getAttribute('data-tour');
+  if(a === 'exit') tourExit();
+  else if(!tour) return;
+  else if(a === 'back') tourGo(tourAt - 1);
+  else if(a === 'next') tourGo(tourAt + 1);
+  else if(a === 'again') tourGo(tourAt);
+});
+
+// Make a tour, as v1's: + Add step puts the version shown, as it is, after the step chosen; choosing a step (the menu,
+// ◀ / ▶) shows it; Use current view puts the version shown into the chosen step, its text kept; Move earlier / later swap
+// it with its neighbour and leave the view alone; the text field is the chosen step's, kept as typed. Out of the way
+// while a tour plays, and not on the site. The tour here is a draft
+// (localStorage xrisk-versions-tour); Save writes it to vtours/<name>.json through author.R (POST save-vtour?set=<name>,
+// its previous version in sandbox/xriskscenes/vtours), Open brings a saved one back (GET vtours lists them). Opened any
+// other way than through author.R there's no file to write: the button downloads the tour, for vtours/.
+var SITE = 'villeseppala.github.io', LANDING = 'prototypes';   // the published site; the tour its bare address lands on
+var myTour = {name: LANDING, title: '', steps: []}, tmCur = -1;   // the tour here; the step chosen (-1: none)
+var tmServed = false;                             // author.R there to save to
+function tmLoad(){
+  try {
+    var j = JSON.parse(localStorage.getItem('xrisk-versions-tour'));
+    myTour = cleanTour(j); myTour.name = typeof j.name === 'string' ? j.name : LANDING;
+  } catch(err){}
+}
+function tmSave(){                               // (the visitors' link shown is out of date now: hidden till saved again)
+  document.getElementById('tmSee').hidden = true;
+  try { localStorage.setItem('xrisk-versions-tour', JSON.stringify(myTour)); }
+  catch(err){ tmStatus('This browser won’t keep it: save it before you leave the page.'); }
+}
+function tmStatus(msg){ document.getElementById('tmStatus').textContent = msg; }
+function tmDrawList(){
+  var list = document.getElementById('tmList'), n = myTour.steps.length;
+  list.innerHTML = '';
+  function opt(value, text){ var o = document.createElement('option'); o.value = value; o.textContent = text; list.appendChild(o); }
+  opt('', n ? '— choose a step —' : '— no steps yet —');
+  myTour.steps.forEach(function(s, i){
+    var line = s.notes.split('\n')[0].trim();                              // the text's first line names it
+    opt(String(i), 'Step ' + (i + 1) + ' · ' + s.version + (line ? ' · ' + (line.length > 48 ? line.slice(0, 47) + '…' : line) : ''));
+  });
+  list.value = tmCur >= 0 ? String(tmCur) : '';
+}
+function tmDraw(){
+  var n = myTour.steps.length, has = tmCur >= 0 && tmCur < n;
+  if(!has) tmCur = -1;
+  tmDrawList();
+  function off(id, x){ document.getElementById(id).disabled = x; }
+  off('tmPrev', !n || tmCur === 0); off('tmNext', !n || tmCur === n - 1);
+  off('tmUpd', !has); off('tmDel', !has); off('tmWrite', !n); off('tmPlay', !n);
+  off('tmEarlier', !has || tmCur === 0); off('tmLater', !has || tmCur === n - 1);
+  var t = document.getElementById('tmText');
+  t.disabled = !has; t.value = has ? myTour.steps[tmCur].notes : '';
+  document.getElementById('tmTitle').value = myTour.title;
+  document.getElementById('tmName').value = myTour.name;
+}
+function tmShow(){
+  var on = document.getElementById('showtm').checked && !tour;
+  document.getElementById('tourmaker').hidden = !on;
+  if(on) tmDraw();
+}
+function tmGo(k){                                 // choose step k: its version as it was then
+  if(k < 0 || k >= myTour.steps.length) return;
+  tmCur = k; goStep(myTour.steps[k]); tmDraw();
+}
+function tmNoAnswer(){ tmStatus('No answer from ' + shown + ': reload this page and try again'); }
+function tmAdd(){
+  readStep().then(function(s){
+    var at = tmCur >= 0 ? tmCur + 1 : myTour.steps.length;
+    myTour.steps.splice(at, 0, {version: s.version, notes: '', state: s.state});
+    tmCur = at; tmSave(); tmDraw();
+    tmStatus('Step ' + (at + 1) + ' added: write its text below');
+    document.getElementById('tmText').focus();
+  }).catch(tmNoAnswer);
+}
+function tmUpdate(){
+  if(tmCur < 0) return;
+  var k = tmCur;
+  readStep().then(function(s){
+    myTour.steps[k].version = s.version; myTour.steps[k].state = s.state; tmSave(); tmDraw();
+    tmStatus('Step ' + (k + 1) + ' now shows the current view');
+  }).catch(tmNoAnswer);
+}
+function tmMove(by){                              // the chosen step swapped with the one `by` away, and still chosen
+  var s = myTour.steps, k = tmCur, to = k + by;
+  if(k < 0 || to < 0 || to >= s.length) return;
+  var step = s[k]; s[k] = s[to]; s[to] = step;
+  tmCur = to; tmSave(); tmDraw();
+  tmStatus('Now step ' + (to + 1));
+}
+function armed(btn, question){
+  if(btn.classList.contains('armed')) return true;
+  var text = btn.textContent; btn.classList.add('armed'); btn.textContent = question;
+  setTimeout(function(){ btn.classList.remove('armed'); btn.textContent = text; }, 3000);
+  return false;
+}
+function tmDelete(btn){
+  if(tmCur < 0 || !armed(btn, 'Delete step ' + (tmCur + 1) + '?')) return;
+  var n = tmCur + 1;
+  myTour.steps.splice(tmCur, 1); tmCur = -1; tmSave(); tmDraw();
+  tmStatus('Step ' + n + ' deleted');
+}
+function tmPlay(){
+  if(myTour.steps.length) startTour(JSON.parse(JSON.stringify(myTour)), 'preview');
+}
+function tmDownload(name, text){
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], {type: 'application/json'}));
+  a.download = name + '.json';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1000);
+  tmStatus('Downloaded ' + a.download + ': put it in vtours/');
+}
+function tmWrite(){
+  var name = myTour.name.trim();
+  if(!myTour.steps.length) return;
+  if(!/^[a-z0-9][a-z0-9-]{0,39}$/.test(name)) return tmStatus('A tour’s name: lowercase letters, digits and hyphens, e.g. prototypes');
+  var text = JSON.stringify({title: myTour.title, steps: myTour.steps}, null, 1);
+  if(!tmServed) return tmDownload(name, text);
+  fetch('save-vtour?set=' + encodeURIComponent(name), {method: 'POST', body: text,
+                         headers: {'Content-Type': 'application/json; charset=utf-8', 'X-Xriskb-Save': '1'}})
+    .then(function(r){
+      if(!r.ok) throw new Error('HTTP ' + r.status);
+      tmStatus('Saved vtours/' + name + '.json (' + new Date().toLocaleTimeString() + '): a push publishes it');
+      var see = document.getElementById('tmSee'); see.href = 'versions.html?vtour=' + name; see.hidden = false;
+      tmFiles();
+    })
+    .catch(function(){ tmStatus('Not saved: is author.R still running?'); });
+}
+function tmOpen(btn){
+  var name = document.getElementById('tmSaved').value;
+  if(!name || (myTour.steps.length && !armed(btn, 'Replace the tour here?'))) return;
+  fetch('vtours/' + name + '.json', {cache: 'no-store'})
+    .then(function(r){ if(!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(function(j){
+      myTour = cleanTour(j); myTour.name = name; tmCur = -1; tmSave(); tmDraw();
+      tmStatus('Opened ' + name);
+    })
+    .catch(function(){ tmStatus('Could not read ' + name); });
+}
+// the saved tours, if author.R is there to list them: then Save and Open take the place of the download
+function tmFiles(){
+  if(!/^https?:$/.test(location.protocol)) return;
+  fetch('vtours', {cache: 'no-store'})
+    .then(function(r){ if(!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(function(list){
+      var sel = document.getElementById('tmSaved'), was = sel.value, w = document.getElementById('tmWrite');
+      sel.innerHTML = '';
+      function opt(value, text){ var o = document.createElement('option'); o.value = value; o.textContent = text; sel.appendChild(o); }
+      opt('', list.length ? '— saved tours —' : '— none saved yet —');
+      list.forEach(function(t){ opt(t.name, t.name + (t.title ? ' · ' + t.title : '')); });
+      sel.value = list.some(function(t){ return t.name === was; }) ? was : '';
+      tmServed = true;
+      document.getElementById('tmFiles').hidden = false;
+      w.textContent = 'Save'; w.title = 'Write this tour to vtours/<name>.json';
+    })
+    .catch(function(){});
+}
+document.addEventListener('change', function(e){
+  var t = e.target;
+  if(t.id === 'showtm') tmShow();
+  else if(t.id === 'tmList'){ if(t.value !== '') tmGo(+t.value); }
+});
+document.addEventListener('input', function(e){
+  var t = e.target;
+  if(t.id === 'tmTitle'){ myTour.title = t.value; tmSave(); }
+  else if(t.id === 'tmName'){ myTour.name = t.value; tmSave(); }
+  else if(t.id === 'tmText' && tmCur >= 0){ myTour.steps[tmCur].notes = t.value; tmSave(); tmDrawList(); }
+});
+document.addEventListener('click', function(e){
+  var b = e.target.closest('#tourmaker button'); if(!b) return;
+  if(b.id === 'tmPrev') tmGo(tmCur < 0 ? myTour.steps.length - 1 : tmCur - 1);
+  else if(b.id === 'tmNext') tmGo(tmCur < 0 ? 0 : tmCur + 1);
+  else if(b.id === 'tmAdd') tmAdd();
+  else if(b.id === 'tmUpd') tmUpdate();
+  else if(b.id === 'tmEarlier') tmMove(-1);
+  else if(b.id === 'tmLater') tmMove(1);
+  else if(b.id === 'tmDel') tmDelete(b);
+  else if(b.id === 'tmPlay') tmPlay();
+  else if(b.id === 'tmWrite') tmWrite();
+  else if(b.id === 'tmOpen') tmOpen(b);
+});
+
+// ── start-up ──
+// The tour the address names, only here at the start: a step changing version changes the address too, and that
+// mustn't start the tour again. No such tour, or none to read: the versions as usual.
+function tourStart(){
+  var name = tourName();
+  if(!name || !/^https?:$/.test(location.protocol)) return show(wanted());
+  fetch('vtours/' + name + '.json', {cache: 'no-cache'})
+    .then(function(r){ if(!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(function(j){
+      var t = cleanTour(j);
+      if(!t.steps.length) throw new Error('no steps');
+      startTour(t, 'site');
+    })
+    .catch(function(){ show(wanted()); });
+}
+window.addEventListener('hashchange', function(){ show(wanted()); });
+tmLoad();
+if(location.hostname === SITE) document.body.classList.add('onsite');   // (no bar there during a tour: CSS)
+else {                                           // Make a tour on by default, set here so the site, where the box is hidden, stays without it
+  document.querySelector('.tmshow').hidden = false;
+  document.getElementById('showtm').checked = true;
+  tmShow(); tmFiles();
+  var local = document.createElement('script');   // not in the repository: none, and nothing changes
+  local.src = 'versions_local.js'; document.head.appendChild(local);
+}
+tourStart();
+</script>
+</body>
+</html>

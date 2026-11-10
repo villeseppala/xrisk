@@ -4,24 +4,27 @@
 // keeps the page's default.
 window.XRISKB_SETTINGS = {
   "author": {
-    "--page-bg": "#182630",
+    "--page-bg": "#24323d",
     "--g-bg": "#1d3c59",
     "--g-line-col": "#000000",
     "--row-line-w": "2px",
     "--row-line-col": "#2b4b5e",
     "--v-bg": "#0e405d",
     "--v-edit-bg": "#0e273a",
-    "--area-op": "0.5",
+    "--area-op": "0.35",
+    "--grain-op": "0.05",
+    "--grp-fill": "0.02",
     "--title-fs": "19px",
     "--formula-fs": "17.2px",
     "--ar-w": "1.6px",
     "--col-rate": "#c98678",
-    "--col-surv": "#7bb9cc",
+    "--col-surv": "#7cdfde",
     "--col-rate-c": "#bd5b47",
     "--col-surv-c": "#41b3d2",
-    "--col-out": "#ca779f",
+    "--col-out": "#d590b1",
     "--col-cum": "#c2b456",
     "graphYears": true,
+    "graphHatch": true,
     "boxTextPx": 16.9
   },
   "view": {
@@ -38,7 +41,7 @@ window.XRISKB_SETTINGS = {
       100000,
       1000000
     ],
-    "zoom": 0.9,
+    "zoom": 0.807,
     "namesWidth": 412,
     "variables": [
       "rate",
@@ -58,7 +61,8 @@ window.XRISKB_SETTINGS = {
       "groupElements": false,
       "groupVariables": false,
       "groupTimeScale": true,
-      "groupControls": false,
+      "groupControls": true,
+      "groupSummary": true,
       "comparison": true
     },
     "comparePrevious": false,
@@ -88,6 +92,9 @@ window.XRISKB_SETTINGS = {
       "valexpLoss": false,
       "valcumLoss": false
     },
-    "relative": {}
+    "relative": {},
+    "locked": [
+      "surv:0"
+    ]
   }
 };

@@ -1,0 +1,1447 @@
+{
+ "title": "Guide to site prototypes",
+ "steps": [
+  {
+   "version": "v3",
+   "notes": "This is a guided tour to the draft of my existential risk website and its prototypes (v1 and v3). Site calculates and visualizes the connection between existential risk probability and humankind's longevity over time. \nThe aim is not to depict any particular existential risk probabilities, but to offer a flexible platform to try them out and to show the impact of changes. \n\nOut of the prototypes, v3, depicted here, is focused on the visual presentation and on showing the connections between the variables via the graphs. \n",
+   "state": {
+    "view": {
+     "start": 2027,
+     "points": [
+      1,
+      2
+     ],
+     "ahead": [
+      9,
+      99,
+      999,
+      9999,
+      99999,
+      999999
+     ],
+     "show": {
+      "graphs": true,
+      "riskGraph": true,
+      "survGraph": true,
+      "cmp": false,
+      "real": true,
+      "time": true,
+      "work": true,
+      "scales": true,
+      "lines": true,
+      "braces": true,
+      "spin": false
+     },
+     "formulas": true,
+     "scale": {
+      "r": "pow",
+      "s": "all"
+     },
+     "groups": {
+      "grpCtl": false,
+      "grpOut": false,
+      "grpCmp": true,
+      "grpElements": false,
+      "grpTime": true,
+      "grpSim": false
+     },
+     "optionsWidth": 247,
+     "namesWidth": 220,
+     "heights": {
+      "r": 116,
+      "s": 210,
+      "t": 303
+     },
+     "widths": {
+      "1": 322,
+      "2": 316,
+      "3": 411
+     },
+     "outcome": "years",
+     "flip": {
+      "r": false,
+      "s": false,
+      "y": false
+     }
+    },
+    "values": {
+     "a": {
+      "risk": {
+       "1": 0.0005,
+       "2": 0.0005,
+       "3": 0.00035845920957367996
+      },
+      "surv": {
+       "2": 0.7705365526929188
+      }
+     },
+     "b": {
+      "risk": {},
+      "surv": {}
+     },
+     "rShape": {
+      "1": {
+       "kind": "flat",
+       "h": 0.5
+      },
+      "2": {
+       "kind": "flat",
+       "h": 0.5
+      },
+      "3": {
+       "kind": "flat",
+       "h": 0.5
+      }
+     },
+     "sShape": {
+      "2": {
+       "kind": "exp",
+       "h": 0.85
+      }
+     },
+     "drive": {},
+     "pot": {
+      "lives": {},
+      "value": {}
+     }
+    },
+    "colors": {
+     "page": "#1b2b34",
+     "names": "#1b2b34",
+     "box": "#343d46",
+     "label": "#4f5b66",
+     "text": "#c0c5ce",
+     "muted": "#a7adba",
+     "faint": "#a7adba",
+     "risk": "#ec5f67",
+     "riskFill": "#79424b",
+     "odds": "#f99157",
+     "surv": "#5fb3b3",
+     "years": "#77b4ee",
+     "lost": "#c594c5",
+     "line": "#c0c5ce",
+     "title": "#fac863",
+     "bad": "#ec5f67",
+     "good": "#99c794",
+     "btn": "#343d46",
+     "btnLine": "#65737e",
+     "lit": "#4f5b66",
+     "litLine": "#5fb3b3",
+     "border": "#65737e",
+     "accent": "#5fb3b3",
+     "well": "#1b2b34",
+     "sel": "#c594c5",
+     "dim": "#a7adba",
+     "menu": "#a7adba",
+     "ok": "#99c794",
+     "faintD": "#a7adba",
+     "periods": [
+      "#353c4b",
+      "#2a4152",
+      "#29464d",
+      "#344a47",
+      "#3d4051",
+      "#484a3d"
+     ]
+    },
+    "colorsLight": {},
+    "simN": 0,
+    "palette": ""
+   }
+  },
+  {
+   "version": "v1",
+   "notes": "V1 is focused on numbers, and on showing the effect of changes between different specifications. Also, the menu options are more numerous in this prototype as of now, as I've spent more time on it. \n\nThe final site may be some kind of combination of these prototypes, or it could be built around one of them. Feedback is appreciated on what works and with what. Both versions have been coded using Claude. \n",
+   "state": {
+    "view": {
+     "start": 2026,
+     "points": [
+      2,
+      3
+     ],
+     "scale": [
+      10,
+      100,
+      1000,
+      10000,
+      100000,
+      1000000
+     ],
+     "zoom": 0.582,
+     "namesWidth": 412,
+     "variables": [
+      "rate",
+      "surv",
+      "outann",
+      "outcum"
+     ],
+     "show": {
+      "graphs": true,
+      "arrows": true,
+      "spin": false,
+      "formulas": true,
+      "change": true,
+      "b": true,
+      "names": false,
+      "note": false,
+      "groupElements": false,
+      "groupVariables": false,
+      "groupTimeScale": false,
+      "groupControls": false,
+      "groupSummary": false,
+      "comparison": true
+     },
+     "comparePrevious": false,
+     "excludePopulation": true,
+     "excludeValue": true,
+     "graphScale": {
+      "rate": "cum",
+      "surv": "full",
+      "yrexp": "full",
+      "years": "potall",
+      "popexp": "pot",
+      "lives": "potall",
+      "valexp": "pot",
+      "valcum": "potall",
+      "pop": "all"
+     },
+     "outcome": "years",
+     "lang": "en",
+     "views": {
+      "rateComp": true,
+      "survComp": false,
+      "yearsComp": false,
+      "yrexpComp": false,
+      "livesLy": false,
+      "livesLoss": false,
+      "popexpLoss": false,
+      "valexpLoss": false,
+      "valcumLoss": false
+     },
+     "relative": {},
+     "locked": [
+      "surv:0"
+     ]
+    },
+    "data": {
+     "rates": [
+      0.0005,
+      0.0001
+     ],
+     "pops": [
+      8300000000,
+      8300000000,
+      8300000000
+     ],
+     "vals": [
+      100,
+      100,
+      100
+     ],
+     "ref": {
+      "rates": [
+       0.0005,
+       0.0001
+      ],
+      "pops": [
+       8300000000,
+       8300000000,
+       8300000000
+      ],
+      "vals": [
+       100,
+       100,
+       100
+      ]
+     },
+     "prev": {
+      "rates": [
+       0.0005,
+       0.0001
+      ],
+      "pops": [
+       8300000000,
+       8300000000,
+       8300000000
+      ],
+      "vals": [
+       100,
+       100,
+       100
+      ]
+     },
+     "excluded": [],
+     "sel": {
+      "kind": "rate_c",
+      "i": 0,
+      "place": 0.00001,
+      "part": "main"
+     },
+     "names": {
+      "A": "",
+      "B": ""
+     },
+     "note": ""
+    }
+   }
+  },
+  {
+   "version": "v3",
+   "notes": "We'll get into bit more detail now, starting with v3. The page has three variables on by default: A) Annual exctinction risk, which accumulates to B) Survival probability by a certain year - which can be though of as share of possible futures that survive. The numbers depicted in the second graph here show the connection between these two variables. \n\nThe third variable is the main outcome, here depicted as how many years in expectation has humanity survived by certain year. It is the sum of cumulative survival probabilities and thus depicted by the area under the survival curve. \n",
+   "state": {
+    "view": {
+     "start": 2027,
+     "points": [
+      1
+     ],
+     "ahead": [
+      9,
+      99,
+      999,
+      9999,
+      99999,
+      999999
+     ],
+     "show": {
+      "graphs": true,
+      "riskGraph": true,
+      "survGraph": true,
+      "cmp": false,
+      "real": false,
+      "time": true,
+      "work": true,
+      "scales": true,
+      "lines": true,
+      "braces": true,
+      "spin": false
+     },
+     "formulas": true,
+     "scale": {
+      "r": "pow",
+      "s": "per"
+     },
+     "groups": {
+      "grpCtl": false,
+      "grpOut": false,
+      "grpCmp": true,
+      "grpElements": false,
+      "grpTime": true,
+      "grpSim": false
+     },
+     "optionsWidth": 247,
+     "namesWidth": 220,
+     "heights": {
+      "r": 116,
+      "s": 320,
+      "t": 303
+     },
+     "widths": {
+      "1": 617,
+      "2": 466,
+      "3": 411
+     },
+     "outcome": "years",
+     "flip": {
+      "r": false,
+      "s": false,
+      "y": false
+     }
+    },
+    "values": {
+     "a": {
+      "risk": {
+       "1": 0.0005,
+       "2": 0.0005,
+       "3": 0.00035845920957367996
+      },
+      "surv": {
+       "2": 0.7705365526929188
+      }
+     },
+     "b": {
+      "risk": {},
+      "surv": {}
+     },
+     "rShape": {
+      "1": {
+       "kind": "flat",
+       "h": 0.5
+      },
+      "2": {
+       "kind": "flat",
+       "h": 0.5
+      },
+      "3": {
+       "kind": "flat",
+       "h": 0.5
+      }
+     },
+     "sShape": {
+      "2": {
+       "kind": "exp",
+       "h": 0.85
+      }
+     },
+     "drive": {},
+     "pot": {
+      "lives": {},
+      "value": {}
+     }
+    },
+    "colors": {
+     "page": "#1b2b34",
+     "names": "#1b2b34",
+     "box": "#343d46",
+     "label": "#4f5b66",
+     "text": "#c0c5ce",
+     "muted": "#a7adba",
+     "faint": "#a7adba",
+     "risk": "#ec5f67",
+     "riskFill": "#79424b",
+     "odds": "#f99157",
+     "surv": "#5fb3b3",
+     "years": "#77b4ee",
+     "lost": "#c594c5",
+     "line": "#c0c5ce",
+     "title": "#fac863",
+     "bad": "#ec5f67",
+     "good": "#99c794",
+     "btn": "#343d46",
+     "btnLine": "#65737e",
+     "lit": "#4f5b66",
+     "litLine": "#5fb3b3",
+     "border": "#65737e",
+     "accent": "#5fb3b3",
+     "well": "#1b2b34",
+     "sel": "#c594c5",
+     "dim": "#a7adba",
+     "menu": "#a7adba",
+     "ok": "#99c794",
+     "faintD": "#a7adba",
+     "periods": [
+      "#353c4b",
+      "#2a4152",
+      "#29464d",
+      "#344a47",
+      "#3d4051",
+      "#484a3d"
+     ]
+    },
+    "colorsLight": {},
+    "simN": 0,
+    "palette": ""
+   }
+  },
+  {
+   "version": "v3",
+   "notes": "You can control the first and the second variables either by changing the numeric input in the box or by dragging the values in the graphs. \nIn principle, the first variable always causes the second one, but changing either one in the UI will update the other one to match the connection between the variables. \n\nYou can control the shape of the curves with the buttons above the graph.",
+   "state": {
+    "view": {
+     "start": 2027,
+     "points": [
+      1
+     ],
+     "ahead": [
+      9,
+      99,
+      999,
+      9999,
+      99999,
+      999999
+     ],
+     "show": {
+      "graphs": true,
+      "riskGraph": true,
+      "survGraph": true,
+      "cmp": false,
+      "real": false,
+      "time": true,
+      "work": true,
+      "scales": true,
+      "lines": true,
+      "braces": true,
+      "spin": false
+     },
+     "formulas": true,
+     "scale": {
+      "r": "pow",
+      "s": "per"
+     },
+     "groups": {
+      "grpCtl": false,
+      "grpOut": false,
+      "grpCmp": true,
+      "grpElements": false,
+      "grpTime": true,
+      "grpSim": false
+     },
+     "optionsWidth": 247,
+     "namesWidth": 220,
+     "heights": {
+      "r": 116,
+      "s": 320,
+      "t": 303
+     },
+     "widths": {
+      "1": 548,
+      "2": 466,
+      "3": 411
+     },
+     "outcome": "years",
+     "flip": {
+      "r": false,
+      "s": false,
+      "y": false
+     }
+    },
+    "values": {
+     "a": {
+      "risk": {
+       "1": 0.0005,
+       "2": 0.0005,
+       "3": 0.00035845920957367996
+      },
+      "surv": {
+       "2": 0.7705365526929188
+      }
+     },
+     "b": {
+      "risk": {},
+      "surv": {}
+     },
+     "rShape": {
+      "1": {
+       "kind": "flat",
+       "h": 0.5
+      },
+      "2": {
+       "kind": "flat",
+       "h": 0.5
+      },
+      "3": {
+       "kind": "flat",
+       "h": 0.5
+      }
+     },
+     "sShape": {
+      "2": {
+       "kind": "exp",
+       "h": 0.85
+      }
+     },
+     "drive": {},
+     "pot": {
+      "lives": {},
+      "value": {}
+     }
+    },
+    "colors": {
+     "page": "#1b2b34",
+     "names": "#1b2b34",
+     "box": "#343d46",
+     "label": "#4f5b66",
+     "text": "#c0c5ce",
+     "muted": "#a7adba",
+     "faint": "#a7adba",
+     "risk": "#ec5f67",
+     "riskFill": "#79424b",
+     "odds": "#f99157",
+     "surv": "#5fb3b3",
+     "years": "#77b4ee",
+     "lost": "#c594c5",
+     "line": "#c0c5ce",
+     "title": "#fac863",
+     "bad": "#ec5f67",
+     "good": "#99c794",
+     "btn": "#343d46",
+     "btnLine": "#65737e",
+     "lit": "#4f5b66",
+     "litLine": "#5fb3b3",
+     "border": "#65737e",
+     "accent": "#5fb3b3",
+     "well": "#1b2b34",
+     "sel": "#c594c5",
+     "dim": "#a7adba",
+     "menu": "#a7adba",
+     "ok": "#99c794",
+     "faintD": "#a7adba",
+     "periods": [
+      "#353c4b",
+      "#2a4152",
+      "#29464d",
+      "#344a47",
+      "#3d4051",
+      "#484a3d"
+     ]
+    },
+    "colorsLight": {},
+    "simN": 0,
+    "palette": ""
+   }
+  },
+  {
+   "version": "v3",
+   "notes": "You can choose different time periods from the time scale menu. This allows to choose variation in x-risk rates in different time periods. \nIt also shows how far-reaching the changes in extinction risk in the near future are to the cumulative survival in the far future. Extinction is permanent.  ",
+   "state": {
+    "view": {
+     "start": 2027,
+     "points": [
+      1,
+      2
+     ],
+     "ahead": [
+      9,
+      99,
+      999,
+      9999,
+      99999,
+      999999
+     ],
+     "show": {
+      "graphs": true,
+      "riskGraph": true,
+      "survGraph": true,
+      "cmp": false,
+      "real": false,
+      "time": true,
+      "work": true,
+      "scales": true,
+      "lines": true,
+      "braces": true,
+      "spin": false
+     },
+     "formulas": true,
+     "scale": {
+      "r": "pow",
+      "s": "per"
+     },
+     "groups": {
+      "grpCtl": false,
+      "grpOut": false,
+      "grpCmp": true,
+      "grpElements": false,
+      "grpTime": true,
+      "grpSim": false
+     },
+     "optionsWidth": 247,
+     "namesWidth": 220,
+     "heights": {
+      "r": 116,
+      "s": 320,
+      "t": 303
+     },
+     "widths": {
+      "1": 347,
+      "2": 340,
+      "3": 411
+     },
+     "outcome": "years",
+     "flip": {
+      "r": false,
+      "s": false,
+      "y": false
+     }
+    },
+    "values": {
+     "a": {
+      "risk": {
+       "1": 0.0005,
+       "2": 0.0005,
+       "3": 0.00035845920957367996
+      },
+      "surv": {
+       "2": 0.7705365526929188
+      }
+     },
+     "b": {
+      "risk": {},
+      "surv": {}
+     },
+     "rShape": {
+      "1": {
+       "kind": "flat",
+       "h": 0.5
+      },
+      "2": {
+       "kind": "flat",
+       "h": 0.5
+      },
+      "3": {
+       "kind": "flat",
+       "h": 0.5
+      }
+     },
+     "sShape": {
+      "2": {
+       "kind": "exp",
+       "h": 0.85
+      }
+     },
+     "drive": {},
+     "pot": {
+      "lives": {},
+      "value": {}
+     }
+    },
+    "colors": {
+     "page": "#1b2b34",
+     "names": "#1b2b34",
+     "box": "#343d46",
+     "label": "#4f5b66",
+     "text": "#c0c5ce",
+     "muted": "#a7adba",
+     "faint": "#a7adba",
+     "risk": "#ec5f67",
+     "riskFill": "#79424b",
+     "odds": "#f99157",
+     "surv": "#5fb3b3",
+     "years": "#77b4ee",
+     "lost": "#c594c5",
+     "line": "#c0c5ce",
+     "title": "#fac863",
+     "bad": "#ec5f67",
+     "good": "#99c794",
+     "btn": "#343d46",
+     "btnLine": "#65737e",
+     "lit": "#4f5b66",
+     "litLine": "#5fb3b3",
+     "border": "#65737e",
+     "accent": "#5fb3b3",
+     "well": "#1b2b34",
+     "sel": "#c594c5",
+     "dim": "#a7adba",
+     "menu": "#a7adba",
+     "ok": "#99c794",
+     "faintD": "#a7adba",
+     "periods": [
+      "#353c4b",
+      "#2a4152",
+      "#29464d",
+      "#344a47",
+      "#3d4051",
+      "#484a3d"
+     ]
+    },
+    "colorsLight": {},
+    "simN": 0,
+    "palette": ""
+   }
+  },
+  {
+   "version": "v3",
+   "notes": "By default, the graph scales change based on the minimum and maximum values of the variables over a given time period. You can choose alternative scales using the buttons to the left of graphs. \n\nOn the bottom, there is a graph that represents the survival probability on a 0 to 100% scale and shows all the time periods on the same scale. Small changes and connections between the graphs are harder harder to notice on notice on this graph, but it is good at depicting the the actual magnitude of all things considered.  ",
+   "state": {
+    "view": {
+     "start": 2027,
+     "points": [
+      1,
+      2
+     ],
+     "ahead": [
+      9,
+      99,
+      999,
+      9999,
+      99999,
+      999999
+     ],
+     "show": {
+      "graphs": true,
+      "riskGraph": true,
+      "survGraph": true,
+      "cmp": false,
+      "real": true,
+      "time": true,
+      "work": true,
+      "scales": true,
+      "lines": true,
+      "braces": true,
+      "spin": false
+     },
+     "formulas": true,
+     "scale": {
+      "r": "pow",
+      "s": "per"
+     },
+     "groups": {
+      "grpCtl": false,
+      "grpOut": false,
+      "grpCmp": true,
+      "grpElements": false,
+      "grpTime": true,
+      "grpSim": false
+     },
+     "optionsWidth": 247,
+     "namesWidth": 220,
+     "heights": {
+      "r": 116,
+      "s": 320,
+      "t": 303
+     },
+     "widths": {
+      "1": 356,
+      "2": 352,
+      "3": 411
+     },
+     "outcome": "years",
+     "flip": {
+      "r": false,
+      "s": false,
+      "y": false
+     }
+    },
+    "values": {
+     "a": {
+      "risk": {
+       "1": 0.0005,
+       "2": 0.0005,
+       "3": 0.00035845920957367996
+      },
+      "surv": {
+       "2": 0.7705365526929188
+      }
+     },
+     "b": {
+      "risk": {},
+      "surv": {}
+     },
+     "rShape": {
+      "1": {
+       "kind": "flat",
+       "h": 0.5
+      },
+      "2": {
+       "kind": "flat",
+       "h": 0.5
+      },
+      "3": {
+       "kind": "flat",
+       "h": 0.5
+      }
+     },
+     "sShape": {
+      "2": {
+       "kind": "exp",
+       "h": 0.85
+      }
+     },
+     "drive": {},
+     "pot": {
+      "lives": {},
+      "value": {}
+     }
+    },
+    "colors": {
+     "page": "#1b2b34",
+     "names": "#1b2b34",
+     "box": "#343d46",
+     "label": "#4f5b66",
+     "text": "#c0c5ce",
+     "muted": "#a7adba",
+     "faint": "#a7adba",
+     "risk": "#ec5f67",
+     "riskFill": "#79424b",
+     "odds": "#f99157",
+     "surv": "#5fb3b3",
+     "years": "#77b4ee",
+     "lost": "#c594c5",
+     "line": "#c0c5ce",
+     "title": "#fac863",
+     "bad": "#ec5f67",
+     "good": "#99c794",
+     "btn": "#343d46",
+     "btnLine": "#65737e",
+     "lit": "#4f5b66",
+     "litLine": "#5fb3b3",
+     "border": "#65737e",
+     "accent": "#5fb3b3",
+     "well": "#1b2b34",
+     "sel": "#c594c5",
+     "dim": "#a7adba",
+     "menu": "#a7adba",
+     "ok": "#99c794",
+     "faintD": "#a7adba",
+     "periods": [
+      "#353c4b",
+      "#2a4152",
+      "#29464d",
+      "#344a47",
+      "#3d4051",
+      "#484a3d"
+     ]
+    },
+    "colorsLight": {},
+    "simN": 0,
+    "palette": ""
+   }
+  },
+  {
+   "version": "v3",
+   "notes": "You can simulate possible future extinction given the chosen parameters. This can give a better impression of the threat instead of the expected values. ",
+   "state": {
+    "view": {
+     "start": 2027,
+     "points": [
+      1,
+      2
+     ],
+     "ahead": [
+      9,
+      99,
+      999,
+      9999,
+      99999,
+      999999
+     ],
+     "show": {
+      "graphs": true,
+      "riskGraph": true,
+      "survGraph": true,
+      "cmp": false,
+      "real": true,
+      "time": true,
+      "work": true,
+      "scales": true,
+      "lines": true,
+      "braces": true,
+      "spin": false
+     },
+     "formulas": true,
+     "scale": {
+      "r": "pow",
+      "s": "per"
+     },
+     "groups": {
+      "grpCtl": false,
+      "grpOut": false,
+      "grpCmp": true,
+      "grpElements": false,
+      "grpTime": false,
+      "grpSim": true
+     },
+     "optionsWidth": 247,
+     "namesWidth": 220,
+     "heights": {
+      "r": 116,
+      "s": 320,
+      "t": 303
+     },
+     "widths": {
+      "1": 328,
+      "2": 352,
+      "3": 411
+     },
+     "outcome": "years",
+     "flip": {
+      "r": false,
+      "s": false,
+      "y": false
+     }
+    },
+    "values": {
+     "a": {
+      "risk": {
+       "1": 0.0005,
+       "2": 0.0005,
+       "3": 0.00035845920957367996
+      },
+      "surv": {
+       "2": 0.7705365526929188
+      }
+     },
+     "b": {
+      "risk": {},
+      "surv": {}
+     },
+     "rShape": {
+      "1": {
+       "kind": "flat",
+       "h": 0.5
+      },
+      "2": {
+       "kind": "flat",
+       "h": 0.5
+      },
+      "3": {
+       "kind": "flat",
+       "h": 0.5
+      }
+     },
+     "sShape": {
+      "2": {
+       "kind": "exp",
+       "h": 0.85
+      }
+     },
+     "drive": {},
+     "pot": {
+      "lives": {},
+      "value": {}
+     }
+    },
+    "colors": {
+     "page": "#1b2b34",
+     "names": "#1b2b34",
+     "box": "#343d46",
+     "label": "#4f5b66",
+     "text": "#c0c5ce",
+     "muted": "#a7adba",
+     "faint": "#a7adba",
+     "risk": "#ec5f67",
+     "riskFill": "#79424b",
+     "odds": "#f99157",
+     "surv": "#5fb3b3",
+     "years": "#77b4ee",
+     "lost": "#c594c5",
+     "line": "#c0c5ce",
+     "title": "#fac863",
+     "bad": "#ec5f67",
+     "good": "#99c794",
+     "btn": "#343d46",
+     "btnLine": "#65737e",
+     "lit": "#4f5b66",
+     "litLine": "#5fb3b3",
+     "border": "#65737e",
+     "accent": "#5fb3b3",
+     "well": "#1b2b34",
+     "sel": "#c594c5",
+     "dim": "#a7adba",
+     "menu": "#a7adba",
+     "ok": "#99c794",
+     "faintD": "#a7adba",
+     "periods": [
+      "#353c4b",
+      "#2a4152",
+      "#29464d",
+      "#344a47",
+      "#3d4051",
+      "#484a3d"
+     ]
+    },
+    "colorsLight": {},
+    "simN": 100,
+    "palette": ""
+   }
+  },
+  {
+   "version": "v1",
+   "notes": "V1 prototype focuses on comparison scenarios. V1 is also the only one so far to offer other outcome variables besides survival and cumulative survived years: most notably expected population and and its cumulative version. Using population based metrics can put the outcome in perspective, especially when it comes to seemingly small changes.",
+   "state": {
+    "view": {
+     "start": 2026,
+     "points": [
+      2,
+      3
+     ],
+     "scale": [
+      10,
+      100,
+      1000,
+      10000,
+      100000,
+      1000000
+     ],
+     "zoom": 0.582,
+     "namesWidth": 412,
+     "variables": [
+      "rate",
+      "surv",
+      "outann",
+      "outcum"
+     ],
+     "show": {
+      "graphs": true,
+      "arrows": true,
+      "spin": false,
+      "formulas": true,
+      "change": true,
+      "b": true,
+      "names": false,
+      "note": false,
+      "groupElements": false,
+      "groupVariables": false,
+      "groupTimeScale": false,
+      "groupControls": false,
+      "groupSummary": false,
+      "comparison": true
+     },
+     "comparePrevious": false,
+     "excludePopulation": true,
+     "excludeValue": true,
+     "graphScale": {
+      "rate": "cum",
+      "surv": "full",
+      "yrexp": "full",
+      "years": "potall",
+      "popexp": "pot",
+      "lives": "potall",
+      "valexp": "pot",
+      "valcum": "potall",
+      "pop": "all"
+     },
+     "outcome": "years",
+     "lang": "en",
+     "views": {
+      "rateComp": false,
+      "survComp": false,
+      "yearsComp": false,
+      "yrexpComp": false,
+      "livesLy": false,
+      "livesLoss": false,
+      "popexpLoss": false,
+      "valexpLoss": false,
+      "valcumLoss": false
+     },
+     "relative": {},
+     "locked": [
+      "surv:0"
+     ]
+    },
+    "data": {
+     "rates": [
+      0.0005,
+      0.0001
+     ],
+     "pops": [
+      8300000000,
+      8300000000,
+      8300000000
+     ],
+     "vals": [
+      100,
+      100,
+      100
+     ],
+     "ref": {
+      "rates": [
+       0.0005,
+       0.0001
+      ],
+      "pops": [
+       8300000000,
+       8300000000,
+       8300000000
+      ],
+      "vals": [
+       100,
+       100,
+       100
+      ]
+     },
+     "prev": {
+      "rates": [
+       0.0005,
+       0.0001
+      ],
+      "pops": [
+       8300000000,
+       8300000000,
+       8300000000
+      ],
+      "vals": [
+       100,
+       100,
+       100
+      ]
+     },
+     "excluded": [],
+     "sel": {
+      "kind": "rate",
+      "i": 0,
+      "place": 0.00001,
+      "part": "main"
+     },
+     "names": {
+      "A": "",
+      "B": ""
+     },
+     "note": ""
+    }
+   }
+  },
+  {
+   "version": "v1",
+   "notes": "Here, a reduction of annual extinction probability from 0.050% (1 in 2000) per year to 0.049% (1 in 2041) per year during the next hundred years increases the the number of expected lives by over 5 million during that time and by nearly 100 million during the next hundred years, even if there is no change in extinction probability starting from 2126. ",
+   "state": {
+    "view": {
+     "start": 2026,
+     "points": [
+      2,
+      3
+     ],
+     "scale": [
+      10,
+      100,
+      1000,
+      10000,
+      100000,
+      1000000
+     ],
+     "zoom": 0.582,
+     "namesWidth": 412,
+     "variables": [
+      "rate",
+      "surv",
+      "outann",
+      "outcum"
+     ],
+     "show": {
+      "graphs": true,
+      "arrows": true,
+      "spin": false,
+      "formulas": true,
+      "change": true,
+      "b": true,
+      "names": false,
+      "note": false,
+      "groupElements": false,
+      "groupVariables": false,
+      "groupTimeScale": false,
+      "groupControls": false,
+      "groupSummary": false,
+      "comparison": true
+     },
+     "comparePrevious": false,
+     "excludePopulation": true,
+     "excludeValue": true,
+     "graphScale": {
+      "rate": "cum",
+      "surv": "full",
+      "yrexp": "full",
+      "years": "potall",
+      "popexp": "pot",
+      "lives": "potall",
+      "valexp": "pot",
+      "valcum": "potall",
+      "pop": "all"
+     },
+     "outcome": "population",
+     "lang": "en",
+     "views": {
+      "rateComp": false,
+      "survComp": false,
+      "yearsComp": false,
+      "yrexpComp": false,
+      "livesLy": false,
+      "livesLoss": false,
+      "popexpLoss": false,
+      "valexpLoss": false,
+      "valcumLoss": false
+     },
+     "relative": {},
+     "locked": [
+      "surv:0"
+     ]
+    },
+    "data": {
+     "rates": [
+      0.0005,
+      0.0001
+     ],
+     "pops": [
+      8300000000,
+      8300000000,
+      8300000000
+     ],
+     "vals": [
+      100,
+      100,
+      100
+     ],
+     "ref": {
+      "rates": [
+       0.00049,
+       0.0001
+      ],
+      "pops": [
+       8300000000,
+       8300000000,
+       8300000000
+      ],
+      "vals": [
+       100,
+       100,
+       100
+      ]
+     },
+     "prev": {
+      "rates": [
+       0.0005,
+       0.0001
+      ],
+      "pops": [
+       8300000000,
+       8300000000,
+       8300000000
+      ],
+      "vals": [
+       100,
+       100,
+       100
+      ]
+     },
+     "excluded": [],
+     "sel": {
+      "kind": "rate",
+      "i": 0,
+      "place": 0.00001,
+      "part": "delta"
+     },
+     "names": {
+      "A": "",
+      "B": ""
+     },
+     "note": ""
+    }
+   }
+  },
+  {
+   "version": "v3",
+   "notes": "There are lots of things to add, here are some: \n\n- Scenario comparison will be expanded to include specific scenarios pertaining to individual existential threats, like AI. User can set estimates on how much removing a certain risk factor would reduce the overall x-risk. I have explored here why I think this could be a useful approach to individual x-risk: https://villeseppala.github.io/interests/articles/202.html It is a policy relevant angle and also helps circumvent the problem of risk being intertwined.\n- Collecting estimates from users. Expert evaluations could be filtered using some simple authentications mechanisms, such as identification codes. Estimates from experts or the general public can be used to set default values for the site, and their distribution can be shown to the user. This can be done while also giving the users the ability to set what variables they control and with what timelines, as the results can be interpolated.\n-  Catastrophic risk - risk that don’t cause extinction but a significant reduction in the human population. In addition to event probability, user could set how great the population reduction is (user can also set a probability distribution for this) as well as how quick the population recovery is.\n- Default values used for the risk probabilities can influence the user on what they think the actual probabilities are, even if this is not the main point of the site. Therefore, I want to set the default values to reflect the studies on the topic. These studies usually focus on probability estimates given by experts on either the individual risks or the total existential risk, usually by year 2100. Some estimates I think about using: https://villeseppala.github.io/interests/articles/201.5.html\n- Other outcome measures\n",
+   "state": {
+    "view": {
+     "start": 2027,
+     "points": [
+      1,
+      2
+     ],
+     "ahead": [
+      9,
+      99,
+      999,
+      9999,
+      99999,
+      999999
+     ],
+     "show": {
+      "graphs": true,
+      "riskGraph": true,
+      "survGraph": true,
+      "cmp": false,
+      "real": true,
+      "time": true,
+      "work": true,
+      "scales": true,
+      "lines": true,
+      "braces": true,
+      "spin": false
+     },
+     "formulas": true,
+     "scale": {
+      "r": "pow",
+      "s": "per"
+     },
+     "groups": {
+      "grpCtl": false,
+      "grpOut": false,
+      "grpCmp": true,
+      "grpElements": false,
+      "grpTime": true,
+      "grpSim": false
+     },
+     "optionsWidth": 247,
+     "namesWidth": 220,
+     "heights": {
+      "r": 116,
+      "s": 320,
+      "t": 303
+     },
+     "widths": {
+      "1": 293,
+      "2": 308,
+      "3": 411
+     },
+     "outcome": "years",
+     "flip": {
+      "r": false,
+      "s": false,
+      "y": false
+     }
+    },
+    "values": {
+     "a": {
+      "risk": {
+       "1": 0.0005,
+       "2": 0.0005,
+       "3": 0.00035845920957367996
+      },
+      "surv": {
+       "2": 0.7705365526929188
+      }
+     },
+     "b": {
+      "risk": {},
+      "surv": {}
+     },
+     "rShape": {
+      "1": {
+       "kind": "flat",
+       "h": 0.5
+      },
+      "2": {
+       "kind": "flat",
+       "h": 0.5
+      },
+      "3": {
+       "kind": "flat",
+       "h": 0.5
+      }
+     },
+     "sShape": {
+      "2": {
+       "kind": "exp",
+       "h": 0.85
+      }
+     },
+     "drive": {},
+     "pot": {
+      "lives": {},
+      "value": {}
+     }
+    },
+    "colors": {
+     "page": "#1b2b34",
+     "names": "#1b2b34",
+     "box": "#343d46",
+     "label": "#4f5b66",
+     "text": "#c0c5ce",
+     "muted": "#a7adba",
+     "faint": "#a7adba",
+     "risk": "#ec5f67",
+     "riskFill": "#79424b",
+     "odds": "#f99157",
+     "surv": "#5fb3b3",
+     "years": "#77b4ee",
+     "lost": "#c594c5",
+     "line": "#c0c5ce",
+     "title": "#fac863",
+     "bad": "#ec5f67",
+     "good": "#99c794",
+     "btn": "#343d46",
+     "btnLine": "#65737e",
+     "lit": "#4f5b66",
+     "litLine": "#5fb3b3",
+     "border": "#65737e",
+     "accent": "#5fb3b3",
+     "well": "#1b2b34",
+     "sel": "#c594c5",
+     "dim": "#a7adba",
+     "menu": "#a7adba",
+     "ok": "#99c794",
+     "faintD": "#a7adba",
+     "periods": [
+      "#353c4b",
+      "#2a4152",
+      "#29464d",
+      "#344a47",
+      "#3d4051",
+      "#484a3d"
+     ]
+    },
+    "colorsLight": {},
+    "simN": 0,
+    "palette": ""
+   }
+  }
+ ]
+}

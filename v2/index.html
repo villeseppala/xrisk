@@ -1,0 +1,1322 @@
+<!DOCTYPE html>
+<!--
+  Extinction-risk calculator, second installment (v2): the layout planned in Krita (krita/sketch3.svg, Sketch 12)
+  as a working page. The old page (../index.html) stays as it is and is what the site publishes. One file again:
+  markup, CSS and one script; its saved settings (settings.js) beside it. Author mode through v2/author.R, which
+  also takes the page's Export to Krita (krita/app.svg).
+  The board (the three rows: chance of extinction, chance of survival, years in total) is one SVG drawn by the
+  script in the sketches' own coordinates, so exporting it for Krita is copying it.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Extinction risk calculator</title>
+<style>
+*, *::before, *::after{box-sizing:border-box;}
+body{margin:0;background:#24323d;color:#e8eef4;font-family:Arial,Helvetica,sans-serif;font-size:14px;}
+button,input,textarea{font:inherit;color:inherit;}
+/* the option groups on the left, the board on the right; on a narrow screen the groups above */
+.app{display:flex;align-items:flex-start;gap:14px;padding:16px;}
+/* the options column: as wide as the old page's Time scale (seven 64 px columns and the group's sides) unless dragged
+   (--sidew, its grip: setSideW) */
+.side{position:relative;flex:0 0 var(--sidew, 476px);min-width:0;display:flex;flex-direction:column;gap:8px;}
+.main{flex:1 1 auto;min-width:0;}
+/* a column's grip, as the old page's names column's: on the options column's right edge (in the gap), and the
+   board's names column's (data-grip, in the SVG); lit while hovered or dragged */
+.colgrip{position:absolute;top:0;bottom:0;right:-11px;width:8px;border-radius:3px;cursor:col-resize;z-index:4;touch-action:none;}
+.colgrip:hover, body.siderz .colgrip{background:rgba(143,214,242,.35);}
+body.siderz, body.namesrz{cursor:col-resize;user-select:none;-webkit-user-select:none;}
+@media (max-width: 900px){ .app{flex-direction:column;} .side{flex-basis:auto;width:100%;} .main{width:100%;} .colgrip{display:none;} }
+
+/* the groups: accordions (details), titled as in the sketches */
+details.grp{background:rgba(29,60,89,.7);border-radius:6px;}
+details.grp > summary{list-style:none;cursor:pointer;background:#12405f;border:1px solid #2a6a8f;border-radius:6px;
+  padding:6px 30px 6px 14px;position:relative;user-select:none;}
+details.grp > summary::-webkit-details-marker{display:none;}
+details.grp > summary:hover{background:#175981;}
+details.grp > summary::after{content:'';position:absolute;right:14px;top:50%;width:7px;height:7px;
+  border-right:1.8px solid #e8eef4;border-bottom:1.8px solid #e8eef4;transform:translateY(-70%) rotate(45deg);}
+details.grp:not([open]) > summary::after{transform:translateY(-50%) rotate(-45deg);}
+.gbody{padding:10px 14px 12px;font-size:13px;color:#b7c6d3;}
+.gbody label{display:flex;align-items:center;gap:7px;margin:4px 0;cursor:pointer;}
+.gbody input[type=checkbox]{margin:0;cursor:pointer;}
+.gnote{font-size:11px;color:#8496a4;margin-top:8px;line-height:1.4;}
+.btn{background:#12405f;color:#e8eef4;border:1px solid #2a6a8f;border-radius:6px;padding:5px 12px;font-size:13px;cursor:pointer;}
+.btn:hover{background:#175981;}
+.austatus{font-size:12px;color:#a6e22e;margin-top:8px;min-height:1em;}
+#auText{width:100%;height:160px;margin-top:8px;background:#0b2a40;border:1px solid #2a6a8f;border-radius:4px;font-size:11px;}
+
+/* Time scale, as the old page's: the present, then a dot for each time point, on one line; a click on a dot shows or
+   hides it (drawScale). The line is filled up to the last one shown, the horizon. Each point a column of the same
+   width: its year (a field to type in), its dot, its years ahead (another); the present's "now" fixed. The line in two
+   halves on either side of the dot (the dot's row, ::before, ::after), each filled while inside the horizon (lin, rin).
+   An options column dragged narrower than the line: the line scrolls sideways in its group (.tscroll). */
+.tscroll{overflow-x:auto;}
+.tpts{display:grid;grid-template-columns:repeat(7, 64px);}
+.tpt{display:flex;flex-direction:column;align-items:center;gap:3px;color:#9fb0bf;}
+.tdrow{position:relative;align-self:stretch;display:flex;justify-content:center;}
+.tdrow::before, .tdrow::after{content:'';position:absolute;top:7px;height:4px;background:#12405f;}
+.tdrow::before{left:0;right:50%;}
+.tdrow::after{left:50%;right:0;}
+.tpt:first-child .tdrow::before, .tpt:last-child .tdrow::after{display:none;}
+.tpt.lin .tdrow::before, .tpt.rin .tdrow::after{background:#1f77a8;}
+.tdotb{position:relative;z-index:1;display:block;margin:0;padding:0;border:0;background:none;line-height:0;cursor:pointer;}
+.tpt.only .tdotb{cursor:default;}                 /* the only point shown stays */
+.tdot{position:relative;z-index:1;display:block;box-sizing:border-box;width:18px;height:18px;border-radius:50%;
+  border:2px solid #2a6a8f;background:#0b2a40;}
+.tpt.on .tdot{background:#8fd6f2;border-color:#8fd6f2;box-shadow:1px 1px 3px rgba(255,255,255,.3);}
+.tpt.tnow .tdot{width:12px;height:12px;margin:3px 0;background:#8fd6f2;border-color:#8fd6f2;}
+.tpt:not(.only) .tdotb:hover .tdot{border-color:#8fd6f2;}
+.tdotb:focus{outline:none;}
+.tdotb:focus-visible .tdot{box-shadow:0 0 0 3px rgba(143,214,242,.35);}
+/* the fields (and the present's "now", as tall): the point's numbers, light while it is shown */
+.tin, .tfix{box-sizing:border-box;width:60px;height:20px;font:11px/1.2 Arial,Helvetica,sans-serif;text-align:center;}
+.tin{margin:0;padding:1px 2px;color:#9fb0bf;background:#0a2438;border:1px solid #1e4e6c;border-radius:4px;}
+.tin:hover{border-color:#2a6a8f;}
+.tin:focus{outline:none;border-color:#8fd6f2;color:#e8eef4;}
+.tfix{display:flex;align-items:center;justify-content:center;white-space:nowrap;}
+.tpt.on .tin, .tpt.tnow .tin, .tpt.tnow .tfix{color:#e8eef4;}
+
+/* the board: one SVG, as wide as there is room (its own coordinates are the sketches': 1 unit, 1 px at 1920 wide) */
+#board{display:block;width:100%;height:auto;user-select:none;-webkit-user-select:none;}
+#board [data-drag]{touch-action:none;}
+#board [data-grip]{cursor:col-resize;touch-action:none;}
+#board [data-grip]:hover rect, body.namesrz #board [data-grip] rect{opacity:.35;}
+#board [data-drag="r"], #board [data-drag="s"]{cursor:ns-resize;}
+#board [data-drag="rb"], #board [data-drag="sb"]{cursor:ew-resize;}
+#board [data-dg], #board [data-box], #board [data-act], #board [data-shape], #board [data-drop]{cursor:pointer;}
+#board [data-shape]:hover rect, #board [data-drop]:hover rect{stroke:#8fd6f2;}
+/* the boxes' digits (digitsSvg), as the old page's: a digit under the pointer lit, its ▲ / ▼ too */
+#board text[data-dg]:hover{fill:#ffd27f;}
+#board text[data-spin]:hover{fill:#ffd27f;fill-opacity:1;}
+/* a shape's menu (openPop): its function, the bend, the fitted numbers */
+.pop{position:fixed;z-index:15;width:310px;background:#0e405d;border:1.5px solid #8fd6f2;border-radius:6px;
+  padding:10px 12px 12px;box-shadow:4px 4px 0 rgba(0,0,0,.35);font-size:12px;color:#b7c6d3;line-height:1.5;}
+.pop .popx{position:absolute;right:6px;top:4px;background:none;border:none;color:#b7c6d3;font-size:16px;cursor:pointer;}
+.pop .pt{color:#e8eef4;margin-right:18px;}
+.pop .pf{font-family:Cambria,Georgia,serif;font-style:italic;font-size:15px;color:#e8eef4;margin:4px 0;}
+.pop .pn{color:#8496a4;font-size:11px;}
+.pop .ph{display:flex;align-items:center;gap:8px;margin:4px 0;}
+.pop .ph input{flex:1 1 auto;}
+.pop .pab{font-size:12px;}
+.pop .pab b{color:#8496a4;font-weight:normal;margin-right:6px;}
+.pop .pv{color:#e8836f;}
+.pop.surv .pv{color:#41b3d2;}
+/* a row's Scale menu (openScale): its options, the one in effect lit, one not available now greyed */
+.pop.smenu{width:auto;min-width:200px;padding:5px;}
+.smenu button{display:block;width:100%;text-align:left;font:inherit;font-size:12px;color:#cdd9e3;background:none;border:0;
+  border-radius:4px;padding:4px 8px;cursor:pointer;white-space:nowrap;}
+.smenu button:hover:not(:disabled){background:#12405f;}
+.smenu button.on{color:#8fd6f2;font-weight:600;}
+.smenu button:disabled{color:#5d7384;cursor:default;}
+#board [data-act="scale"]:hover rect{stroke:#8fd6f2;}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="colgrip" id="sideGrip" title="Drag to resize the options column; double-click for the default width"></div>
+    <details class="grp" id="grpElements" open>
+      <summary>Show elements</summary>
+      <div class="gbody">
+        <label><input type="checkbox" data-show="graphs" checked> Graphs</label>
+        <label><input type="checkbox" data-show="ticks" checked> Time ticks in the graphs</label>
+        <label><input type="checkbox" data-show="scales" checked> Scales (each graph's max and min)</label>
+        <label><input type="checkbox" data-show="lines" checked> Lines from the boxes to the graphs</label>
+        <label><input type="checkbox" data-show="braces" checked> Braces and arrows between the rows</label>
+        <label title="The ▲ / ▼ buttons on the selected number's digits; without them, click a digit and use the arrow keys, the wheel or 0–9"><input type="checkbox" data-show="spin"> &#9650; and &#9660; controls</label>
+      </div>
+    </details>
+    <details class="grp" id="grpTime" open>
+      <summary>Time scale</summary>
+      <div class="gbody">
+        <div class="tscroll"><div class="tpts" id="tpts" role="group" aria-label="Time points shown, in years ahead"></div></div>
+        <div class="gnote">Click a dot to show or hide its time point. Type a year, or the years ahead under it.</div>
+      </div>
+    </details>
+    <details class="grp" id="grpCompare" open>
+      <summary>Show comparison scenario</summary>
+      <div class="gbody">
+        <label><input type="checkbox" id="showB"> Scenario B, and B &#8722; A in every box</label>
+      </div>
+    </details>
+    <details class="grp" id="grpAuthor" open hidden>
+      <summary>Author</summary>
+      <div class="gbody">
+        <button type="button" class="btn" id="auSave">Save settings</button>
+        <button type="button" class="btn" id="auKrita">Export to Krita</button>
+        <div class="austatus" id="auStatus"></div>
+        <textarea id="auText" spellcheck="false" hidden></textarea>
+      </div>
+    </details>
+  </aside>
+  <main class="main">
+    <svg id="board" xmlns="http://www.w3.org/2000/svg" viewBox="330 30 1235 900" role="img"
+         aria-label="Chance of extinction, chance of survival and years in total, between the time points"></svg>
+  </main>
+</div>
+<div class="pop" id="pop" hidden></div>
+<div class="pop smenu" id="smenu" hidden></div>
+<script src="settings.js"></script>
+<script>
+// ════════════════════════════════════════════════════════════════════════════
+// The whole page runs here. Sections: model · formatting · the board (SVG) · state and settings · editing ·
+// controls · Krita export · start-up. Everything above "state and settings" is pure (no page access), so a check
+// like the old page's check_parity.R can load it alone later.
+// ════════════════════════════════════════════════════════════════════════════
+
+// ── model ──
+// Time points: up to SLOTS of them, each a number of years ahead of START (slotAhead, by default 10, 100, ...,
+// 1 000 000); the reader shows any of them (tpoints, ascending; by default 2126, 3026 and 12026). The checkpoints
+// are START and the points shown; a period runs between two neighbours.
+// The inputs are kept by time point (slot k), so hiding and showing points keeps them:
+//   risk[k]   the yearly chance of extinction at that point, for A and B. The first point shown sets the first
+//             period's level (2026 to 2126: the same every year); every later period runs from the risk at its start
+//             to the risk at its end, in its shape.
+//   rShape[k] the shape of the period ending at k (k after the first point): {kind, h}. kind 'exp' is c + a·e^(kτ),
+//             a and c fitted to the two ends; h the share of the period by which half of the change is done (0.5:
+//             linear; below: fast, then slows; above: slow, then fast). kind 's' is an S-curve, its middle at h.
+//             One shape for A and B, so B − A follows the same curve.
+//   drive[k]  'r' (the risk drives the period, survival follows: the default) or 's' (survival drives: it runs
+//             from its start to surv[k] in the shape sShape[k], and the yearly risk follows from it).
+// Survival is the running product of (1 − risk) over the years after START, Years in total the running sum of
+// survival (each year after START counts its chance of being reached), as the old page's model.
+var START = 2026, DEF_START = 2026, START_MIN = 1, START_MAX = 9999;
+var SLOTS = 6, DEF_AHEAD = [10, 100, 1000, 10000, 100000, 1000000], DEF_POINTS = [2, 3, 4], YEARS_MAX = 1000000;
+var H_MIN = 0.02, H_MAX = 0.98, H_SNAP = 0.015, S_STEEP = 12;   // the bend's range, its snap to linear; the S-curve's steepness
+// the four shape buttons: linear, fast then slows, slow then fast, S-curve
+var PRESETS = [{kind: 'exp', h: 0.5}, {kind: 'exp', h: 0.15}, {kind: 'exp', h: 0.85}, {kind: 's', h: 0.5}];
+var SHAPE_NAMES = ['linear', 'fast, then slows', 'slow, then fast', 'S-curve'];
+// the default shape of the period ending at the third time point (2126 to 3026): fast, then slows, with
+// k = −0.005 a year over its 900 years, as Sketch 8 to 12 (half the change by 2262)
+var DEF_FAST = {slot: 3, shape: {kind: 'exp', h: 0.15156}};
+function defRisk(ahead){                          // a time point's default risk: A's (B's twice it)
+  return ahead <= 100 ? 0.005 : ahead <= 1000 ? 0.0005 : ahead <= 10000 ? 0.0001 : ahead <= 100000 ? 0.00005 : 0.00001;
+}
+function modelAt(pts, ahead, start){
+  var slots = [0].concat(pts), cps = slots.map(function(k){ return k ? start + ahead[k - 1] : start; }), segLen = [];
+  for(var i = 0; i < cps.length - 1; i++) segLen.push(cps[i + 1] - cps[i]);
+  return {n: cps.length, slots: slots, cps: cps, segLen: segLen};
+}
+function clamp(x, lo, hi){ return Math.max(lo, Math.min(hi, x)); }
+// The shapes as g(u): the share of the change done at u, the share of the period gone (g(0) = 0, g(1) = 1).
+// 'exp': (e^(xu) − 1) / (e^x − 1), x = k·n found from h (half the change at u = h: expX, by halving the interval);
+// x = 0 is the straight line. 's': a logistic of steepness S_STEEP, its middle at h, stretched to meet both ends.
+function expX(h){
+  if(Math.abs(h - 0.5) < 1e-9) return 0;
+  var lo = -700, hi = 700;                         // g(h) falls from 1 to 0 as x grows
+  for(var q = 0; q < 200; q++){
+    var m = (lo + hi) / 2, v = Math.abs(m) < 1e-12 ? h : Math.expm1(h * m) / Math.expm1(m);
+    if(v > 0.5) lo = m; else hi = m;
+  }
+  return (lo + hi) / 2;
+}
+function lgs(u, c){ return 1 / (1 + Math.exp(-S_STEEP * (u - c))); }
+function shapeFn(sh){
+  if(sh.kind === 's'){
+    var c = sh.h, l0 = lgs(0, c), l1 = lgs(1, c);
+    return function(u){ return (lgs(u, c) - l0) / (l1 - l0); };
+  }
+  var x = expX(sh.h);
+  if(Math.abs(x) < 1e-9) return function(u){ return u; };
+  var d = Math.expm1(x);
+  return function(u){ return Math.expm1(x * u) / d; };
+}
+function shapeBtn(sh){ return sh.kind === 's' ? 3 : Math.abs(sh.h - 0.5) < H_SNAP ? 0 : sh.h < 0.5 ? 1 : 2; }
+// The cascade, year by year, read off at the checkpoints. P: one scenario's inputs by checkpoint (resolve):
+// risk[j] (j ≥ 1; risk[1] the first period's level), surv[j] (a survival-driven period's end), rShape[i] and
+// sShape[i] (period i), drive[i]. Returns S[j], Y[j] and r[j] (the risk at checkpoint j: the yearly risk in the
+// period's last year), and per period fac[i] (what survival keeps over it), yp[i] (its years) and, with K, track[i]:
+// {tau, r, S} sampled at every year of a period up to 2K years long, else at K evenly spaced years, and its start.
+function compute(M, P, K){
+  var S = 1, Y = 0, rPrev = P.risk[1], o = {S: [1], Y: [0], r: [NaN], fac: [], yp: [], track: []};
+  for(var i = 0; i < M.n - 1; i++){
+    var len = M.segLen[i], S0 = S, Y0 = Y, rEnd = rPrev, every = len <= 2 * K, step = len / K, next = step;
+    var tr = K ? {tau: [0], r: [NaN], S: [S]} : null, t, rr;
+    if(P.drive[i] === 's'){                         // survival from S0 to its end, in its shape; the risk follows
+      var S1 = Math.min(P.surv[i + 1], S0), gs = shapeFn(P.sShape[i]), prev = S0;
+      for(t = 1; t <= len; t++){
+        var cur = S0 + (S1 - S0) * gs(t / len);
+        rr = prev > 0 ? 1 - cur / prev : 1; S = cur; Y += S; prev = cur;
+        if(t === 1 && tr) tr.r[0] = rr;
+        if(tr && (every || t >= next - 1e-9 || t === len)){ tr.tau.push(t); tr.r.push(rr); tr.S.push(S); if(!every) next += step; }
+      }
+      rEnd = rr;
+    } else {                                        // the risk from its start to its end, in its shape (the first period: level)
+      var r0 = i === 0 ? P.risk[1] : rPrev, r1 = P.risk[i + 1], g = i === 0 ? null : shapeFn(P.rShape[i]);
+      if(tr) tr.r[0] = r0;
+      for(t = 1; t <= len; t++){
+        rr = g ? r0 + (r1 - r0) * g(t / len) : r1;
+        S *= 1 - rr; Y += S;
+        if(tr && (every || t >= next - 1e-9 || t === len)){ tr.tau.push(t); tr.r.push(rr); tr.S.push(S); if(!every) next += step; }
+      }
+      rEnd = r1;
+    }
+    rPrev = rEnd;
+    o.S.push(S); o.Y.push(Y); o.r.push(rEnd); o.fac.push(S0 > 0 ? S / S0 : 0); o.yp.push(Y - Y0); o.track.push(tr);
+  }
+  return o;
+}
+// The risk at a risk-driven period's end that brings survival to T there (a survival typed or dragged): the first
+// period's level directly, a later one's end by halving the interval 0..1 (survival falls as the end risk grows).
+// A long period is summed over 4 000 even strata instead of every year; then the result is near, not exact.
+function solveEnd(M, P, res, i, T){
+  var len = M.segLen[i], S0 = res.S[i];
+  if(!(S0 > 0)) return P.risk[i + 1];
+  var ratio = clamp(T / S0, 1e-300, 1), target = Math.log(ratio);
+  if(i === 0) return clamp(1 - Math.pow(ratio, 1 / len), 0, 1);
+  var r0 = res.r[i], g = shapeFn(P.rShape[i]), m = Math.min(len, 4000), w = len / m;
+  function lnS(r1){
+    var s = 0;
+    for(var q = 1; q <= m; q++){
+      var rr = r0 + (r1 - r0) * g(m === len ? q / len : (q - 0.5) / m);
+      if(rr >= 1) return -Infinity;
+      s += Math.log(1 - rr);
+    }
+    return s * w;
+  }
+  if(lnS(0) <= target) return 0;
+  var lo = 0, hi = 1;
+  for(var q = 0; q < 50; q++){ var mid = (lo + hi) / 2; if(lnS(mid) > target) lo = mid; else hi = mid; }
+  return (lo + hi) / 2;
+}
+// the time ticks' step in a period len years long: 1, 2 or 5 times a power of ten, about four to eight ticks
+function tickStep(len){
+  var raw = len / 8, p = Math.pow(10, Math.floor(Math.log10(raw)));
+  return [1, 2, 5, 10].map(function(s){ return s * p; }).filter(function(s){ return s >= raw; })[0];
+}
+
+// ── formatting ──
+// Percentages with two decimals, more when small (two significant digits past the zeros), no trailing zeros past
+// the second decimal: 0.50%, 0.05%, 0.012%, 16.45%, 100%. Deltas in percentage points (pp) with their sign, ±0 at
+// none. Years whole from 10 up; the years of time points over 9 999 with a thin space (12 026), as the old page.
+function trimDec(s){ return s.replace(/(\.\d\d\d*?)0+$/, '$1'); }
+function pctNum(v){                               // v in percent
+  var a = Math.abs(v);
+  if(a < 1e-12) return '0';
+  if(a >= 1 && Math.abs(a - Math.round(a)) < 1e-9) return String(Math.round(a));
+  return trimDec(a.toFixed(Math.max(2, Math.min(8, Math.ceil(-Math.log10(a)) + 1))));
+}
+function fPct(x){ return (x < 0 ? '−' : '') + pctNum(x * 100) + '%'; }
+function fPP(d){ return Math.abs(d * 100) < 1e-10 ? '±0' : (d > 0 ? '+' : '−') + pctNum(d * 100) + ' pp'; }
+function group3(s){ return s.replace(/\B(?=(\d{3})+(?!\d))/g, ' '); }
+function fYear(y){ return y >= 10000 ? group3(String(y)) : String(y); }
+function fYrs(y){ return (y >= 10 ? group3(String(Math.round(y))) : String(Math.round(y * 10) / 10)); }
+function fYrsD(d){ return Math.abs(d) < 0.05 ? '±0' : (d > 0 ? '+' : '−') + fYrs(Math.abs(d)); }
+function fFac(f){ return f >= 0.001 ? f.toFixed(4) : f.toPrecision(3); }
+// a graph's two scale ends (top, foot) as percentages, with as many significant digits (from three) as tell them apart
+function fEnds(top, foot){
+  function f(v, p){ var x = v * 100; return (Math.abs(x) < 1e-12 ? '0' : String(+x.toPrecision(p))) + '%'; }
+  for(var p = 3; p < 10; p++) if(f(top, p) !== f(foot, p)) break;
+  return [f(top, p), f(foot, p)];
+}
+
+// ── the board (SVG) ──
+// Laid out in Sketch 12's coordinates (the page 1920 wide), the names column its own, as the old page's: the row
+// names from x 330 to 330 + labW (its grip on the right edge sets labW: setLabW; never narrower than the views'
+// switches, so the names never run into the table), then the table, TABLE_GAP further: time point j at
+// xAt(j), 280 apart, its boxes 240 wide centred on it; the rows' boxes, buttons, graphs and braces at the heights
+// below. The SVG's viewBox starts at the names column and ends after the last box, so it scales to the room there is.
+var C = {box: '#0e405d', graph: '#1d3c59', risk: '#e8836f', surv: '#41b3d2', years: '#d590b1', bad: '#ee4d4d',
+         good: '#7fd18f', zero: '#8496a4', text: '#e8eef4', muted: '#b7c6d3', faint: '#8496a4', line: '#4d6577',
+         tick: '#6b8396', btn: '#12405f', btnLine: '#2a6a8f', lit: '#1f77a8', litLine: '#8fd6f2'};
+var NAMES_X = 330, LABW_DEF = 230, LABW_MIN = 220, LABW_MAX = 520, TABLE_GAP = 20, labW = LABW_DEF;
+var DX = 280, GPAD = 25, GW = 230;                // time points, and the graphs between them
+var RB = {y: 86, h: 100}, RBTN = 200, RG = {y: 228, h: 140}, RBR = 374;   // risk: boxes, buttons, graphs, braces' top
+var SB = {y: 424, h: 116}, SBTN = 554, SG = {y: 582, h: 160}, SBR = 748;  // survival
+var YB = {y: 798, h: 116};                        // years in total
+var GRAPH_K = 120;                                // samples per period, a period up to twice as long drawn every year
+function xAt(j){ return NAMES_X + labW + TABLE_GAP + 120 + DX * j; }
+function gx0(i){ return xAt(i) + GPAD; }
+function gx1(i){ return xAt(i + 1) - GPAD; }
+function r2(v){ return Math.round(v * 100) / 100; }
+function esc(s){ return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+// text, rect and path as SVG, with presentation attributes only (Krita reads those, not CSS)
+function T(x, y, s, o){
+  o = o || {};
+  return '<text x="' + r2(x) + '" y="' + r2(y) + '" font-family="' + (o.fam || 'Arial') + '" font-size="' + (o.size || 12) + '"' +
+         (o.bold ? ' font-weight="bold"' : '') + (o.it ? ' font-style="italic"' : '') + ' fill="' + (o.fill || C.text) + '"' +
+         (o.anchor ? ' text-anchor="' + o.anchor + '"' : '') + (o.attrs || '') + '>' + esc(s) + '</text>';
+}
+function R(x, y, w, h, o){
+  o = o || {};
+  return '<rect x="' + r2(x) + '" y="' + r2(y) + '" width="' + r2(w) + '" height="' + r2(h) + '" rx="' + (o.rx != null ? o.rx : 6) + '"' +
+         ' fill="' + (o.fill || 'none') + '"' + (o.stroke ? ' stroke="' + o.stroke + '" stroke-width="' + (o.sw || 1) + '"' : '') +
+         (o.op != null ? ' opacity="' + o.op + '"' : '') + (o.attrs || '') + '/>';
+}
+function Pa(d, o){
+  o = o || {};
+  return '<path d="' + d + '" fill="' + (o.fill || 'none') + '"' + (o.stroke ? ' stroke="' + o.stroke + '" stroke-width="' + (o.sw || 1) + '"' : '') +
+         (o.op != null ? ' opacity="' + o.op + '"' : '') + (o.attrs || '') + '/>';
+}
+function head(x, y, dir){ return ' M' + r2(x - 4 * dir) + ' ' + r2(y - 3) + ' L' + r2(x) + ' ' + r2(y) + ' L' + r2(x - 4 * dir) + ' ' + r2(y + 3); }
+function dot(x, y, col, filled, attrs){
+  return '<circle cx="' + r2(x) + '" cy="' + r2(y) + '" r="' + (filled ? 4 : 3.5) + '" fill="' + (filled ? col : C.graph) + '"' +
+         ' stroke="' + (filled ? C.graph : col) + '" stroke-width="' + (filled ? 1.5 : 1.8) + '"' + (attrs || '') + '/>';
+}
+function diamond(x, y, attrs){
+  return Pa('M' + r2(x) + ' ' + r2(y - 6) + ' L' + r2(x + 6) + ' ' + r2(y) + ' L' + r2(x) + ' ' + r2(y + 6) + ' L' + r2(x - 6) + ' ' + r2(y) + ' Z',
+            {fill: C.text, stroke: '#24323d', sw: 1.5, attrs: attrs});
+}
+// the patterns, and the braces' fades from one row's colour to the next (top to bottom: the first two rows' colours
+// as their views have them, rowCol)
+function defs(){
+  return '<defs>' +
+    '<pattern id="years" patternUnits="userSpaceOnUse" x="0" y="0" width="16" height="16">' +
+    '<path d="M0 16 L16 0 M-4 4 L4 -4 M12 20 L20 12" fill="none" stroke="#d590b1" stroke-width="2" opacity="0.8"/></pattern>' +
+    '<pattern id="diff" patternUnits="userSpaceOnUse" x="0" y="0" width="8" height="8">' +
+    '<circle cx="2" cy="2" r="1.3" fill="#ee4d4d" opacity="0.45"/><circle cx="6" cy="6" r="1.3" fill="#ee4d4d" opacity="0.45"/></pattern>' +
+    '<linearGradient id="fadeRS" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + rowCol('r') + '"/><stop offset="1" stop-color="' + rowCol('s') + '"/></linearGradient>' +
+    '<linearGradient id="fadeSY" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + rowCol('s') + '"/><stop offset="1" stop-color="' + C.years + '"/></linearGradient>' +
+    '</defs>';
+}
+// The first two rows' views (the old page's ⇄ switches, in the row names): the risk row as the chance of extinction
+// in a year (comp.r false) or of surviving it (1 − that), the survival row as the chance of survival up to the year
+// (comp.s false) or of extinction by then (1 − that). A view is in its own colour: extinction coral, survival blue.
+// Its graph is the other's turned upside down (the same curve, read from the top), so a scale's max and min swap
+// for 100% and 100% less it. The model and the inputs stay the risk and survival; only what is shown and typed flips.
+function rowCol(row){ return row === 'r' ? (comp.r ? C.surv : C.risk) : (comp.s ? C.risk : C.surv); }
+// the switch: the view shown first, lit (a thicker outline in its colour); the other after it, grey, a click away
+function segSvg(x, y, row){
+  var on = comp[row], a = row === 'r' ? ['extinction', C.risk] : ['survival', C.surv], b = row === 'r' ? ['survival', C.surv] : ['extinction', C.risk];
+  var first = on ? b : a, second = on ? a : b, h = '';
+  [first, second].forEach(function(w, q){
+    var wd = Math.round(w[0].length * 9.2) + 14, lit = q === 0, attrs = ' data-act="comp" data-row="' + row + '" data-v="' + ((w === b) ? 1 : 0) + '"';
+    h += R(x, y, wd, 24, {rx: 5, fill: lit ? C.btn : '#24323d', stroke: w[1], sw: lit ? 2.5 : 1, attrs: attrs}) +
+         T(x + wd / 2, y + 17, w[0], {size: 16, bold: true, fill: lit ? w[1] : '#6f8595', anchor: 'middle', attrs: attrs});
+    x += wd + 4;
+  });
+  return h;
+}
+// B − A's colour: worse red, better green, none grey (upGood: more is better)
+function tone(d, upGood, eps){ return Math.abs(d) <= (eps || 1e-12) ? C.zero : (d > 0) === upGood ? C.good : C.bad; }
+
+// Everything the board shows comes from the state section's: M, the results resA and resB (always both, B drawn
+// only with showB), their inputs PA and PB, show, showB, scaleMode, comp, formulasOpen and scl (the scales fitted, or held while a
+// dot is dragged).
+function boardSvg(){
+  var h = '';
+  for(var j = 0; j < M.n; j++) h += T(xAt(j), 70, fYear(M.cps[j]), {size: 24, anchor: 'middle'});
+  h = namesSvg() + h;                             // the names column's fill under everything
+  h += riskRow() + survRow() + yearsRow();
+  // the names column's grip, on its right edge, last so it is on top (lit while hovered or dragged: CSS)
+  var gx = NAMES_X + labW;
+  h += '<g data-grip="names">' + R(gx - 4, 30, 8, 900, {rx: 3, fill: C.litLine, op: 0}) +
+       '<title>Drag to resize the names column; double-click for the default width</title></g>';
+  return h;
+}
+// the names column: a fill of its own and a line on its right edge, the table beyond it
+function namesSvg(){
+  var h = R(NAMES_X, 30, labW, 900, {rx: 0, fill: '#202d37'}) + Pa('M' + (NAMES_X + labW) + ' 30 V930', {stroke: C.line, sw: 1}) +
+          R(340, 44, 125, 28, {fill: C.btn, stroke: C.btnLine, attrs: ' data-act="formulas"'}) +
+          T(354, 63, 'Formulas', {size: 14, attrs: ' data-act="formulas"'}) +
+          Pa(formulasOpen ? 'M443 55 L449 61 L455 55' : 'M446 52 L452 58 L446 64', {stroke: C.text, sw: 1.8, attrs: ' data-act="formulas"'});
+  // the first two rows: "Chance of", the view's switch, then what it is of; the years row its two lines
+  [['r', 'given alive', 225, comp.r ? 's(t) = 1 − e(t)' : 'e(t) = 1 − s(t)', 330],
+   ['s', 'up to year', 581, comp.s ? 'E(t) = 1 − S(t)' : 'S(t) = S(t−1) × s(t)', 694]].forEach(function(r){
+    var col = rowCol(r[0]);
+    h += T(340, r[2], 'Chance of', {size: 22, fill: col}) + segSvg(340, r[2] + 11, r[0]) + T(340, r[2] + 56, r[1], {size: 22, fill: col});
+    if(formulasOpen) h += T(340, r[4], r[3], {size: 16, fam: 'Cambria', it: true, fill: C.muted});
+  });
+  h += T(340, 846, 'Years', {size: 22, fill: C.years}) + T(340, 874, 'in total', {size: 22, fill: C.years});
+  if(formulasOpen) h += T(340, 900, 'Y(t) = Y(t−1) + S(t)', {size: 16, fam: 'Cambria', it: true, fill: C.muted});
+  return h;
+}
+// A box's A, B − A and B lines (B's two only with showB). Read-only (ed null): plain text in fmt. Editable (ed:
+// {kind, j}): each line a row of digits as the old page's boxes (digitsSvg), PCT_DEC decimals, all three editable:
+// A, B, or the change (B − A, which moves B). The rows' keys: kind:j:a, kind:j:d, kind:j:b (see "editing").
+var PCT_DEC = 4, FAINT_D = '#8a97a3', SEL_D = '#ffd27f';
+function valLines(x, y, offs, a, b, fmt, suffix, col, dFmt, upGood, ed){
+  var h = T(x + 16, y + offs[0] - 1, 'A', {fill: C.faint});
+  if(!ed){
+    h += T(x + 224, y + offs[0], fmt(a) + suffix, {size: 18, bold: true, fill: col, anchor: 'end'});
+    if(showB) h += T(x + 224, y + offs[1], dFmt(b - a), {size: 13, bold: true, fill: tone(b - a, upGood, 1e-12), anchor: 'end'}) +
+                   T(x + 16, y + offs[2] - 1, 'B', {fill: C.faint}) +
+                   T(x + 224, y + offs[2], fmt(b) + suffix, {size: 18, bold: true, fill: col, anchor: 'end'});
+    return h;
+  }
+  var key = ed.kind + ':' + ed.j + ':', xr = x + 224 - 17;   // the digits' right edge: their % after it
+  h += digitsSvg(xr, y + offs[0], 18, a * 100, col, key + 'a', null, upGood) + T(xr + 1, y + offs[0], '%', {size: 18, bold: true, fill: col});
+  if(showB){
+    var d = (b - a) * 100, zero = Math.abs(d) < 0.5 * Math.pow(10, -PCT_DEC), dc = zero ? C.zero : tone(b - a, upGood, 1e-12);
+    var sg = pendingSign && pendingSign.key === key + 'd' ? (pendingSign.s > 0 ? '+' : '−') : zero ? '±' : d > 0 ? '+' : '−';
+    h += digitsSvg(xr, y + offs[1], 13, d, dc, key + 'd', sg, upGood) + T(xr + 2, y + offs[1], 'pp', {size: 11, fill: C.faint}) +
+         T(x + 16, y + offs[2] - 1, 'B', {fill: C.faint}) +
+         digitsSvg(xr, y + offs[2], 18, b * 100, col, key + 'b', null, upGood) + T(xr + 1, y + offs[2], '%', {size: 18, bold: true, fill: col});
+  }
+  return h;
+}
+// A number as the old page's boxes have it, one digit at a time, right-aligned at xr: the integer part in groups of
+// three, PCT_DEC decimals; padding zeros before the ones digit and the decimals' trailing zeros faint (only there for
+// the precision); the selected digit lit. Each digit (an invisible rect behind it, for an easy click, and the digit)
+// carries data-dg = key:place, its place value in the units shown (100 for the hundreds of a percentage, 0.0001 for
+// its last decimal). sign: a sign before the digits (the change's). With the ▲ / ▼ controls (show.spin) the selected
+// row's digits have them over and under them, as the old page's: ▲ in the colour of better, ▼ of worse (upGood).
+// rowPlaces[key]: the row's places, left to right, as drawn (for moving along them: moveDigit).
+var rowPlaces = {};
+function digitsSvg(xr, y, size, v, col, key, sign, upGood){
+  var s = Math.abs(v).toFixed(PCT_DEC).split('.'), chars = (group3(s[0]) + '.' + s[1]).split(''), n = chars.length;
+  var dot = chars.indexOf('.'), nInt = 0, seen = 0, dec = 0, sig = false, ones = -1, place = [], lead = [], trail = [], k;
+  for(k = 0; k < dot; k++) if(chars[k] >= '0' && chars[k] <= '9') nInt++;
+  for(k = 0; k < n; k++){
+    if(!(chars[k] >= '0' && chars[k] <= '9')) continue;
+    if(k < dot){ seen++; place[k] = Math.pow(10, nInt - seen); ones = k; } else { dec++; place[k] = Math.pow(10, -dec); }
+    lead[k] = !sig && chars[k] === '0'; if(chars[k] !== '0') sig = true;
+  }
+  for(k = n - 1; k > dot; k--){ if(chars[k] === '0') trail[k] = true; else break; }
+  var allTrail = !!trail[dot + 1], here = selOn && sel.key === key, h = '', cx = xr, places = [];
+  if(here){                                        // the selection snaps to the nearest digit there is (the number may have grown or shrunk)
+    var best = null;
+    place.forEach(function(p){ if(p != null && (best == null || Math.abs(Math.log(p / sel.place)) < Math.abs(Math.log(best / sel.place)))) best = p; });
+    if(best != null) sel.place = best;
+  }
+  for(k = n - 1; k >= 0; k--){
+    var c = chars[k], w = size * (place[k] != null ? 0.556 : c === '.' ? 0.278 : 0.25), mid = cx - w / 2;
+    if(place[k] != null){
+      places.unshift(place[k]);
+      var a = ' data-dg="' + key + ':' + place[k] + '"', on = here && Math.abs(place[k] / sel.place - 1) < 1e-9;
+      var faint = (lead[k] && k < ones) || trail[k];
+      h += '<rect x="' + r2(cx - w) + '" y="' + r2(y - size * 0.8) + '" width="' + r2(w) + '" height="' + r2(size * 1.05) + '" fill="#000000" fill-opacity="0"' + a + '/>' +
+           '<text x="' + r2(mid) + '" y="' + y + '" font-family="Arial" font-size="' + size + '" font-weight="bold" text-anchor="middle" fill="' +
+           (on ? SEL_D : faint ? FAINT_D : col) + '"' + (faint && !on ? ' fill-opacity="0.6"' : '') + a + '>' + c + '</text>';
+      if(here && show.spin){                       // ▲ raises the digit, ▼ lowers it
+        var up = upGood ? C.good : C.bad, dn = upGood ? C.bad : C.good;
+        h += '<text x="' + r2(mid) + '" y="' + r2(y - size * 0.78 - 2) + '" font-family="Arial" font-size="8" text-anchor="middle" fill="' + up + '" fill-opacity="0.8" data-spin="1"' + a + '>▲</text>' +
+             '<text x="' + r2(mid) + '" y="' + r2(y + 9) + '" font-family="Arial" font-size="8" text-anchor="middle" fill="' + dn + '" fill-opacity="0.8" data-spin="-1"' + a + '>▼</text>';
+      }
+    } else if(c === '.') h += '<text x="' + r2(mid) + '" y="' + y + '" font-family="Arial" font-size="' + size + '" font-weight="bold" text-anchor="middle" fill="' +
+                              (allTrail ? FAINT_D : col) + '">.</text>';
+    cx -= w;
+  }
+  if(sign) h += '<text x="' + r2(cx - 2) + '" y="' + y + '" font-family="Arial" font-size="' + size + '" font-weight="bold" text-anchor="end" fill="' + col + '"' +
+                ' data-sgn="' + key + '">' + sign + '</text>';
+  rowPlaces[key] = places;
+  return h;
+}
+// the four shape buttons over a graph, and the arrow that opens its menu; lit: the button lit, or -1
+function shapeButtons(x, y, kind, k, lit){
+  var h = '<g transform="translate(' + r2(x) + ',' + y + ')">';
+  var icons = ['M4 5 L20 18', 'M4 4 Q6 18 20 18', 'M4 4 Q19 4 20 19', 'M4 4 C13 4 11 18 20 18'];
+  for(var b = 0; b < 4; b++){
+    var on = b === lit, a = ' data-shape="' + kind + '" data-k="' + k + '" data-b="' + b + '"';
+    h += '<g' + a + ' transform="translate(' + 28 * b + ',0)">' +
+         R(0, 0, 24, 22, {rx: 4, fill: on ? C.lit : C.btn, stroke: on ? C.litLine : C.btnLine, sw: on ? 2 : 1}) +
+         Pa(icons[b], {stroke: C.text, sw: 1.6}) + '<title>' + SHAPE_NAMES[b] + '</title></g>';
+  }
+  h += '<g data-drop="' + kind + '" data-k="' + k + '">' + R(108, 0, 20, 22, {rx: 4, fill: C.btn, op: 0}) +
+       Pa(popAt && popAt.kind === kind && popAt.k === k ? 'M113 14 L118 9 L123 14' : 'M113 9 L118 14 L123 9', {stroke: C.text, sw: 1.6}) +
+       '<title>The shape\'s function and its bend</title></g>';
+  return h + '</g>';
+}
+// a row's Scale menu, left of its graphs: the scale in effect (rScaleMode), at most 16 characters of it (all of it in
+// the tooltip and the open menu: openScale)
+function scaleCtl(y, row){
+  var x = xAt(0) - 120;                           // under the first survival box's left edge, left of the first graph
+  var lab = scaleLab(row, row === 'r' ? rScaleMode() : scaleMode.s), cut = lab.length > 17 ? lab.slice(0, 16) + '…' : lab;
+  return T(x, y - 6, 'Scale', {size: 11, fill: C.muted}) +
+         '<g data-act="scale" data-row="' + row + '">' + R(x, y, 112, 22, {rx: 5, fill: C.btn, stroke: scaleAt === row ? C.litLine : C.btnLine}) +
+         T(x + 8, y + 15, cut, {size: 11}) +
+         Pa('M' + (x + 96) + ' ' + (y + 9) + ' L' + (x + 100) + ' ' + (y + 13) + ' L' + (x + 104) + ' ' + (y + 9), {stroke: C.text, sw: 1.4}) +
+         '<title>Scale: ' + esc(lab) + '</title></g>';
+}
+// a graph's time ticks along its foot: a few, evenly spaced in years
+function ticks(X, yb, len){
+  var s = tickStep(len), d = '';
+  for(var t = s; t < len - 1e-9; t += s) d += ' M' + r2(X + t / len * GW) + ' ' + yb + ' V' + (yb - 5);
+  return d ? Pa(d.slice(1), {stroke: C.tick, sw: 1}) : '';
+}
+// a graph's max and min at its corners, outside, both sides (the first graph's left ones beyond its bracket)
+function maxMin(i, top, bottom, mx, mn){
+  var lx = i === 0 ? xAt(0) + 2 : gx0(i) - 3, rx = gx1(i) + 3, o = {size: 9, fill: C.faint};
+  return T(lx, top + 8, mx, Object.assign({anchor: 'end'}, o)) + T(rx, top + 8, mx, o) +
+         T(lx, bottom + 10, mn, Object.assign({anchor: 'end'}, o)) + T(rx, bottom + 10, mn, o);
+}
+// The graphs' vertical scales, each row's chosen in its Scale menu, as the old page's (its GSCALE_OPTS): the risk row
+// 0 to the next power of ten at or above its largest risk, 0 to the largest, or the smallest to the largest (over every
+// period, A's and B's while compared), or the survival row's own scale ("cumulative's scale": only while the two rows
+// show the same kind of probability, annual and cumulative survival or extinction; else "0/next power of ten" stands
+// in); the survival row the smallest to the largest over every period, or over each period, or 0–100%. On the
+// cumulative's scale the risks go into the survival row's range too, so both rows' lines fit it. Each scale {lo, hi}
+// is in the row's own terms (the risk; survival), and its other view (comp) reads it upside down: 100% at the top.
+// Fitted once a render (fitScales: scl), and held while a dot is dragged (freeze).
+var SCALE_OPTS = {
+  r: [['pow', '0/next power of ten'], ['max', '0/max, all periods'], ['minmax', 'min/max, all periods'], ['cum', "cumulative's scale"]],
+  s: [['all', 'min/max, all periods'], ['per', 'min/max per period'], ['full', '0–100%']]
+};
+var SCALE_R_COMP = {pow: '100% − power of ten/100%', max: 'min/100%, all periods'};   // the risk row's in its survival view
+function scaleLab(row, id){
+  var o = SCALE_OPTS[row].filter(function(x){ return x[0] === id; })[0];
+  return (row === 'r' && comp.r && SCALE_R_COMP[id]) || o[1];
+}
+function rScaleMode(){ return scaleMode.r === 'cum' && comp.r === comp.s ? 'pow' : scaleMode.r; }   // the one in effect
+function nextPow10(x){ return x > 0 ? Math.pow(10, Math.ceil(Math.log10(x) - 1e-9)) : 1; }
+function periodsAll(){ for(var a = [], q = 0; q < M.n - 1; q++) a.push(q); return a; }
+function valsOf(periods, key){                    // the plotted values over these periods: A's, and B's while compared
+  var out = [];
+  [resA, showB ? resB : null].forEach(function(res){
+    if(res) periods.forEach(function(i){ out.push.apply(out, res.track[i][key]); });
+  });
+  return out;
+}
+function spanOf(vs){                              // smallest to largest; all equal: a little either side, within 0–100%
+  var lo = Math.min.apply(null, vs), hi = Math.max.apply(null, vs);
+  if(!(hi - lo > 1e-12 * Math.max(Math.abs(hi), 1e-300))){
+    var pad = Math.max(Math.abs(hi), 1e-4) * 0.1;
+    lo = Math.max(0, lo - pad); hi = Math.min(1, hi + pad);
+  }
+  return {lo: lo, hi: hi};
+}
+function fitScales(){
+  var o = {r: [], s: []}, all = periodsAll(), rm = rScaleMode(), rs = valsOf(all, 'r'), rMax = Math.max.apply(null, rs.concat([0]));
+  all.forEach(function(i){
+    var ps = scaleMode.s === 'per' ? [i] : all, vs;
+    if(scaleMode.s === 'full') o.s.push({lo: 0, hi: 1});
+    else {
+      vs = valsOf(ps, 'S');
+      if(rm === 'cum') vs = vs.concat(valsOf(ps, 'r').map(function(r){ return 1 - r; }));
+      o.s.push(spanOf(vs));
+    }
+    o.r.push(rm === 'cum' ? {lo: 1 - o.s[i].hi, hi: 1 - o.s[i].lo} : rm === 'minmax' ? spanOf(rs) :
+             {lo: 0, hi: rm === 'max' ? (rMax > 0 ? rMax : 0.01) : nextPow10(rMax)});
+  });
+  return o;
+}
+function scaleR(i){ return scl.r[i]; }
+function scaleS(i){ return scl.s[i]; }
+// a graph's ends as its view reads them: [top, foot]
+function scaleEnds(row, s){ return (row === 'r' ? comp.r : comp.s) ? fEnds(1 - s.lo, 1 - s.hi) : fEnds(s.hi, s.lo); }
+// a risk (survival) to its graph's y: from the foot up, or (the other view: comp) from the top down
+function ry(i, v){ var s = scaleR(i), f = clamp((v - s.lo) / (s.hi - s.lo), 0, 1); return comp.r ? RG.y + f * RG.h : RG.y + RG.h - f * RG.h; }
+function sy(i, v){ var s = scaleS(i), f = clamp((v - s.lo) / (s.hi - s.lo), 0, 1); return comp.s ? SG.y + f * SG.h : SG.y + SG.h - f * SG.h; }
+// ...and back, for dragging (the scale held: fr)
+function yToR(y, fr){ return fr.lo + (comp.r ? y - RG.y : RG.y + RG.h - y) / RG.h * (fr.hi - fr.lo); }
+function yToS(y, fr){ return fr.lo + (comp.s ? y - SG.y : SG.y + SG.h - y) / SG.h * (fr.hi - fr.lo); }
+// a view's value: the risk or survival as is, or 1 − it
+function rv(v){ return comp.r ? 1 - v : v; }
+function sv(v){ return comp.s ? 1 - v : v; }
+function linePts(i, tr, key, yf){
+  var len = M.segLen[i], X = gx0(i);
+  return tr.tau.map(function(t, q){ return r2(X + t / len * GW) + ',' + r2(yf(i, tr[key][q])); });
+}
+// a row's connecting lines: from each box down to the graph ends it sets. A bracket at the outer ends, a fork at a
+// shared year (an arrow to the end of one graph and the start of the next); the tips stop 6 px short of the dots.
+// stems(j): {x, d} where the line leaves the box at j and how (an elbow for the first risk box, centred on its period)
+function connectors(yTop, yAt, col, stem){
+  var d = '', hd = '';
+  for(var j = 0; j < M.n; j++){
+    var L = j > 0 ? yAt(j - 1, 'end') : [], Rt = j < M.n - 1 ? yAt(j, 'start') : [], s = stem(j);
+    var ys = L.concat(Rt), ymax = Math.max.apply(null, ys);
+    d += ' ' + s.d + ' V' + r2(ymax);
+    L.forEach(function(y){ d += ' M' + s.x + ' ' + r2(y) + ' H' + r2(gx1(j - 1) + 10); hd += head(gx1(j - 1) + 10, y, -1); });
+    Rt.forEach(function(y){ d += ' M' + s.x + ' ' + r2(y) + ' H' + r2(gx0(j) - 10); hd += head(gx0(j) - 10, y, 1); });
+  }
+  return Pa(d.slice(1), {stroke: col, sw: 1.2, op: 0.85}) + Pa(hd.slice(1), {stroke: col, sw: 1.2});
+}
+// Under each graph: its length, its brace (hooked up at both ends, an arrow down near the right end into the box
+// below), the years between the graphs; and the box before's own arrow, from its year's column to beside the brace's
+// (survival by 3026 = by 2126 × what survival keeps; years by 3026 = by 2126 + the period's). T0: the hooks' top.
+function braces(T0, fill, boxTop, mergeCol, mergeFrom){
+  var h = '', u = T0 + 14, l = T0 + 18, hb = T0 + 38, p = T0 + 46, my = T0 + 30, d = '', hd = '';
+  for(var i = 0; i < M.n - 1; i++){
+    var a = gx0(i), b = gx1(i), s = b - 8;
+    h += T((a + b) / 2, T0 + 10, group3(String(M.segLen[i])) + ' years', {size: 11, fill: C.faint, anchor: 'middle'});
+    h += Pa('M' + a + ' ' + T0 + ' Q' + a + ' ' + u + ' ' + (a + 12) + ' ' + u + ' H' + (b - 12) + ' Q' + b + ' ' + u + ' ' + b + ' ' + T0 +
+            ' Q' + b + ' ' + l + ' ' + (b - 12) + ' ' + l + ' H' + (a + 12) + ' Q' + a + ' ' + l + ' ' + a + ' ' + T0 + ' Z' +
+            ' M' + (s - 2) + ' ' + (l - 1) + ' H' + (s + 2) + ' V' + hb + ' H' + (s - 2) + ' Z' +
+            ' M' + (s - 7) + ' ' + hb + ' H' + (s + 7) + ' L' + s + ' ' + p + ' Z', {fill: 'url(#' + fill + ')'});
+    if(i >= mergeFrom){
+      var x0 = xAt(i), ex = x0 + 232;
+      d += ' M' + x0 + ' ' + boxTop + ' V' + (my + 6) + ' Q' + x0 + ' ' + my + ' ' + (x0 + 6) + ' ' + my + ' H' + (ex - 6) +
+           ' Q' + ex + ' ' + my + ' ' + ex + ' ' + (my + 6) + ' V' + hb;
+      hd += ' M' + (ex - 6) + ' ' + hb + ' H' + (ex + 6) + ' L' + ex + ' ' + p + ' Z';
+    }
+  }
+  for(var j = 0; j < M.n; j++) h += T(xAt(j), T0 + 18, fYear(M.cps[j]), {size: 12, fill: C.muted, anchor: 'middle'});
+  if(d) h += Pa(d.slice(1), {stroke: mergeCol, sw: 2}) + Pa(hd.slice(1), {fill: mergeCol});
+  return h;
+}
+
+// The first two rows draw their view (comp): the numbers as rv / sv, in rowCol's colour, B − A better or worse as
+// that view reads (more survival better, more extinction worse); the graphs through ry / sy.
+function riskRow(){
+  var h = '', i, j, col = rowCol('r');
+  for(j = 1; j < M.n; j++){                       // the boxes: the first period's level, then the risk at each point
+    var lvl = j === 1 && PA.drive[0] === 'r', cx = j === 1 ? (xAt(0) + xAt(1)) / 2 : xAt(j), x = cx - 120;
+    h += R(x, RB.y, 240, RB.h, {fill: C.box, stroke: col, sw: boxSel('r', j) ? 3 : 1.5, attrs: ' data-box="r:' + j + '"'}) +
+         T(cx, RB.y + 19, (lvl ? M.cps[0] + ' to ' + fYear(M.cps[1]) : 'in ' + fYear(M.cps[j])) + ', a year', {size: 14, fill: C.muted, anchor: 'middle'}) +
+         valLines(x, RB.y, [47, 68, 92], rv(resA.r[j]), rv(resB.r[j]), fPct, ' a year', col, fPP, comp.r, {kind: 'r', j: j});
+  }
+  if(!show.graphs) return h;
+  for(i = 1; i < M.n - 1; i++)                     // the shape buttons over each shaped period (the first: one level)
+    h += shapeButtons(gx0(i) + GW / 2 - 63, RBTN, 'r', M.slots[i + 1], PA.drive[i] === 'r' ? shapeBtn(PA.rShape[i]) : -1);
+  if(show.scales) h += scaleCtl(290, 'r');
+  for(i = 0; i < M.n - 1; i++){
+    var X = gx0(i), ta = resA.track[i], tb = resB.track[i], A = linePts(i, ta, 'r', ry), B = showB ? linePts(i, tb, 'r', ry) : null;
+    h += R(X, RG.y, GW, RG.h, {fill: C.graph, stroke: '#000000'});
+    if(show.ticks) h += ticks(X, RG.y + RG.h, M.segLen[i]);
+    if(B) h += '<polygon points="' + B.concat(A.slice().reverse()).join(' ') + '" fill="url(#diff)"/>' +
+               Pa('M' + B.join(' L'), {stroke: col, sw: 2.5, op: 0.55});
+    h += Pa('M' + A.join(' L'), {stroke: col, sw: 2.5});
+    var ks = M.slots[Math.max(i, 1)], ke = M.slots[i + 1], la = ta.r.length - 1;
+    if(B){
+      h += dot(X, ry(i, tb.r[0]), col, false, ' data-drag="r" data-sc="b" data-k="' + ks + '" data-g="' + i + '"') +
+           dot(X + GW, ry(i, tb.r[la]), col, false, ' data-drag="r" data-sc="b" data-k="' + ke + '" data-g="' + i + '"');
+    }
+    h += dot(X, ry(i, ta.r[0]), col, true, ' data-drag="r" data-sc="a" data-k="' + ks + '" data-g="' + i + '"') +
+         dot(X + GW, ry(i, ta.r[la]), col, true, ' data-drag="r" data-sc="a" data-k="' + ke + '" data-g="' + i + '"');
+    if(i > 0 && PA.drive[i] === 'r'){              // the bend: where half of the change is done, on A's line
+      var u = PA.rShape[i].h, v = resA.r[i] + (resA.r[i + 1] - resA.r[i]) * shapeFn(PA.rShape[i])(u);
+      h += diamond(X + u * GW, ry(i, v), ' data-drag="rb" data-k="' + ke + '" data-g="' + i + '"');
+    }
+    if(show.scales){ var er = scaleEnds('r', scaleR(i)); h += maxMin(i, RG.y, RG.y + RG.h, er[0], er[1]); }
+  }
+  if(show.lines) h += connectors(RB.y + RB.h, function(i, end){
+    var la = resA.track[i].r.length - 1, at = end === 'end' ? la : 0, ys = [ry(i, resA.track[i].r[at])];
+    if(showB) ys.push(ry(i, resB.track[i].r[at]));
+    return ys;
+  }, col, function(j){
+    var yb = RB.y + RB.h, bx = (xAt(0) + xAt(1)) / 2 - 120;
+    if(j === 0) return {x: xAt(0) + 6, d: 'M' + (bx + 6) + ' ' + yb + ' C' + (bx + 6) + ' ' + (yb + 14) + ' ' + (xAt(0) + 6) + ' ' + (yb + 8) + ' ' + (xAt(0) + 6) + ' ' + (yb + 28)};
+    if(j === 1) return {x: xAt(1), d: 'M' + (bx + 234) + ' ' + yb + ' C' + (bx + 234) + ' ' + (yb + 14) + ' ' + xAt(1) + ' ' + (yb + 8) + ' ' + xAt(1) + ' ' + (yb + 30)};
+    return {x: xAt(j), d: 'M' + xAt(j) + ' ' + yb};
+  });
+  if(show.braces) h += braces(RBR, 'fadeRS', SB.y, rowCol('s'), 0);
+  return h;
+}
+
+function survRow(){
+  var h = '', i, j, col = rowCol('s');
+  for(j = 0; j < M.n; j++){                       // the boxes: lost (or left) so far, the working, A, B − A, B
+    var x = xAt(j) - 120, y = SB.y;
+    h += R(x, y, 240, SB.h, {fill: C.box, stroke: col, sw: boxSel('s', j) ? 3 : 1.5, attrs: j > 0 ? ' data-box="s:' + j + '"' : ''}) +
+         T(x + 16, y + 19, 'by ' + fYear(M.cps[j]), {size: 14, fill: C.muted}) +
+         (comp.s ? T(x + 224, y + 19, fPct(resA.S[j]) + ' left', {size: 13, bold: true, fill: C.surv, anchor: 'end'})
+                 : T(x + 224, y + 19, fPct(1 - resA.S[j]) + ' lost', {size: 13, bold: true, fill: C.risk, anchor: 'end'}));
+    if(j > 0) h += T(x + 169, y + 41, (comp.s ? '1 − (1 − ' + fPct(1 - resA.S[j - 1]) + ')' : fPct(resA.S[j - 1])) + ' ×',
+                     {size: 13, bold: true, fill: C.faint, anchor: 'end'}) +
+                   T(x + 224, y + 41, fFac(resA.fac[j - 1]) + ' =', {size: 13, bold: true, fill: C.surv, anchor: 'end'});
+    h += valLines(x, y, [64, 84, 108], sv(resA.S[j]), sv(resB.S[j]), fPct, '', col, fPP, !comp.s, j > 0 ? {kind: 's', j: j} : null);
+  }
+  if(!show.graphs) return h;
+  for(i = 0; i < M.n - 1; i++)
+    h += shapeButtons(gx0(i) + GW / 2 - 63, SBTN, 's', M.slots[i + 1], PA.drive[i] === 's' ? shapeBtn(PA.sShape[i]) : -1);
+  if(show.scales) h += scaleCtl(650, 's');
+  for(i = 0; i < M.n - 1; i++){
+    var X = gx0(i), ta = resA.track[i], tb = resB.track[i], A = linePts(i, ta, 'S', sy), B = showB ? linePts(i, tb, 'S', sy) : null;
+    var yb = SG.y + SG.h, ye = comp.s ? SG.y : yb, la = ta.S.length - 1, ke = M.slots[i + 1];
+    // the years: the area between A's survival and the zero line (the foot, or in the other view the top)
+    h += R(X, SG.y, GW, SG.h, {fill: C.graph, stroke: '#000000'}) +
+         '<polygon points="' + A.join(' ') + ' ' + r2(X + GW) + ',' + ye + ' ' + X + ',' + ye + '" fill="url(#years)"/>';
+    if(show.ticks) h += ticks(X, yb, M.segLen[i]);
+    if(B) h += '<polygon points="' + A.concat(B.slice().reverse()).join(' ') + '" fill="url(#diff)"/>' +
+               Pa('M' + B.join(' L'), {stroke: col, sw: 2.5, op: 0.55});
+    h += Pa('M' + A.join(' L'), {stroke: col, sw: 2.5});
+    if(B){
+      h += dot(X, sy(i, tb.S[0]), col, false, i > 0 ? ' data-drag="s" data-sc="b" data-j="' + i + '" data-g="' + i + '"' : '') +
+           dot(X + GW, sy(i, tb.S[la]), col, false, ' data-drag="s" data-sc="b" data-j="' + (i + 1) + '" data-g="' + i + '"');
+    }
+    h += dot(X, sy(i, ta.S[0]), col, true, i > 0 ? ' data-drag="s" data-sc="a" data-j="' + i + '" data-g="' + i + '"' : '') +
+         dot(X + GW, sy(i, ta.S[la]), col, true, ' data-drag="s" data-sc="a" data-j="' + (i + 1) + '" data-g="' + i + '"');
+    if(PA.drive[i] === 's'){
+      var u = PA.sShape[i].h, v = resA.S[i] + (resA.S[i + 1] - resA.S[i]) * shapeFn(PA.sShape[i])(u);
+      h += diamond(X + u * GW, sy(i, v), ' data-drag="sb" data-k="' + ke + '" data-g="' + i + '"');
+    }
+    // what survival keeps over the period, and A's years in it, on the graph's own fill: the first at the top right
+    // and the second at the foot, or (the other view, the years along the top) the other way round
+    var fy = comp.s ? yb - 26 : SG.y + 6, ny = comp.s ? SG.y + 15 : yb - 36;
+    h += R(X + GW - 78, fy, 76, 20, {rx: 4, fill: C.graph, op: 0.9}) +
+         T(X + GW - 6, fy + 14, '× ' + fFac(resA.fac[i]), {size: 15, bold: true, fill: C.surv, anchor: 'end'}) +
+         R(X + 110, ny, 90, 21, {rx: 4, fill: C.graph, op: 0.9}) +
+         T(X + 155, ny + 15, fYrs(resA.yp[i]) + ' years', {size: 14, bold: true, fill: C.years, anchor: 'middle'});
+    if(show.scales){ var es = scaleEnds('s', scaleS(i)); h += maxMin(i, SG.y, yb, es[0], es[1]); }
+  }
+  if(show.lines) h += connectors(SB.y + SB.h, function(i, end){
+    var la = resA.track[i].S.length - 1, at = end === 'end' ? la : 0, ys = [sy(i, resA.track[i].S[at])];
+    if(showB) ys.push(sy(i, resB.track[i].S[at]));
+    return ys;
+  }, col, function(j){
+    var yb = SB.y + SB.h, x = j === 0 ? xAt(0) + 6 : xAt(j);
+    return {x: x, d: 'M' + x + ' ' + yb};
+  });
+  if(show.braces) h += braces(SBR, 'fadeSY', YB.y, C.years, 1);
+  return h;
+}
+
+function yearsRow(){
+  var h = '';
+  for(var j = 1; j < M.n; j++){
+    var x = xAt(j) - 120, y = YB.y;
+    h += R(x, y, 240, YB.h, {fill: C.box, stroke: C.years, sw: 1.5}) +
+         T(x + 16, y + 19, 'by ' + fYear(M.cps[j]), {size: 14, fill: C.muted}) +
+         R(x + 204, y + 8, 18, 16, {rx: 0, fill: C.graph}) + R(x + 204, y + 8, 18, 16, {rx: 0, fill: 'url(#years)', stroke: C.years}) +
+         T(x + 224, y + 41, fYrs(resA.Y[j - 1]) + ' + ' + fYrs(resA.yp[j - 1]) + ' =', {size: 13, bold: true, fill: C.faint, anchor: 'end'}) +
+         valLines(x, y, [64, 84, 108], resA.Y[j], resB.Y[j], function(v){ return fYrs(v); }, ' years', C.years,
+                  function(d){ return fYrsD(d) + ' years'; }, true, null);
+  }
+  return h;
+}
+
+// ── state and settings ──
+var tpoints = DEF_POINTS.slice(), slotAhead = DEF_AHEAD.slice();
+var M = modelAt(tpoints, slotAhead, START);
+function blankState(){ return {a: {risk: {}, surv: {}}, b: {risk: {}, surv: {}}, rShape: {}, sShape: {}, drive: {}}; }
+var st = blankState();
+var showB = false, show = {graphs: true, ticks: true, scales: true, lines: true, braces: true, spin: false}, formulasOpen = false;
+var scaleMode = {r: 'pow', s: 'full'}, comp = {r: false, s: false};   // the Scale menus (SCALE_OPTS); comp: the first two rows' views (rowCol)
+var resA = null, resB = null, PA = null, PB = null, scl = null, freeze = null, popAt = null, scaleAt = null;   // scaleAt: the Scale menu open
+function num(v){ return typeof v === 'number' && isFinite(v); }
+function riskOf(sc, k){ var v = st[sc].risk[k]; return num(v) ? v : defRisk(slotAhead[k - 1]) * (sc === 'b' ? 2 : 1); }
+function rShapeOf(k){ return st.rShape[k] || (k === DEF_FAST.slot ? DEF_FAST.shape : PRESETS[0]); }
+function sShapeOf(k){ return st.sShape[k] || PRESETS[0]; }
+// one scenario's inputs, by checkpoint and period, for compute
+function resolve(sc){
+  var P = {risk: [NaN], surv: [1], rShape: [], sShape: [], drive: []};
+  for(var j = 1; j < M.n; j++){ var k = M.slots[j], s = st[sc].surv[k]; P.risk.push(riskOf(sc, k)); P.surv.push(num(s) ? s : NaN); }
+  for(var i = 0; i < M.n - 1; i++){
+    var kk = M.slots[i + 1];
+    P.rShape.push(i ? rShapeOf(kk) : null); P.sShape.push(sShapeOf(kk));
+    P.drive.push(st.drive[kk] === 's' && num(P.surv[i + 1]) ? 's' : 'r');
+  }
+  return P;
+}
+var board = document.getElementById('board'), renderQueued = false;
+function render(){
+  PA = resolve('a'); PB = resolve('b');
+  resA = compute(M, PA, GRAPH_K); resB = compute(M, PB, GRAPH_K);
+  scl = freeze || fitScales();
+  board.setAttribute('viewBox', '330 30 ' + (xAt(M.n - 1) + 140 - 330) + ' 900');
+  rowPlaces = {};                                 // the boxes' rows as drawn now (digitsSvg)
+  board.innerHTML = defs() + boardSvg();
+  if(popAt) fillPop();
+}
+function scheduleRender(){
+  if(renderQueued) return;
+  renderQueued = true;
+  requestAnimationFrame(function(){ renderQueued = false; render(); });
+}
+// a period's drive switched: to the risk (its end risk kept as it now is, A's and B's), or to survival (its end
+// survival kept as it now is)
+function toRiskDrive(k){
+  if(st.drive[k] !== 's') return;
+  var j = M.slots.indexOf(k);
+  st.a.risk[k] = resA.r[j]; st.b.risk[k] = resB.r[j]; delete st.drive[k];
+}
+function toSurvDrive(k){
+  var j = M.slots.indexOf(k);
+  st.a.surv[k] = resA.S[j]; st.b.surv[k] = resB.S[j]; st.drive[k] = 's';
+}
+function setRisk(sc, k, v){ toRiskDrive(k); st[sc].risk[k] = clamp(v, 0, 1); }
+// survival at checkpoint j set: a survival-driven period's end directly; else the period's end risk that gives it
+function setSurv(sc, j, T){
+  var k = M.slots[j], i = j - 1, res = sc === 'a' ? resA : resB, P = sc === 'a' ? PA : PB;
+  T = clamp(T, 0, res.S[i]);
+  if(P.drive[i] === 's') st[sc].surv[k] = T;
+  else st[sc].risk[k] = solveEnd(M, P, res, i, T);
+}
+function setBend(kind, k, h){
+  h = clamp(h, H_MIN, H_MAX);
+  var cur = kind === 'r' ? rShapeOf(k) : sShapeOf(k);
+  if(cur.kind === 'exp' && Math.abs(h - 0.5) < H_SNAP) h = 0.5;
+  (kind === 'r' ? st.rShape : st.sShape)[k] = {kind: cur.kind, h: h};
+}
+
+// xrisk/v2/settings.js (beside the page) sets XRISK2_SETTINGS: the view readers first see and its values, the page
+// as it was when saved (author mode's Save settings). Anything missing or out of range keeps the page's default.
+var GROUP_IDS = ['grpElements', 'grpTime', 'grpCompare'];
+function currentSettings(){
+  var groups = {};
+  GROUP_IDS.forEach(function(id){ groups[id] = document.getElementById(id).open; });
+  return {view: {start: START, points: tpoints.slice(), ahead: slotAhead.slice(), comparison: showB,
+                 show: Object.assign({}, show), formulas: formulasOpen, scale: Object.assign({}, scaleMode), comp: Object.assign({}, comp), groups: groups,
+                 optionsWidth: sideW, namesWidth: labW === LABW_DEF ? null : labW},
+          values: JSON.parse(JSON.stringify(st))};
+}
+function applySettings(s){
+  if(!s || typeof s !== 'object') return;
+  var v = s.view || {}, i;
+  if(num(v.start) && v.start === Math.round(v.start) && v.start >= START_MIN && v.start <= START_MAX) START = v.start;
+  if(Array.isArray(v.ahead) && v.ahead.length === SLOTS && v.ahead.every(function(x, q){
+       return num(x) && x === Math.round(x) && x >= 1 && x <= YEARS_MAX && (q === 0 || x > v.ahead[q - 1]); })) slotAhead = v.ahead.slice();
+  if(Array.isArray(v.points)){
+    var p = v.points.filter(function(k, q, a){ return k === Math.round(k) && k >= 1 && k <= SLOTS && a.indexOf(k) === q; }).sort(function(a, b){ return a - b; });
+    if(p.length) tpoints = p;
+  }
+  M = modelAt(tpoints, slotAhead, START);
+  if(typeof v.comparison === 'boolean') showB = v.comparison;
+  Object.keys(show).forEach(function(k){ if(v.show && typeof v.show[k] === 'boolean') show[k] = v.show[k]; });
+  if(typeof v.formulas === 'boolean') formulasOpen = v.formulas;
+  ['r', 's'].forEach(function(r){ if(v.comp && typeof v.comp[r] === 'boolean') comp[r] = v.comp[r]; });
+  if(num(v.optionsWidth)) setSideW(v.optionsWidth);
+  if(num(v.namesWidth)) labW = Math.round(clamp(v.namesWidth, LABW_MIN, LABW_MAX));
+  ['r', 's'].forEach(function(r){
+    if(v.scale && SCALE_OPTS[r].some(function(o){ return o[0] === v.scale[r]; })) scaleMode[r] = v.scale[r];
+  });
+  GROUP_IDS.forEach(function(id){ if(v.groups && typeof v.groups[id] === 'boolean') document.getElementById(id).open = v.groups[id]; });
+  var x = s.values || {};
+  function shape(o){ return o && (o.kind === 'exp' || o.kind === 's') && num(o.h) ? {kind: o.kind, h: clamp(o.h, H_MIN, H_MAX)} : null; }
+  st = blankState();
+  for(i = 1; i <= SLOTS; i++){
+    ['a', 'b'].forEach(function(sc){
+      ['risk', 'surv'].forEach(function(f){ var y = ((x[sc] || {})[f] || {})[i]; if(num(y) && y >= 0 && y <= 1) st[sc][f][i] = y; });
+    });
+    var rs = shape((x.rShape || {})[i]), ss = shape((x.sShape || {})[i]);
+    if(rs) st.rShape[i] = rs;
+    if(ss) st.sShape[i] = ss;
+    if((x.drive || {})[i] === 's') st.drive[i] = 's';
+  }
+}
+function syncControls(){
+  document.getElementById('showB').checked = showB;
+  Array.prototype.forEach.call(document.querySelectorAll('[data-show]'), function(b){ b.checked = !!show[b.getAttribute('data-show')]; });
+}
+
+// ── editing: the boxes' digits (as the old page's), dragging on the graphs, the shape buttons and their menus ──
+// The selection: one digit of one row of a box (sel.key kind:j:part, part a, d (the change, B − A) or b; sel.place its
+// place value), lit, its box outlined thicker. A click on a digit selects it (on its ▲ / ▼, with those shown, it also
+// turns it); on the change's sign, the change the other way; elsewhere in a box, its A line; anywhere else, nothing.
+// Then: 0–9 types over the digit and steps right (as a text field; not on into the next box), ↑ / ↓ turn it by one
+// (▲ always raises, ▼ lowers, carrying over), ← / → move along the digits and on into the next box, + / − on the change
+// line set its sign (a zero change remembers it for the digit typed next: pendingSign), Esc lets go. The wheel turns
+// the digit under the pointer in a box clicked first, and only while the pointer stays in it, so scrolling the page
+// past never edits. All in the units shown (percent, the row's view: shownVal); the change line moves B.
+var sel = {key: '', kind: 'r', j: 1, part: 'a', place: 0.01}, selOn = false, pendingSign = null;
+function boxSel(kind, j){ return selOn && sel.kind === kind && sel.j === j; }
+function selectKey(key, place){
+  var p = key.split(':');
+  sel = {key: key, kind: p[0], j: +p[1], part: p[2], place: place != null ? place : sel.place};
+  selOn = true;
+  if(pendingSign && pendingSign.key !== key) pendingSign = null;   // the selection moved on: forget a waiting sign
+}
+function shownVal(kind, sc, j){ var res = sc === 'a' ? resA : resB; return 100 * (kind === 'r' ? rv(res.r[j]) : sv(res.S[j])); }
+function setShown(kind, sc, j, v){ v /= 100; if(kind === 'r') setRisk(sc, M.slots[j], rv(v)); else setSurv(sc, j, sv(v)); }
+function editVal(){
+  var a = shownVal(sel.kind, 'a', sel.j);
+  return sel.part === 'a' ? a : sel.part === 'b' ? shownVal(sel.kind, 'b', sel.j) : shownVal(sel.kind, 'b', sel.j) - a;
+}
+function applyEdit(nv){
+  pendingSign = null;
+  if(sel.part === 'a') setShown(sel.kind, 'a', sel.j, nv);
+  else setShown(sel.kind, 'b', sel.j, sel.part === 'b' ? nv : shownVal(sel.kind, 'a', sel.j) + nv);
+  render();
+}
+function change(dir){ applyEdit(editVal() + dir * sel.place); }
+function typeDigit(d){
+  var place = sel.place, v = editVal(), av = Math.abs(v), sign = v < 0 ? -1 : 1, q = Math.pow(10, -PCT_DEC);
+  if(pendingSign && pendingSign.key === sel.key){ sign = pendingSign.s; av = 0; }   // a zero change typed after + / −
+  av = Math.round(av / q) * q;                     // the number as shown, so the digit typed over is the one on screen
+  var cd = Math.floor(av / place + 1e-6) % 10;     // the digit there now
+  applyEdit(sign * (av + (d - cd) * place));
+  moveDigit(1, false);
+}
+// the boxes' rows of one part in order (the risk row's boxes left to right, then the survival row's), for moving on
+function rowKeys(part){
+  var ks = [];
+  ['r', 's'].forEach(function(kind){ for(var j = 1; j < M.n; j++) ks.push(kind + ':' + j + ':' + part); });
+  return ks;
+}
+function nearestIdx(pl, place){
+  var b = 0;
+  for(var k = 1; k < pl.length; k++) if(Math.abs(Math.log(pl[k] / place)) < Math.abs(Math.log(pl[b] / place))) b = k;
+  return b;
+}
+function moveDigit(dir, cross){
+  var pl = rowPlaces[sel.key] || []; if(!pl.length) return;
+  var idx = nearestIdx(pl, sel.place);
+  if(idx + dir >= 0 && idx + dir < pl.length) sel.place = pl[idx + dir];
+  else if(cross){
+    var ks = rowKeys(sel.part), nk = ks[ks.indexOf(sel.key) + dir], np = nk && rowPlaces[nk];
+    if(np && np.length) selectKey(nk, dir > 0 ? np[0] : np[np.length - 1]);
+  }
+  render();
+}
+// + / − on the change line: a nonzero change takes that sign (B to A ± |change|); a zero one waits for its digit
+function setDeltaSign(s){
+  var d = editVal(), zero = Math.abs(d) < 0.5 * Math.pow(10, -PCT_DEC);
+  if(zero || (pendingSign && pendingSign.key === sel.key)){ pendingSign = {key: sel.key, s: s}; render(); return; }
+  if((d > 0 ? 1 : -1) !== s) applyEdit(-d);
+}
+function flipDeltaSign(){
+  var d = editVal(), zero = Math.abs(d) < 0.5 * Math.pow(10, -PCT_DEC), waiting = pendingSign && pendingSign.key === sel.key;
+  if(zero || waiting) setDeltaSign(waiting ? -pendingSign.s : 1); else applyEdit(-d);
+}
+document.addEventListener('keydown', function(e){
+  if(!selOn || (e.target.closest && e.target.closest('input, textarea, select'))) return;
+  var k = e.key;
+  if(!rowPlaces[sel.key]){ selOn = false; pendingSign = null; render(); return; }   // its row no longer shown
+  if(k === 'Escape'){ selOn = false; pendingSign = null; render(); return; }
+  if(/^[0-9]$/.test(k)){ e.preventDefault(); typeDigit(+k); return; }
+  if((k === '+' || k === '-') && !(e.ctrlKey || e.metaKey || e.altKey) && sel.part === 'd'){ e.preventDefault(); setDeltaSign(k === '+' ? 1 : -1); return; }
+  if(k === 'ArrowUp' || k === 'ArrowDown'){ e.preventDefault(); change(k === 'ArrowUp' ? 1 : -1); return; }
+  if(k === 'ArrowLeft' || k === 'ArrowRight'){ e.preventDefault(); moveDigit(k === 'ArrowRight' ? 1 : -1, true); }
+});
+// the wheel, armed by a click in a box (by its kind:j: every edit redraws the board), disarmed once the pointer leaves it
+var wheelArm = null, wheelAcc = 0, wheelDig = null;
+function boxOf(el){
+  var b = el && el.closest && el.closest('[data-box],[data-dg],[data-sgn]'); if(!b) return null;
+  var p = (b.getAttribute('data-box') || b.getAttribute('data-dg') || b.getAttribute('data-sgn')).split(':');
+  return p[0] + ':' + p[1];
+}
+board.addEventListener('pointerover', function(e){ if(wheelArm && boxOf(e.target) !== wheelArm) wheelArm = null; });
+board.addEventListener('wheel', function(e){
+  if(e.ctrlKey || e.metaKey || !wheelArm || boxOf(e.target) !== wheelArm){ wheelAcc = 0; return; }
+  e.preventDefault();                              // in the armed box: never the page's
+  var dg = e.target.closest('[data-dg]'); if(!dg){ wheelAcc = 0; return; }   // between its digits: nothing
+  var a = dg.getAttribute('data-dg'), cut = a.lastIndexOf(':');
+  if(a !== wheelDig){ wheelDig = a; wheelAcc = 0; }   // moved to another digit: its count afresh
+  var d = e.deltaY;
+  if(e.deltaMode === 1) d *= 33; else if(e.deltaMode === 2) d *= 400;   // lines, pages → px
+  if(wheelAcc !== 0 && (d < 0) !== (wheelAcc < 0)) wheelAcc = 0;
+  wheelAcc += d;
+  var STEP = 90, n = 0;                            // about a step a notch, or a firm swipe of a touchpad
+  if(Math.abs(wheelAcc) < STEP) return;
+  selectKey(a.slice(0, cut), +a.slice(cut + 1));
+  while(wheelAcc <= -STEP && n < 8){ wheelAcc += STEP; change(1); n++; }
+  while(wheelAcc >= STEP && n < 8){ wheelAcc -= STEP; change(-1); n++; }
+  if(n >= 8) wheelAcc = 0;
+}, {passive: false});
+// a click off the board lets go of the selection
+document.addEventListener('click', function(e){ if(selOn && !board.contains(e.target)){ selOn = false; pendingSign = null; render(); } });
+
+// dragging: a risk dot (that point's risk; the first graph's either end, its level), a survival dot (survival
+// there: setSurv), a bend handle (h). The scales hold still while dragging (freeze), so the dot stays under the
+// pointer; they re-fit on letting go.
+var drag = null;
+function svgPt(e){
+  var pt = board.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
+  return pt.matrixTransform(board.getScreenCTM().inverse());
+}
+board.addEventListener('pointerdown', function(e){
+  var el = e.target.closest('[data-drag]'); if(!el) return;
+  e.preventDefault();
+  freeze = scl;                                   // the scales as drawn now
+  drag = {kind: el.getAttribute('data-drag'), sc: el.getAttribute('data-sc'), k: +el.getAttribute('data-k'),
+          j: +el.getAttribute('data-j'), g: +el.getAttribute('data-g')};
+  board.setPointerCapture(e.pointerId);
+});
+board.addEventListener('pointermove', function(e){
+  if(!drag) return;
+  var p = svgPt(e), g = drag.g;
+  if(drag.kind === 'r') setRisk(drag.sc, drag.k, yToR(p.y, freeze.r[g]));
+  else if(drag.kind === 's') setSurv(drag.sc, drag.j, yToS(p.y, freeze.s[g]));
+  else setBend(drag.kind === 'rb' ? 'r' : 's', drag.k, (p.x - gx0(g)) / GW);
+  scheduleRender();
+});
+function endDrag(){ if(!drag) return; drag = null; freeze = null; scheduleRender(); }
+board.addEventListener('pointerup', endDrag);
+board.addEventListener('pointercancel', endDrag);
+
+// clicks on the board: a box (its digit, its change's sign, or elsewhere in it: see "editing"), a shape button, a
+// menu's arrow, the scale choices, the views' switches, Formulas; anywhere else lets go of the selection
+board.addEventListener('click', function(e){
+  var dg = e.target.closest('[data-dg]'), sg = e.target.closest('[data-sgn]'), bx = e.target.closest('[data-box]');
+  if(dg || sg || bx){
+    wheelArm = boxOf(dg || sg || bx);
+    if(sg){ selectKey(sg.getAttribute('data-sgn')); flipDeltaSign(); return render(); }
+    if(dg){
+      var a = dg.getAttribute('data-dg'), cut = a.lastIndexOf(':'), sp = e.target.closest('[data-spin]');
+      selectKey(a.slice(0, cut), +a.slice(cut + 1));
+      if(sp) return change(+sp.getAttribute('data-spin'));
+    } else selectKey(bx.getAttribute('data-box') + ':a');
+    return render();
+  }
+  wheelArm = null;
+  var el = e.target.closest('[data-shape],[data-drop],[data-act]');
+  if(!el){ if(selOn){ selOn = false; pendingSign = null; render(); } return; }
+  if(el.hasAttribute('data-drop')){
+    var kind = el.getAttribute('data-drop'), k = +el.getAttribute('data-k');
+    if(popAt && popAt.kind === kind && popAt.k === k) closePop(); else openPop(kind, k, el);
+    return render();
+  }
+  if(el.hasAttribute('data-shape')){
+    var sk = el.getAttribute('data-shape'), kk = +el.getAttribute('data-k'), b = +el.getAttribute('data-b');
+    var pre = {kind: PRESETS[b].kind, h: PRESETS[b].h};
+    if(sk === 'r'){ toRiskDrive(kk); st.rShape[kk] = pre; }
+    else if(st.drive[kk] !== 's'){ toSurvDrive(kk); st.sShape[kk] = pre; }
+    else if(shapeBtn(sShapeOf(kk)) === b) toRiskDrive(kk);   // the lit one again: the risk drives again
+    else st.sShape[kk] = pre;
+    return render();
+  }
+  var act = el.getAttribute('data-act');
+  if(act === 'formulas') formulasOpen = !formulasOpen;
+  else if(act === 'comp') comp[el.getAttribute('data-row')] = el.getAttribute('data-v') === '1';
+  else if(act === 'scale'){ var row = el.getAttribute('data-row'); if(scaleAt === row) closeScale(); else openScale(row, el); }
+  render();
+});
+
+// A row's Scale menu (scaleCtl): its options in full, the one in effect lit; the risk row's "cumulative's scale"
+// greyed while the two rows show different kinds of probability (rScaleMode). A choice closes it.
+var smenu = document.getElementById('smenu');
+function openScale(row, el){
+  scaleAt = row;
+  var now = row === 'r' ? rScaleMode() : scaleMode.s;
+  smenu.innerHTML = SCALE_OPTS[row].map(function(o){
+    var off = row === 'r' && o[0] === 'cum' && comp.r === comp.s;
+    return '<button type="button" data-v="' + o[0] + '"' + (o[0] === now ? ' class="on"' : '') +
+           (off ? ' disabled title="Only while both rows show survival, or both extinction"' : '') + '>' + esc(scaleLab(row, o[0])) + '</button>';
+  }).join('');
+  var r = el.getBoundingClientRect();
+  smenu.style.left = clamp(r.left, 8, window.innerWidth - 240) + 'px';
+  smenu.style.top = (r.bottom + 4) + 'px';
+  smenu.hidden = false;
+}
+function closeScale(){ scaleAt = null; smenu.hidden = true; smenu.innerHTML = ''; }
+smenu.addEventListener('click', function(e){
+  var b = e.target.closest('button[data-v]'); if(!b || b.disabled) return;
+  scaleMode[scaleAt] = b.getAttribute('data-v'); closeScale(); render();
+});
+document.addEventListener('keydown', function(e){ if(e.key === 'Escape' && scaleAt){ closeScale(); render(); } });
+document.addEventListener('pointerdown', function(e){
+  if(scaleAt && !smenu.contains(e.target) && !e.target.closest('[data-act="scale"]')){ closeScale(); scheduleRender(); }
+});
+
+// A shape's menu: the period's function in τ (years since its start), the bend (k, or the S-curve's middle) with
+// a slider for the year by which half of the change is done (as dragging the diamond), the fitted a and c, and A's
+// and B's functions with their numbers. Built once when opened (so the slider keeps its drag), filled on each render.
+var pop = document.getElementById('pop');
+function openPop(kind, k, el){
+  popAt = {kind: kind, k: k};
+  pop.className = 'pop' + (kind === 's' ? ' surv' : '');
+  pop.innerHTML = '<button type="button" class="popx" aria-label="Close">×</button><div class="pt" id="pT"></div>' +
+    '<div class="pn" id="pNote"></div><div id="pBody"><div class="pf" id="pF"></div><div class="pn" id="pTau"></div>' +
+    '<div class="pn" id="pK"></div><label class="ph">Half of the change by <b id="pHy"></b>' +
+    '<input type="range" id="pH" min="2" max="98" step="0.5"></label><div class="pn" id="pAC"></div>' +
+    '<div class="pab" id="pA"></div><div class="pab" id="pB"></div></div>';
+  var r = el.getBoundingClientRect();
+  pop.style.left = clamp(r.left - 150, 8, window.innerWidth - 330) + 'px';
+  pop.style.top = (r.bottom + 6) + 'px';
+  pop.hidden = false;
+}
+function closePop(){ popAt = null; pop.hidden = true; pop.innerHTML = ''; }
+function fillPop(){
+  var i = M.slots.indexOf(popAt.k) - 1;
+  if(i < 0 || (popAt.kind === 'r' && i === 0)){ closePop(); return; }   // gone, or now the first period (one level)
+  var kind = popAt.kind, P = PA, len = M.segLen[i], drives = P.drive[i] === kind;
+  var sh = kind === 'r' ? P.rShape[i] : P.sShape[i], v = kind === 'r' ? 'r' : 'S', b = shapeBtn(sh);
+  function set(id, html){ document.getElementById(id).innerHTML = html; }
+  set('pT', fYear(M.cps[i]) + ' to ' + fYear(M.cps[i + 1]) + ': ' + (kind === 'r' ? 'risk' : 'survival') + ', ' + SHAPE_NAMES[b]);
+  set('pNote', drives ? '' : kind === 'r' ? 'Survival drives this period (a survival shape is lit); the risk follows from it.' :
+                             'The risk drives this period; survival follows. Light a survival shape to set survival directly.');
+  document.getElementById('pBody').hidden = !drives;
+  if(!drives) return;
+  var x = sh.kind === 'exp' ? expX(sh.h) : 0, lin = sh.kind === 'exp' && Math.abs(x) < 1e-9;
+  var L0 = lgs(0, sh.h), L1 = lgs(1, sh.h);
+  set('pF', lin ? v + '(τ) = ' + v + '₀ + (' + v + '₁ − ' + v + '₀) · τ/n' :
+            sh.kind === 'exp' ? v + '(τ) = c + a · e^(kτ)' : v + '(τ) = c + a / (1 + e^(−s(τ − τₘ)))');
+  set('pTau', 'τ: years since ' + fYear(M.cps[i]) + ', 0 to n = ' + group3(String(len)));
+  set('pK', lin ? 'k = 0: a straight line' : sh.kind === 'exp' ? 'k = ' + (x / len).toPrecision(3).replace('-', '−') + ' a year, for A and B' :
+            's = ' + (S_STEEP / len).toPrecision(3) + ' a year, its middle τₘ = ' + group3(String(Math.round(sh.h * len))));
+  set('pHy', fYear(M.cps[i] + Math.round(sh.h * len)));
+  var hs = document.getElementById('pH'); if(document.activeElement !== hs) hs.value = sh.h * 100;
+  set('pAC', lin ? '' : sh.kind === 'exp' ? 'a = (' + v + '₁ − ' + v + '₀) / (e^(kn) − 1), c = ' + v + '₀ − a' :
+                                            'a and c fitted the same way, to meet ' + v + '₀ and ' + v + '₁');
+  function fn(res, sc){
+    var v0 = kind === 'r' ? res.r[i] : res.S[i], v1 = kind === 'r' ? res.r[i + 1] : res.S[i + 1], a, c, tail;
+    if(lin){ c = v0; a = v1 - v0; tail = ' · τ/' + group3(String(len)); }
+    else if(sh.kind === 'exp'){ a = (v1 - v0) / Math.expm1(x); c = v0 - a; tail = ' · e^(kτ)'; }
+    else { a = (v1 - v0) / (L1 - L0); c = v0 - a * L0; tail = ' / (1 + e^(−s(τ − τₘ)))'; }
+    return '<b>' + sc + '</b><span class="pv">' + fPct(c) + ' ' + (a < 0 ? '−' : '+') + ' ' + pctNum(Math.abs(a) * 100) + ' pp' + tail + '</span>';
+  }
+  set('pA', fn(resA, 'A')); set('pB', showB ? fn(resB, 'B') : '');
+}
+pop.addEventListener('input', function(e){
+  if(e.target.id === 'pH' && popAt){ setBend(popAt.kind, popAt.k, +e.target.value / 100); scheduleRender(); }
+});
+pop.addEventListener('click', function(e){ if(e.target.closest('.popx')){ closePop(); render(); } });
+document.addEventListener('keydown', function(e){ if(e.key === 'Escape' && popAt){ closePop(); render(); } });
+document.addEventListener('pointerdown', function(e){
+  if(popAt && !pop.contains(e.target) && !e.target.closest('[data-drop]')){ closePop(); scheduleRender(); }
+});
+
+// ── controls ──
+document.getElementById('showB').addEventListener('change', function(e){ showB = e.target.checked; render(); });
+Array.prototype.forEach.call(document.querySelectorAll('[data-show]'), function(b){
+  b.addEventListener('change', function(){ show[b.getAttribute('data-show')] = b.checked; render(); });
+});
+// Time scale, as the old page's: the present, then a dot for each time point; a click shows or hides it (one stays
+// shown); over each its year, under it its years ahead, both to type in (Enter or leaving the field sets it, Esc
+// puts it back). A point stays between its neighbours. Built once, then updated in place, so a field keeps its focus.
+function slotBounds(k){ return {lo: k > 1 ? slotAhead[k - 2] + 1 : 1, hi: k < SLOTS ? slotAhead[k] - 1 : YEARS_MAX}; }
+function setPoints(p, ahead){
+  tpoints = p; if(ahead) slotAhead = ahead;
+  M = modelAt(tpoints, slotAhead, START);
+  if(popAt && M.slots.indexOf(popAt.k) < 1) closePop();
+  render(); drawScale();
+}
+function drawScale(){
+  var box = document.getElementById('tpts'), k, f = ' type="text" inputmode="numeric" autocomplete="off" spellcheck="false"';
+  if(!box.firstChild){
+    var h = '<div class="tpt tnow rin"><input class="tin"' + f + ' data-f="start"><span class="tdrow"><span class="tdot"></span></span>' +
+            '<span class="tfix tnowl">now</span></div>';
+    for(k = 1; k <= SLOTS; k++)
+      h += '<div class="tpt" data-k="' + k + '"><input class="tin"' + f + ' data-k="' + k + '" data-f="year">' +
+           '<span class="tdrow"><button type="button" class="tdotb" data-k="' + k + '"><span class="tdot"></span></button></span>' +
+           '<input class="tin"' + f + ' data-k="' + k + '" data-f="ahead"></div>';
+    box.innerHTML = h;
+  }
+  var now = box.querySelector('.tnow'), sIn = now.querySelector('.tin');
+  now.querySelector('.tdrow').title = fYear(START) + ', the present';
+  if(!sIn.hasAttribute('data-dirty')) sIn.value = fYear(START);
+  sIn.title = 'The present year: type one from ' + START_MIN + ' to ' + START_MAX;
+  sIn.setAttribute('aria-label', sIn.title);
+  var last = tpoints[tpoints.length - 1], one = tpoints.length === 1;
+  for(k = 1; k <= SLOTS; k++){
+    var col = box.querySelector('.tpt[data-k="' + k + '"]'), on = tpoints.indexOf(k) >= 0, only = on && one;
+    var ya = slotAhead[k - 1], b = slotBounds(k);
+    col.className = 'tpt' + (on ? ' on' : '') + (k <= last ? ' lin' : '') + (k < last ? ' rin' : '') + (only ? ' only' : '');
+    var dotB = col.querySelector('.tdotb');
+    dotB.setAttribute('aria-pressed', on);
+    dotB.title = fYear(START + ya) + ', ' + group3(String(ya)) + ' years ahead: ' +
+                 (only ? 'the only time point shown' : on ? 'shown (click to hide)' : 'hidden (click to show)');
+    dotB.setAttribute('aria-label', dotB.title);
+    Array.prototype.forEach.call(col.querySelectorAll('.tin'), function(inp){
+      var yr = inp.getAttribute('data-f') === 'year';
+      if(!inp.hasAttribute('data-dirty')) inp.value = yr ? fYear(START + ya) : group3(String(ya));   // not what is being typed
+      inp.title = yr ? 'The year of this time point: type one from ' + fYear(START + b.lo) + ' to ' + fYear(START + b.hi)
+                     : 'Years ahead: type a number from ' + group3(String(b.lo)) + ' to ' + group3(String(b.hi));
+      inp.setAttribute('aria-label', inp.title);
+    });
+  }
+}
+function slotCommit(inp){
+  if(!inp.hasAttribute('data-dirty')) return;
+  inp.removeAttribute('data-dirty');
+  var x = parseInt(inp.value.replace(/\D/g, ''), 10), f = inp.getAttribute('data-f');
+  if(f === 'start'){
+    if(isFinite(x)){ START = clamp(x, START_MIN, START_MAX); setPoints(tpoints); }
+  } else if(isFinite(x)){
+    var k = +inp.getAttribute('data-k'), b = slotBounds(k), ys = slotAhead.slice();
+    ys[k - 1] = clamp(f === 'year' ? x - START : x, b.lo, b.hi);
+    setPoints(tpoints.indexOf(k) >= 0 ? tpoints : tpoints.concat(k).sort(function(a, c){ return a - c; }), ys);
+  }
+  drawScale();
+}
+var tbox = document.getElementById('tpts');
+tbox.addEventListener('input', function(e){ if(e.target.classList.contains('tin')) e.target.setAttribute('data-dirty', ''); });
+tbox.addEventListener('change', function(e){ if(e.target.classList.contains('tin')) slotCommit(e.target); });
+tbox.addEventListener('keydown', function(e){
+  var t = e.target; if(!t.classList.contains('tin')) return;
+  if(e.key === 'Enter'){ e.preventDefault(); slotCommit(t); t.select(); }
+  else if(e.key === 'Escape'){ t.removeAttribute('data-dirty'); drawScale(); t.blur(); }
+});
+tbox.addEventListener('click', function(e){
+  var b = e.target.closest('.tdotb'); if(!b) return;
+  var k = +b.getAttribute('data-k'), on = tpoints.indexOf(k) >= 0;
+  if(on && tpoints.length === 1) return;
+  setPoints(on ? tpoints.filter(function(x){ return x !== k; }) : tpoints.concat(k).sort(function(a, c){ return a - c; }));
+});
+
+// ── column widths ──
+// Two grips, as the old page's names column's: the options column's (#sideGrip, on its right edge: --sidew on .app)
+// and the board's names column's (data-grip: labW, the table moving with it). Drag to resize, double-click for the
+// default. The names column's width is in the board's own units, so its drag is scaled by the board's size when it
+// began. Both are saved with the view (optionsWidth, namesWidth; null: the default).
+var SIDEW_MIN = 200, SIDEW_MAX = 800, sideW = null, colDrag = null;
+function setSideW(w){
+  sideW = w == null ? null : Math.round(clamp(w, SIDEW_MIN, SIDEW_MAX));
+  var app = document.querySelector('.app');
+  if(sideW == null) app.style.removeProperty('--sidew'); else app.style.setProperty('--sidew', sideW + 'px');
+}
+function setLabW(w){ labW = w == null ? LABW_DEF : Math.round(clamp(w, LABW_MIN, LABW_MAX)); scheduleRender(); }
+document.addEventListener('pointerdown', function(e){
+  var g = e.button === 0 && e.target.closest && e.target.closest('#sideGrip, [data-grip]'); if(!g) return;
+  var names = g.hasAttribute('data-grip');
+  colDrag = {names: names, x: e.clientX, id: e.pointerId, k: names ? board.getScreenCTM().a : 1,
+             w: names ? labW : document.querySelector('.side').getBoundingClientRect().width};
+  try { (names ? board : g).setPointerCapture(e.pointerId); } catch(err){}   // the board: the grip is redrawn as it moves
+  document.body.classList.add(names ? 'namesrz' : 'siderz');
+  e.preventDefault();
+});
+document.addEventListener('pointermove', function(e){
+  var d = colDrag; if(!d || e.pointerId !== d.id) return;
+  var w = d.w + (e.clientX - d.x) / d.k;
+  if(d.names) setLabW(w); else setSideW(w);
+});
+function endColDrag(e){
+  if(!colDrag || e.pointerId !== colDrag.id) return;
+  colDrag = null; document.body.classList.remove('namesrz', 'siderz');
+}
+document.addEventListener('pointerup', endColDrag);
+document.addEventListener('pointercancel', endColDrag);
+document.addEventListener('dblclick', function(e){
+  if(!e.target.closest) return;
+  if(e.target.closest('#sideGrip')) setSideW(null);
+  else if(e.target.closest('[data-grip]')) setLabW(null);
+});
+
+// ── author mode: Save settings, Export to Krita ──
+// v2/index.html?author (or #author): the Author group. Served by v2/author.R (on this machine), Save settings writes
+// v2/settings.js and Export to Krita writes krita/app.svg; served any other way, the text is shown to copy instead.
+var AUTHOR = /(^|[?&#])author\b/.test(location.search + location.hash);
+function auStatus(msg, text){
+  document.getElementById('auStatus').textContent = msg;
+  var ta = document.getElementById('auText');
+  ta.hidden = text == null;
+  if(text != null){ ta.value = text; ta.focus(); ta.select(); }
+}
+function settingsText(){
+  return '// The saved settings of the x-risk calculator\'s second installment (v2/index.html): what readers first see.\n' +
+         '// Written by the page\'s Save settings (source("v2/author.R")); hand edits are fine. The page loads it from beside\n' +
+         '// itself. Anything left out keeps the page\'s default.\n' +
+         'window.XRISK2_SETTINGS = ' + JSON.stringify(currentSettings(), null, 2) + ';\n';
+}
+function post(path, text, done, fileName){
+  var local = /^https?:$/.test(location.protocol) && /^(127\.0\.0\.1|localhost)$/.test(location.hostname);
+  if(!local) return auStatus('Not served by v2/author.R: copy this into ' + fileName + '.', text);
+  fetch(path, {method: 'POST', body: text, headers: {'Content-Type': 'text/plain; charset=utf-8', 'X-Xrisk2-Save': '1'}})
+    .then(function(r){ if(!r.ok) throw new Error('HTTP ' + r.status); auStatus(done + ' at ' + new Date().toLocaleTimeString() + '.'); })
+    .catch(function(){ auStatus('The server refused it: copy this into ' + fileName + '.', text); });
+}
+// Krita's copy: the board as it is, beside the option groups drawn as their title bars (an open group's contents as
+// a faint panel of its height), on the page's colour, 1920 × 1200 (the document's size). Presentation attributes
+// only; the svg tag in the first 256 bytes (Krita reads a linked SVG only then). A board wider than the sketches'
+// (more than four time points) is scaled down to fit.
+function kritaSvg(){
+  var side = '', y = 40, W = xAt(M.n - 1) + 140, s = Math.min(1, (1560 - 330) / (W - 330));
+  Array.prototype.forEach.call(document.querySelectorAll('.side > details.grp'), function(g){
+    if(g.hidden || g.id === 'grpAuthor') return;
+    var open = g.open, title = g.querySelector('summary').textContent;
+    side += R(36, y, 285, 30, {fill: C.btn, stroke: C.btnLine}) + T(50, y + 20, title, {size: 14}) +
+            Pa(open ? 'M296 ' + (y + 12) + ' L302 ' + (y + 18) + ' L308 ' + (y + 12) : 'M299 ' + (y + 9) + ' L305 ' + (y + 15) + ' L299 ' + (y + 21),
+               {stroke: C.text, sw: 1.8});
+    y += 32;
+    if(open){
+      var body = g.querySelector('.gbody'), hh = Math.round(body.offsetHeight * 285 / Math.max(1, g.offsetWidth));
+      side += R(36, y, 285, hh, {fill: C.graph, op: 0.7}); y += hh;
+    }
+    y += 8;
+  });
+  var bd = boardSvg().replace(/ data-[a-z]+="[^"]*"/g, '').replace(/<title>[^<]*<\/title>/g, '');
+  return '<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n' +
+         '<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1200" viewBox="0 0 1920 1200">\n' +
+         '<!-- The x-risk calculator (v2) as it was on ' + new Date().toISOString().slice(0, 16).replace('T', ' ') +
+         ', exported for Krita by its Export to Krita (v2/author.R). Rewritten in place on each export. -->\n' +
+         defs() + '\n<rect x="0" y="0" width="1920" height="1200" fill="#24323d"/>\n' + side + '\n' +
+         '<g transform="translate(' + r2(330 * (1 - s)) + ',' + r2(30 * (1 - s)) + ') scale(' + r2(s * 1000) / 1000 + ')">\n' + bd + '\n</g>\n</svg>\n';
+}
+if(AUTHOR){
+  document.getElementById('grpAuthor').hidden = false;
+  document.getElementById('auSave').addEventListener('click', function(){ post('save-settings', settingsText(), 'Saved to v2/settings.js', 'v2/settings.js'); });
+  document.getElementById('auKrita').addEventListener('click', function(){ post('save-krita', kritaSvg(), 'Exported to krita/app.svg', 'krita/app.svg'); });
+}
+
+// versions.html's tours (see its top): this page's state for a step, and a step's state set, by messages, as a page
+// opened as a file can't reach into its frames
+window.addEventListener('message', function(e){
+  var d = e.data;
+  if(window.parent === window || e.source !== window.parent || !d) return;
+  if(d.xriskGet) e.source.postMessage({xriskState: d.xriskGet, state: currentSettings()}, '*');
+  else if(d.xriskSet){
+    selOn = false; pendingSign = null; closeScale(); closePop();
+    applySettings(d.xriskSet); syncControls(); drawScale(); render();
+  }
+});
+
+// ── start-up ──
+applySettings(window.XRISK2_SETTINGS || {});
+syncControls();
+drawScale();
+render();
+</script>
+</body>
+</html>

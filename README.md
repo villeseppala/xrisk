@@ -27,6 +27,8 @@ A tour steps readers through prepared views of the page, each with its text:
 - `?tour=<name>` opens a tour made in author mode (`tours/<name>.json`), e.g. `index.html?tour=intro`;
   `&step=3` starts at its third step.
 - Readers can make their own (Controls → Make a tour) and share them as a link (`#tour=…`).
+- `versions.html?vtour=<name>` opens a tour across the versions (`vtours/<name>.json`), made in Make a tour on
+  `versions.html` through `author.R`. The site's bare address lands on `prototypes`.
 
 ## Checks
 
@@ -40,6 +42,7 @@ version (`reference/app_xrisk/app.R`; needs the V8 package) and writes `parity_o
 | `index.html` | the app |
 | `xriskb_settings.js` | saved settings |
 | `tours/` | published tours |
+| `vtours/` | published tours across the versions |
 | `author.R` | local server for author mode |
 | `check_parity.R` | parity check against the R reference |
 | `reference/` | the Shiny versions the page came from, kept runnable |

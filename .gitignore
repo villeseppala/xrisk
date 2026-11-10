@@ -8,3 +8,13 @@ parity_out.txt
 
 # instructions for Claude Code: kept on this machine, not published
 CLAUDE.md
+
+# versions.html's author commands: only for this machine, not published
+versions_local.js
+
+# the Krita loop (directions.md): drawings, Claude's live layer and the handoff, kept on this machine
+krita/
+directions.md
+
+# layout sketches as pages (directions.md): kept on this machine until one is chosen
+sketches/
