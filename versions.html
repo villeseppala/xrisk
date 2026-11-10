@@ -95,11 +95,25 @@ body.touring .bar .vtab, body.touring.onsite .bar{display:none;}
    panel scrolling past 45% of the window); the frames under it move down for a longer one (Ville's choice over a fixed
    three lines with a scrollbar) */
 .trtext{margin-top:6px;font-size:15px;line-height:1.5;flex:1 1 auto;}
-@media (max-width: 560px){                        /* a phone: the buttons in a row over the text */
+/* the buttons kept in sight while the panel scrolls (Ville's: the step's controls at the top) */
+.trside{position:sticky;top:0;align-self:start;z-index:1;background:var(--panelBg);}
+.trgrip{display:none;}
+/* A phone: the buttons in a row over the text; the panel itself no longer scrolls, the text does, inside its own height
+   (--trh, set by dragging the handle under it: tourGrip; at first at most 30% of the window), so the buttons and the
+   title stay at the top (Ville's) */
+@media (max-width: 560px){
   .trgrid{grid-template-columns:minmax(0, 1fr);}
-  .trside{flex-flow:row wrap;align-items:center;}
+  .trside{flex-flow:row wrap;align-items:center;position:static;}
   .trvers{margin:0;padding:0;border:0;}
+  #tourbar{max-height:none;overflow:visible;padding-bottom:0;}
+  .trtext{max-height:var(--trh, 30vh);overflow-y:auto;overscroll-behavior:contain;}
+  #tourbar.sized .trtext{height:var(--trh);max-height:none;}
+  .trgrip{display:block;position:relative;height:20px;margin:2px -12px 0;cursor:ns-resize;touch-action:none;}
+  .trgrip::after{content:'';position:absolute;left:50%;top:8px;width:48px;height:4px;margin-left:-24px;border-radius:2px;background:var(--hint);}
 }
+/* Tour, in the bar once a tour is left: the same tour from its first step */
+.tourb{border:0;background:none;font:inherit;cursor:pointer;}
+.tourb[hidden]{display:none;}
 .trtext p{margin:0 0 .6em;}
 .trtext p:last-child{margin-bottom:0;}
 </style>
@@ -108,6 +122,7 @@ body.touring .bar .vtab, body.touring.onsite .bar{display:none;}
 <nav class="bar" aria-label="Version">
   <a class="vtab" href="#v1">v1</a>
   <a class="vtab" href="#v3">v3</a>
+  <button type="button" class="vtab tourb" id="tourAgain" hidden title="Start the tour again, from its first step">Tour</button>
   <span class="themes"><button type="button" class="themeb" data-theme="light" title="Light mode" aria-label="Light mode">&#9728;</button><button type="button" class="themeb" data-theme="dark" title="Dark mode" aria-label="Dark mode">&#9790;</button></span>
   <label class="tmshow" title="Make a tour of the versions and save it for the site" hidden><input id="showtm" type="checkbox" autocomplete="off">Make a tour</label>
 </nav>
@@ -249,10 +264,19 @@ function cleanTour(j){
           steps: j.steps.slice(0, 200).filter(function(s){ return s && PAGES.hasOwnProperty(s.version) && s.state && typeof s.state === 'object'; })
             .map(function(s){ return {version: s.version, notes: typeof s.notes === 'string' ? s.notes.slice(0, 10000) : '', state: s.state}; })};
 }
+// the site's tour last started (siteTour: it, its name): Tour in the bar starts it again once left, its ?vtour= back in
+// the address
+var siteTour = null;
 function startTour(t, kind){
+  if(kind === 'site') siteTour = {t: t, name: tourName()};
   tour = {kind: kind, title: t.title, steps: t.steps};
   tourGo(0);
 }
+document.getElementById('tourAgain').addEventListener('click', function(){
+  if(!siteTour || tour) return;
+  if(siteTour.name){ var u = new URL(location.href); u.searchParams.set('vtour', siteTour.name); history.replaceState(null, '', u); }
+  startTour(siteTour.t, 'site');
+});
 function tourGo(k){
   if(!tour || k < 0 || k >= tour.steps.length) return;
   tourAt = k; goStep(tour.steps[k]); drawTour();
@@ -291,11 +315,43 @@ function drawTour(){
           (last ? '' : tourBtn('exit', 'Exit tour', exit)) + '</span>' +
         '<nav class="trvers" aria-label="Version">' + tabs + '</nav>' +
       '</div><div class="trmain"><span class="trtitle">' + esc(tour.title || 'Tour') + '</span>' +
-      '<div class="trtext">' + text + '</div></div></div>';
+      '<div class="trtext">' + text + '</div></div></div>' +
+      '<div class="trgrip" role="separator" aria-orientation="horizontal" title="Drag to make the text taller or shorter; double-tap for the default"></div>';
     bar.hidden = false;
   }
+  document.getElementById('tourAgain').hidden = !siteTour || !!tour;
   tmShow();
 }
+// The phone's handle under the text (.trgrip): dragging it sets the text's height (--trh on the bar, kept through the
+// steps and, in this browser, the next visit: xrisk-tour-h), from 3 lines to most of the window; a double tap (or
+// click) gives back the default
+var TRH_KEY = 'xrisk-tour-h', trDrag = null;
+function setTrH(px){
+  var bar = document.getElementById('tourbar');
+  if(px == null){ bar.style.removeProperty('--trh'); bar.classList.remove('sized'); return; }
+  bar.style.setProperty('--trh', Math.round(Math.max(60, Math.min(px, window.innerHeight * 0.75))) + 'px'); bar.classList.add('sized');
+}
+document.getElementById('tourbar').addEventListener('pointerdown', function(e){
+  var g = e.target.closest('.trgrip'); if(!g) return;
+  var t = this.querySelector('.trtext'); if(!t) return;
+  trDrag = {y: e.clientY, h: t.getBoundingClientRect().height, id: e.pointerId};
+  try { g.setPointerCapture(e.pointerId); } catch(err){}
+  e.preventDefault();
+});
+document.addEventListener('pointermove', function(e){ if(trDrag && e.pointerId === trDrag.id) setTrH(trDrag.h + e.clientY - trDrag.y); });
+function trDragEnd(e){
+  if(!trDrag || e.pointerId !== trDrag.id) return;
+  trDrag = null;
+  var v = document.getElementById('tourbar').style.getPropertyValue('--trh');
+  try { if(v) localStorage.setItem(TRH_KEY, parseFloat(v)); } catch(err){}
+}
+document.addEventListener('pointerup', trDragEnd);
+document.addEventListener('pointercancel', trDragEnd);
+document.getElementById('tourbar').addEventListener('dblclick', function(e){
+  if(!e.target.closest('.trgrip')) return;
+  setTrH(null); try { localStorage.removeItem(TRH_KEY); } catch(err){}
+});
+(function(){ var v = null; try { v = parseFloat(localStorage.getItem(TRH_KEY)); } catch(err){} if(v > 0) setTrH(v); })();
 document.addEventListener('click', function(e){
   var b = e.target.closest('[data-tour]'); if(!b) return;
   var a = b.getAttribute('data-tour');

@@ -39,14 +39,14 @@ button,input,textarea{font:inherit;color:inherit;}
 .app{display:flex;align-items:flex-start;gap:14px;padding:16px;}
 /* the options column (--sidew, its grip: setSideW) */
 .side{position:relative;flex:0 0 var(--sidew, 200px);min-width:0;display:flex;flex-direction:column;gap:8px;}
-/* the board fitted to its room, but never narrower than FIT_MIN of its natural size (--bw, render: 0.7 px a unit, so
-   two periods fit beside the options on a 1280 px wide window), so zooming the page (Ctrl +, Ctrl and the wheel, a
+/* the board fitted to its room, from FIT_MIN to FIT_MAX of its natural size (--bw, --bwmax, render: 0.8 to 1.2 px a unit,
+   Ville's), so zooming the page (Ctrl +, Ctrl and the wheel, a
    touchpad's pinch) enlarges it, scrolling sideways; on a phone it fits the screen, pinched as any page */
 .main{flex:1 1 auto;min-width:0;overflow-x:auto;}
 .colgrip{position:absolute;top:0;bottom:0;right:-11px;width:8px;border-radius:3px;cursor:col-resize;z-index:4;touch-action:none;}
 .colgrip:hover, body.siderz .colgrip{background:var(--litGlow);}
 body.siderz, body.namesrz{cursor:col-resize;user-select:none;-webkit-user-select:none;}
-@media (max-width: 900px){ .app{flex-direction:column;} .side{flex-basis:auto;width:100%;} .main{width:100%;} #board{min-width:0 !important;} .colgrip{display:none;} }
+@media (max-width: 900px){ .app{flex-direction:column;} .side{flex-basis:auto;width:100%;} .main{width:100%;} #board{min-width:0 !important;max-width:none !important;} .colgrip{display:none;} }
 
 /* the groups: accordions (details), in palette 3's panel colours */
 details.grp{background:var(--panel);border-radius:6px;}
@@ -114,7 +114,7 @@ details.grp:not([open]) > summary::after{transform:translateY(-50%) rotate(-45de
 .tpt.on .tin, .tpt.tnow .tin, .tpt.tnow .tfix{color:var(--text);}
 
 /* the board: one SVG, as wide as there is room (its own coordinates are the sketches': 1 unit, 1 px at 1920 wide) */
-#board{display:block;width:100%;min-width:var(--bw, 0);height:auto;user-select:none;-webkit-user-select:none;cursor:grab;}   /* drag to scroll (see "drag to scroll") */
+#board{display:block;width:100%;min-width:var(--bw, 0);max-width:var(--bwmax, none);height:auto;user-select:none;-webkit-user-select:none;cursor:grab;}   /* drag to scroll (see "drag to scroll") */
 body.dragging, body.dragging *{cursor:grabbing !important;user-select:none !important;-webkit-user-select:none !important;}
 /* the zoom buttons (zoomTo), bottom right over everything */
 .zoombar{position:fixed;right:14px;bottom:14px;z-index:20;display:flex;gap:4px;padding:4px;background:var(--float);border:1px solid var(--btnLine);border-radius:8px;}
@@ -129,7 +129,7 @@ body.dragging, body.dragging *{cursor:grabbing !important;user-select:none !impo
 body.hrz{cursor:ns-resize;user-select:none;-webkit-user-select:none;}
 body.wrz{cursor:ew-resize;user-select:none;-webkit-user-select:none;}
 #board [data-grip]{cursor:col-resize;touch-action:none;}
-#board [data-grip]:hover rect, body.namesrz #board [data-grip] rect{opacity:.35;}
+#board [data-grip]:hover rect:first-of-type, body.namesrz #board [data-grip] rect:first-of-type{opacity:.35;}
 #board [data-drag="r"], #board [data-drag="s"]{cursor:ns-resize;}
 #board [data-drag="rb"], #board [data-drag="sb"]{cursor:ew-resize;}
 #board [data-dg], #board [data-box], #board [data-act], #board [data-shape], #board [data-drop]{cursor:pointer;}
@@ -178,6 +178,15 @@ body.wrz{cursor:ew-resize;user-select:none;-webkit-user-select:none;}
 #tippop{position:fixed;z-index:60;max-width:min(320px, calc(100vw - 16px));padding:6px 9px;border-radius:6px;background:var(--btn);border:1px solid var(--litLine);
   color:var(--text);font-size:13px;line-height:1.35;box-shadow:4px 4px 0 var(--shade);}
 #tippop[hidden]{display:none;}
+/* a phone: the options in smaller type (Ville's), their groups less padded */
+@media (max-width: 600px){
+  details.grp > summary{font-size:12.5px;padding:5px 26px 5px 12px;}
+  .gbody{font-size:11.5px;padding:8px 12px 10px;}
+  .gbody label{margin:3px 0;}
+  .gnote{font-size:10px;}
+  .btn{font-size:12px;padding:4px 10px;}
+  .langb, .themeb{font-size:11px;}
+}
 </style>
 </head>
 <body>
@@ -545,8 +554,8 @@ var theme = 'dark';
 // the shown mode's palette as the page has it, for Reset colours and for saving only what differs (colorsSaved,
 // applySettings); each mode's colours as last set, changes from those (themeCols: the shown mode's are C's)
 var C_DEF = THEME_DEF.dark.c, PERIODS_DEF = THEME_DEF.dark.p, themeCols = {dark: {}, light: {}};
-var NAMES_X = 330, LABW_DEF = 230, LABW_MIN = 220, LABW_MAX = 520, TABLE_GAP = 20, labW = LABW_DEF;
-var FIT_MIN = 0.7;                                 // the fitted board's smallest scale, px a unit (CSS: .main)
+var NAMES_X = 330, LABW_DEF = 230, LABW_MIN = 130, LABW_MAX = 520, TABLE_GAP = 20, labW = LABW_DEF;
+var FIT_MIN = 0.8, FIT_MAX = 1.2;                  // the fitted board's scale, px a unit, on a desktop (CSS: .main)
 var DX = 330, GPAD = 50;                          // a period's default width (time line to time line), its graph's margins
 // each period's width, by the time point ending it (pw[k]; DX when unset), set by dragging that time line (lineGrips),
 // a double click giving back the default; its graph that less the margins (gw)
@@ -700,6 +709,7 @@ function boardSvg(){
   h += riskRow() + survRow() + yearsRow() + realSvg();
   var gx = NAMES_X + labW;
   h += '<g id="namesCol">' + namesSvg() + '<g data-grip="names">' + R(gx - 4, 20, 8, boardH(), {rx: 3, fill: C.litLine, op: 0}) +
+       R(gx - 2.5, 44, 5, 28, {rx: 2.5, fill: C.btnLine}) +   // the grip, seen: a short bar on the edge, level with Formulas
        '<title>' + esc(tr('Drag to resize the names column; double-click for the default width')) + '</title></g></g>';
   return h;
 }
@@ -713,18 +723,20 @@ function freezeNames(){
 function boardH(){ return show.real ? RT.y + RT.h + 30 - 20 : Math.max(BEND + 24, YB.y + nameFoot(rowNames().y) + 8) - 20; }
 // the names column: its own fill, a line on its right edge; Formulas; the rows' names (and formulas, while open)
 function namesSvg(){
+  // a narrow column (its grip, down to LABW_MIN): what doesn't fit made smaller, about its top left, not cut (Ville's)
+  function fit(x, y, w, room, s){ var k = Math.min(1, room / Math.max(1, w)); return k < 1 ? '<g transform="translate(' + x + ',' + y + ') scale(' + r2(k * 1000) / 1000 + ') translate(' + (-x) + ',' + (-y) + ')">' + s + '</g>' : s; }
   var h = R(NAMES_X, 20, labW, boardH(), {rx: 0, fill: C.names}) + Pa('M' + (NAMES_X + labW) + ' 20 V' + (20 + boardH()), {stroke: C.label, sw: 1}) +
-          R(340, 44, 125, 28, {fill: C.btn, stroke: C.btnLine, attrs: ' data-act="formulas"'}) +
+          fit(340, 44, 125, labW - 20, R(340, 44, 125, 28, {fill: C.btn, stroke: C.btnLine, attrs: ' data-act="formulas"'}) +
           T(354, 63, tr('Formulas'), {size: 14, attrs: ' data-act="formulas"'}) +
-          Pa(formulasOpen ? 'M443 55 L449 61 L455 55' : 'M446 52 L452 58 L446 64', {stroke: C.text, sw: 1.8, attrs: ' data-act="formulas"'});
+          Pa(formulasOpen ? 'M443 55 L449 61 L455 55' : 'M446 52 L452 58 L446 64', {stroke: C.text, sw: 1.8, attrs: ' data-act="formulas"'}));
   // each variable's name, its top level with its boxes' top (the capitals' tops 16 over the first baseline), its
-  // formula under it when the formulas are shown (lower with a sum or product: room for its limit over it)
+  // formula under it when the formulas are shown (lower with a sum or product: room for its limit over it); both
+  // smaller together where the column is narrower than their widest line (the first's left of the ⇄)
   function name(top, n, row){
-    var ls = nameLines(n.ls);
-    h += '<g><title>' + esc(tr(n.tip)) + '</title>';
-    ls.forEach(function(s, q){ h += T(340, top + 16 + 28 * q, s, {size: 22, fill: n.col}); });
-    if(formulasOpen) h += fxSvg(340, top + 16 + 28 * (ls.length - 1) + (fxHasOp(n.f) ? 30 : 26), n.f);
-    h += '</g>' + flipBtn(top, row);
+    var ls = nameLines(n.ls), g = '', w = 0;
+    ls.forEach(function(s, q){ g += T(340, top + 16 + 28 * q, s, {size: 22, fill: n.col}); w = Math.max(w, fxW(s, 22, false, 'Arial') + (q ? 0 : 30)); });   // (the first line: clear of the ⇄)
+    if(formulasOpen){ g += fxSvg(340, top + 16 + 28 * (ls.length - 1) + (fxHasOp(n.f) ? 30 : 26), n.f); w = Math.max(w, fxSvg.w); }
+    h += '<g><title>' + esc(tr(n.tip)) + '</title>' + fit(340, top, w, labW - 20, g) + '</g>' + flipBtn(top, row);
   }
   var N = rowNames();
   name(RB.y, N.r, 'r'); name(SB.y, N.s, 's'); name(YB.y, N.y, 'y');
@@ -771,7 +783,7 @@ function fxW(s, size, it, fam){                    // (fam: another type's, as s
 }
 function fxHasOp(f){ return f.some(function(p){ return p.op; }); }
 function fxSvg(x, y, f){
-  var h = '';
+  var h = '', x0 = x;
   function put(s, size, fill, it, yy){
     var t = s.trim();
     if(t) h += T(x + fxW(s.match(/^ */)[0], size, it), yy, t, {size: size, fam: 'Cambria', it: it, fill: fill});
@@ -785,6 +797,7 @@ function fxSvg(x, y, f){
       x += w + 3;
     } else { put(p.v, FX, C[p.c], true, y); put(p.i, FX_SUB, C[p.c], false, y + 4); x += 1; }
   });
+  fxSvg.w = x - x0;                                 // its width, for the names column's fit (namesSvg)
   return h;
 }
 // a row's ⇄ (flip): its boxes show the opposite (survival for risk, extinction for survival, lost for lived)
@@ -1383,14 +1396,15 @@ function render(){
   scl = freeze || fitScales();
   var vw = xAt(M.n - 1) + 140 - 330;
   board.setAttribute('viewBox', '330 20 ' + vw + ' ' + boardH());
-  board.style.setProperty('--bw', Math.round(vw * FIT_MIN) + 'px');   // fitted: down to FIT_MIN a unit, no smaller
+  board.style.setProperty('--bw', Math.round(vw * FIT_MIN) + 'px');   // fitted: from FIT_MIN a unit to FIT_MAX
+  board.style.setProperty('--bwmax', Math.round(vw * FIT_MAX) + 'px');
   rowPlaces = {};
   simE = simEvents();
   board.innerHTML = defs() + boardSvg();
   placeCatch();                                    // the armed box's wheel catch, back on top
   hotApply();
   // a time line held: the board kept at its scale as it widens (else, fitted, it would shrink under the pointer)
-  if(drag && drag.kind === 'w'){ board.style.width = Math.round(vw * drag.px) + 'px'; board.style.minWidth = '0'; }
+  if(drag && drag.kind === 'w'){ board.style.width = Math.round(vw * drag.px) + 'px'; board.style.minWidth = '0'; board.style.maxWidth = 'none'; }
   else applyZoom();
   showZoom();
   freezeNames();
@@ -2137,8 +2151,8 @@ mainEl.addEventListener('scroll', freezeNames);     // the names column kept in 
 function boardW(){ return xAt(M.n - 1) + 140 - 330; }
 function curZoom(){ return board.getBoundingClientRect().width / boardW(); }
 function applyZoom(){
-  if(zoom == null){ board.style.removeProperty('width'); board.style.removeProperty('min-width'); }
-  else { board.style.width = Math.round(boardW() * zoom) + 'px'; board.style.minWidth = '0'; }
+  if(zoom == null){ board.style.removeProperty('width'); board.style.removeProperty('min-width'); board.style.removeProperty('max-width'); }
+  else { board.style.width = Math.round(boardW() * zoom) + 'px'; board.style.minWidth = '0'; board.style.maxWidth = 'none'; }
 }
 function showZoom(){ document.getElementById('zoomPct').textContent = Math.round(curZoom() * 100) + '%'; }
 function zoomTo(z, cx, cy){
