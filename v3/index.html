@@ -670,13 +670,13 @@ function arrowFx(f, alt){
   return {w: walk(0, null), svg: walk, alt: alt};
 }
 // The arrow from survival's box j to the next: survival times the period's chance of getting through it, written out
-// with the years in (Ville's, over the number it gives): ∏ from its first year to its last of (1 − r_i); a flat period,
-// one level all through, (1 − r) to the power of its years, r the level itself, the number (Ville's), as a one-year
+// with the years in (Ville's, over the number it gives): ∏ from its first year to its last of (1 − e_i); a flat period,
+// one level all through, (1 − e) to the power of its years, e the level itself, the number (Ville's), as a one-year
 // period's. With risk's row flipped, s_i (s the number).
 function survFx(j){
   var t = fYear(M.cps[j + 1]), n = M.segLen[j], one = isFlat(PA, j) || n === 1, r = resA.r[j + 1], alt = '× ' + fFac(resA.fac[j]);
   var f = flip.r ? [one ? {n: fTrim(1 - r), c: 'risk'} : {v: 's', i: 'i', c: 'risk'}]
-                 : ['(1 − ', one ? {n: fTrim(r), c: 'risk'} : {v: 'r', i: 'i', c: 'risk'}, ')'];
+                 : ['(1 − ', one ? {n: fTrim(r), c: 'risk'} : {v: 'e', i: 'i', c: 'risk'}, ')'];
   if(one) return arrowFx(['× '].concat(f, n > 1 ? [{pow: String(n)}] : []), alt);
   return arrowFx(['× ', {prod: true, lo: 'i=' + fYear(M.cps[j] + 1), up: t}].concat(f), alt);
 }
@@ -745,18 +745,18 @@ function namesSvg(){
 // The rows' names as they show now (flip): each its lines (ls; a translation may break one in two with "\n": its
 // language's words are longer), colour, formula (fxSvg's parts) and tooltip. The formulas as v1's (Ville's): the
 // survival a product and the total a sum over the years from START (2027) to t, each symbol in its variable's colour
-// and written as the rows above show it (a year's survival s_i or 1 − r_i; the share alive S_i or 1 − E_i); the lost
-// total primed (Y′), as v1's.
+// and written as the rows above show it (a year's survival s_i or 1 − e_i; the share alive S_i or 1 − E_i); the lost
+// total primed (Y′), as v1's. A year's extinction e, as v1's (Ville's), not r: e and E, the year's and the cumulative.
 function rowNames(){
   var o = OUT[outcome], lo = 'i=' + fYear(M.cps[0]), yc = flip.y ? 'lost' : 'years';
   function v(s, c, i){ return {v: s, c: c, i: i}; }
-  var fac = flip.r ? [v('s', 'risk', 'i')] : ['(1 − ', v('r', 'risk', 'i'), ')'];
+  var fac = flip.r ? [v('s', 'risk', 'i')] : ['(1 − ', v('e', 'risk', 'i'), ')'];
   var alive = flip.s ? ['(1 − ', v('E', 'surv', 'i'), ')'] : [v('S', 'surv', 'i')];
   var gone = flip.s ? [v('E', 'surv', 'i')] : ['(1 − ', v('S', 'surv', 'i'), ')'];
   return {
-    r: flip.r ? {col: C.risk, ls: ['Chance of|surv', 'surviving year t,', 'if survived until t−1'], f: [v('s', 'risk', 't'), ' = 1 − ', v('r', 'risk', 't')],
+    r: flip.r ? {col: C.risk, ls: ['Chance of|surv', 'surviving year t,', 'if survived until t−1'], f: [v('s', 'risk', 't'), ' = 1 − ', v('e', 'risk', 't')],
                  tip: 'The chance of surviving a year, for a world still alive that year.'}
-              : {col: C.risk, ls: ['Chance of|ext', 'extinction in year t,', 'if survived until t−1'], f: [v('r', 'risk', 't'), ' = 1 − ', v('s', 'surv', 't')],
+              : {col: C.risk, ls: ['Chance of|ext', 'extinction in year t,', 'if survived until t−1'], f: [v('e', 'risk', 't'), ' = 1 − ', v('s', 'surv', 't')],
                  tip: 'The chance of extinction in a year, for a world still alive that year.'},
     s: flip.s ? {col: C.surv, ls: ['Chance of|by', 'extinction,|by', 'by the year'], f: [v('E', 'surv', 't'), ' = 1 − ', {op: '∏', lo: lo, up: 't'}].concat(fac),
                  tip: 'The share of futures gone extinct by the end of the year.'}
@@ -1807,24 +1807,25 @@ function fillPop(){
   var fl = sh.kind === 'flat';
   document.querySelector('#pop .ph').hidden = fl;
   if(fl){                                          // one level: no function to fit, no bend
-    set('pF', 'r(τ) = r₁');
+    set('pF', 'e(τ) = e₁');
     set('pTau', tr('every year of the period') + (i === 0 ? ', ' + trf('{y} too', {y: fYear(M.cps[0])}) : '') + ': ' + group3(String(M.segLen[i] + (i === 0 ? 1 : 0))) + ' ' + tr('years'));
     set('pK', ''); set('pAC', '');
     set('pA', '<span class="pv">' + fPct(resA.r[i + 1]) + ' ' + tr('a year') + '</span>');
     return;
   }
   var x = sh.kind === 'exp' ? expX(sh.h) : 0, lin = sh.kind === 'exp' && Math.abs(x) < 1e-9, L0 = lgs(0, sh.h), L1 = lgs(1, sh.h);
-  set('pF', lin ? 'r(τ) = r₀ + (r₁ − r₀) · τ/n' : sh.kind === 'exp' ? 'r(τ) = c + a · e^(kτ)' : 'r(τ) = c + a / (1 + e^(−s(τ − τₘ)))');
+  // (a year's extinction e, as v1's: Euler's number written exp(), apart from it)
+  set('pF', lin ? 'e(τ) = e₀ + (e₁ − e₀) · τ/n' : sh.kind === 'exp' ? 'e(τ) = c + a · exp(kτ)' : 'e(τ) = c + a / (1 + exp(−s(τ − τₘ)))');
   set('pTau', trf('τ: years since {y}, 0 to n = {n}', {y: fYear(M.cps[i]), n: group3(String(len))}));
   set('pK', lin ? tr('k = 0: a straight line') : sh.kind === 'exp' ? 'k = ' + dc((x / len).toPrecision(3).replace('-', '−')) + ' ' + tr('a year') :
             trf('s = {s} a year, its middle τₘ = {m}', {s: dc((S_STEEP / len).toPrecision(3)), m: group3(String(Math.round(sh.h * len)))}));
   set('pHy', fYear(M.cps[i] + Math.round(sh.h * len)));
   var hs = document.getElementById('pH'); if(document.activeElement !== hs) hs.value = sh.h * 100;
-  set('pAC', lin ? '' : sh.kind === 'exp' ? 'a = (r₁ − r₀) / (e^(kn) − 1), c = r₀ − a' : tr('a and c fitted the same way, to meet r₀ and r₁'));
+  set('pAC', lin ? '' : sh.kind === 'exp' ? 'a = (e₁ − e₀) / (exp(kn) − 1), c = e₀ − a' : tr('a and c fitted the same way, to meet e₀ and e₁'));
   var v0 = resA.r[i], v1 = resA.r[i + 1], a, c, tail;
   if(lin){ c = v0; a = v1 - v0; tail = ' · τ/' + group3(String(len)); }
-  else if(sh.kind === 'exp'){ a = (v1 - v0) / Math.expm1(x); c = v0 - a; tail = ' · e^(kτ)'; }
-  else { a = (v1 - v0) / (L1 - L0); c = v0 - a * L0; tail = ' / (1 + e^(−s(τ − τₘ)))'; }
+  else if(sh.kind === 'exp'){ a = (v1 - v0) / Math.expm1(x); c = v0 - a; tail = ' · exp(kτ)'; }
+  else { a = (v1 - v0) / (L1 - L0); c = v0 - a * L0; tail = ' / (1 + exp(−s(τ − τₘ)))'; }
   set('pA', '<span class="pv">' + fPct(c) + ' ' + (a < 0 ? '−' : '+') + ' ' + pctNum(Math.abs(a) * 100) + ' ' + tr('pp') + tail + '</span>');
 }
 pop.addEventListener('input', function(e){
@@ -2658,7 +2659,7 @@ var FI = {
   // the shape's menu, the simulation, the time scale
   '{a} to {b}: risk, {s}': '{a}–{b}: riski, {s}', 'every year of the period': 'jakson jokainen vuosi', '{y} too': 'myös {y}',
   'τ: years since {y}, 0 to n = {n}': 'τ: vuosia vuodesta {y}, 0–n = {n}', 'k = 0: a straight line': 'k = 0: suora viiva',
-  's = {s} a year, its middle τₘ = {m}': 's = {s} vuodessa, keskikohta τₘ = {m}', 'a and c fitted the same way, to meet r₀ and r₁': 'a ja c sovitettu samoin, kohtaamaan r₀ ja r₁',
+  's = {s} a year, its middle τₘ = {m}': 's = {s} vuodessa, keskikohta τₘ = {m}', 'a and c fitted the same way, to meet e₀ and e₁': 'a ja c sovitettu samoin, kohtaamaan e₀ ja e₁',
   'Half of the change by': 'Puolet muutoksesta vuoteen',
   '{a} of {n} realities reach {y} ({p}; the model: {m}). {x} went extinct.': '{a}/{n} todellisuutta saavuttaa vuoden {y} ({p}; malli: {m}). {x} kuoli sukupuuttoon.',
   'now': 'nyt', '{y}, the present': '{y}, nykyhetki', '{y}, {n} years in total: ': '{y}, {n} vuotta yhteensä: ',

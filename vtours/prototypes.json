@@ -3,7 +3,7 @@
  "steps": [
   {
    "version": "v3",
-   "notes": "This is a guided tour to the draft of my existential risk website and its prototypes (v1 and v3). Site calculates and visualizes the connection between existential risk probability and humankind's longevity over time. \nThe aim is not to depict any particular existential risk probabilities, but to offer a flexible platform to try them out and to show the impact of changes. \n\nOut of the prototypes, v3, depicted here, is focused on the visual presentation and on showing the connections between the variables via the graphs. \n",
+   "notes": "This is a guided tour to the draft of my existential risk website and its prototypes (v1 and v3). Site calculates and visualizes the connection between existential risk probability and humankind's longevity over time. \n\nThe aim is not to depict any particular x-risk probabilities, but to offer a flexible platform to try out different values and to show that even seemingly small risks, or small changes in them, have a huge impact over time, due to the permanence of extinction and the vast value of humanity in case we survive. I want this to motivate us to work to reduce these risks. ",
    "state": {
     "view": {
      "start": 2027,
@@ -35,7 +35,7 @@
      "formulas": true,
      "scale": {
       "r": "pow",
-      "s": "all"
+      "s": "per"
      },
      "groups": {
       "grpCtl": false,
@@ -49,12 +49,160 @@
      "namesWidth": 220,
      "heights": {
       "r": 116,
-      "s": 210,
+      "s": 278,
       "t": 303
      },
      "widths": {
-      "1": 322,
-      "2": 316,
+      "1": 423,
+      "2": 380,
+      "3": 411
+     },
+     "outcome": "years",
+     "flip": {
+      "r": false,
+      "s": false,
+      "y": false
+     }
+    },
+    "values": {
+     "a": {
+      "risk": {
+       "1": 0.0005,
+       "2": 0.0005,
+       "3": 0.00035845920957367996
+      },
+      "surv": {
+       "2": 0.7705365526929188
+      }
+     },
+     "b": {
+      "risk": {},
+      "surv": {}
+     },
+     "rShape": {
+      "1": {
+       "kind": "flat",
+       "h": 0.5
+      },
+      "2": {
+       "kind": "flat",
+       "h": 0.5
+      },
+      "3": {
+       "kind": "flat",
+       "h": 0.5
+      }
+     },
+     "sShape": {
+      "2": {
+       "kind": "exp",
+       "h": 0.85
+      }
+     },
+     "drive": {},
+     "pot": {
+      "lives": {},
+      "value": {}
+     }
+    },
+    "colors": {
+     "page": "#1b2b34",
+     "names": "#1b2b34",
+     "box": "#343d46",
+     "label": "#4f5b66",
+     "text": "#c0c5ce",
+     "muted": "#a7adba",
+     "faint": "#a7adba",
+     "risk": "#ec5f67",
+     "riskFill": "#79424b",
+     "odds": "#f99157",
+     "surv": "#5fb3b3",
+     "years": "#77b4ee",
+     "lost": "#c594c5",
+     "line": "#c0c5ce",
+     "title": "#fac863",
+     "bad": "#ec5f67",
+     "good": "#99c794",
+     "btn": "#343d46",
+     "btnLine": "#65737e",
+     "lit": "#4f5b66",
+     "litLine": "#5fb3b3",
+     "border": "#65737e",
+     "accent": "#5fb3b3",
+     "well": "#1b2b34",
+     "sel": "#c594c5",
+     "dim": "#a7adba",
+     "menu": "#a7adba",
+     "ok": "#99c794",
+     "faintD": "#a7adba",
+     "periods": [
+      "#353c4b",
+      "#2a4152",
+      "#29464d",
+      "#344a47",
+      "#3d4051",
+      "#484a3d"
+     ]
+    },
+    "colorsLight": {},
+    "simN": 0,
+    "palette": ""
+   }
+  },
+  {
+   "version": "v3",
+   "notes": "Out of the prototypes, v3, depicted here, is focused on the visual presentation and on showing the connections between the variables via the graphs. \n",
+   "state": {
+    "view": {
+     "start": 2027,
+     "points": [
+      1,
+      2
+     ],
+     "ahead": [
+      9,
+      99,
+      999,
+      9999,
+      99999,
+      999999
+     ],
+     "show": {
+      "graphs": true,
+      "riskGraph": true,
+      "survGraph": true,
+      "cmp": false,
+      "real": true,
+      "time": true,
+      "work": true,
+      "scales": true,
+      "lines": true,
+      "braces": true,
+      "spin": false
+     },
+     "formulas": true,
+     "scale": {
+      "r": "pow",
+      "s": "per"
+     },
+     "groups": {
+      "grpCtl": false,
+      "grpOut": false,
+      "grpCmp": true,
+      "grpElements": false,
+      "grpTime": true,
+      "grpSim": false
+     },
+     "optionsWidth": 247,
+     "namesWidth": 220,
+     "heights": {
+      "r": 116,
+      "s": 278,
+      "t": 303
+     },
+     "widths": {
+      "1": 423,
+      "2": 380,
       "3": 411
      },
      "outcome": "years",
@@ -151,7 +299,7 @@
   },
   {
    "version": "v1",
-   "notes": "V1 is focused on numbers, and on showing the effect of changes between different specifications. Also, the menu options are more numerous in this prototype as of now, as I've spent more time on it. \n\nThe final site may be some kind of combination of these prototypes, or it could be built around one of them. Feedback is appreciated on what works and with what. Both versions have been coded using Claude. \n",
+   "notes": "V1 is focused on numbers, and on showing the effect of changes between different specifications. Also, the menu options are more numerous in this prototype as of now, as I've spent more time on it. \n\nThe final site may be some kind of combination of these prototypes, or it could be built around one of them. Feedback is appreciated on what works and with what. Both versions have been coded using Claude. Note: there is no specific mobile version yet, so mobile usability may be bad. ",
    "state": {
     "view": {
      "start": 2026,
@@ -208,7 +356,7 @@
      "outcome": "years",
      "lang": "en",
      "views": {
-      "rateComp": true,
+      "rateComp": false,
       "survComp": false,
       "yearsComp": false,
       "yrexpComp": false,
@@ -272,7 +420,7 @@
      },
      "excluded": [],
      "sel": {
-      "kind": "rate_c",
+      "kind": "rate",
       "i": 0,
       "place": 0.00001,
       "part": "main"
